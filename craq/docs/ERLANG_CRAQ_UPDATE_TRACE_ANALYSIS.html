@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRAQ 更新操作 Trace 分析报告</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        .content {
+            padding: 40px;
+        }
+        .section {
+            margin-bottom: 40px;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        .section h2 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .section h3 {
+            color: #34495e;
+            margin-top: 25px;
+        }
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 15px 0;
+            border-left: 4px solid #3498db;
+        }
+        .highlight {
+            background: linear-gradient(120deg, #a8edea 0%, #fed6e3 100%);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #ff6b6b;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            display: block;
+        }
+        .flow-diagram {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 2px solid #e9ecef;
+        }
+        .node-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .timeline {
+            background: #f1f2f6;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .timeline-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .function-call {
+            background: #e8f5e8;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            border-left: 3px solid #27ae60;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔄 CRAQ 更新操作 Trace 分析</h1>
+            <p>深度解析三节点集群的数据更新机制与函数调用流程</p>
+        </div>
+        
+        <div class="content">
+            <!-- 概览统计 -->
+            <div class="section">
+                <h2>📊 更新操作概览</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-number">4</span>
+                        <div>更新操作序列</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number">3</span>
+                        <div>参与节点</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number">~5min</span>
+                        <div>总执行时间</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number">CRAQ</span>
+                        <div>Chain Replication</div>
+                    </div>
+                </div>
+
+                <div class="highlight">
+                    <h3>🎯 测试场景分析</h3>
+                    <p>基于 ReadMe.txt 的更新操作序列：</p>
+                    <ol>
+                        <li><strong>初始插入</strong>: person/10 → {name: john, age: 30, gender: male}</li>
+                        <li><strong>部分更新</strong>: person/10 → {age: 40} (保留其他字段)</li>
+                        <li><strong>字段替换</strong>: person/10 → {name: john_smith}, 删除 age 字段</li>
+                        <li><strong>批量更新</strong>: 同时更新 candidate/10 和 person/10</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- CRAQ更新协议分析 -->
+            <div class="section">
+                <h2>🔗 CRAQ Chain Replication 更新协议</h2>
+                
+                <div class="flow-diagram">
+                    <h3>📋 更新流程架构图</h3>
+                    <div class="code-block">
+<strong>CRAQ 更新协议流程:</strong>
+
+客户端请求 → HEAD节点(Node1) → MIDDLE节点(Node2) → TAIL节点(Node3)
+     ↓              ↓                    ↓                   ↓
+   eh_update    pred_pre_update    pred_pre_update    pred_pre_update
+                     ↓                    ↓                   ↓
+                 验证消息            验证消息            验证消息(TAIL)
+                     ↓                    ↓                   ↓
+                 转发消息            转发消息            执行更新
+                     ↓                    ↓                   ↓
+                 等待确认            等待确认            succ_update ←─┐
+                     ↓                    ↓                   ↓         │
+                 succ_update ←─── succ_update ←─── succ_update         │
+                     ↓                    ↓                   ↓         │
+                 持久化存储          持久化存储          持久化存储      │
+                     ↓                    ↓                   ↓         │
+                 客户端响应          状态更新            状态更新       │
+                                                                      │
+                     └──────────────── 反向确认链 ─────────────────────┘
+                    </div>
+                </div>
+
+                <div class="node-info">
+                    <h4>🏗️ 节点角色与职责</h4>
+                    <ul>
+                        <li><strong>HEAD节点 (ec_n1)</strong>: 接收客户端请求，启动更新链，最终响应客户端</li>
+                        <li><strong>MIDDLE节点 (ec_n2)</strong>: 中继更新消息，参与一致性验证</li>
+                        <li><strong>TAIL节点 (ec_n3)</strong>: 执行实际更新，启动反向确认链</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 关键函数调用分析 -->
+            <div class="section">
+                <h2>⚙️ 关键函数调用序列分析</h2>
+                
+                <h3>🔄 更新消息处理流程</h3>
+                
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <strong>1. 客户端请求处理</strong>
+                        <div class="function-call">eh_system_server:handle_cast({eh_update, ...})</div>
+                        <p>HEAD节点接收客户端更新请求，验证节点状态</p>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <strong>2. 消息验证与时间戳</strong>
+                        <div class="function-call">eh_node_timestamp:valid_pre_update_msg/2</div>
+                        <div class="function-call">eh_node_state:update_state_msg/1</div>
+                        <p>验证消息有效性，更新逻辑时钟，检查冲突</p>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <strong>3. 前向传播 (pred_pre_update)</strong>
+                        <div class="function-call">eh_system_server:send_pre_update_msg/4</div>
+                        <div class="function-call">eh_system_server:send_msg(eh_pred_pre_update, ...)</div>
+                        <p>沿链向后继节点传播更新消息</p>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <strong>4. TAIL节点执行更新</strong>
+                        <div class="function-call">eh_system_server:send_update_msg/2</div>
+                        <div class="function-call">eh_persist_data:persist_data/2</div>
+                        <p>TAIL节点执行实际数据更新和持久化</p>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <strong>5. 反向确认 (succ_update)</strong>
+                        <div class="function-call">eh_system_server:send_msg(eh_succ_update, ...)</div>
+                        <div class="function-call">eh_system_server:process_msg(eh_succ_update, ...)</div>
+                        <p>从TAIL向HEAD传播确认消息</p>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <strong>6. 客户端响应</strong>
+                        <div class="function-call">eh_system_server:reply_to_client/2</div>
+                        <div class="function-call">eh_query_handler:reply/3</div>
+                        <p>HEAD节点向客户端发送更新完成响应</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据持久化分析 -->
+            <div class="section">
+                <h2>💾 数据持久化机制分析</h2>
+                
+                <h3>🔍 eh_persist_data 模块功能</h3>
+                
+                <div class="code-block">
+<strong>持久化函数调用模式:</strong>
+
+eh_persist_data:persist_data/2:
+  ├── eh_update_msg:get_data_list/1        # 提取更新数据
+  ├── eh_system_config:get_repl_data_manager/1  # 获取数据管理器
+  ├── ReplDataManager:update/3             # 执行数据更新
+  └── eh_query_handler:process_pending/2   # 处理待处理查询
+
+eh_persist_data:no_persist_data/2:
+  └── 直接返回状态 (用于消息传播阶段)
+                </div>
+
+                <div class="highlight">
+                    <h4>📝 持久化策略</h4>
+                    <ul>
+                        <li><strong>选择性持久化</strong>: 只有特定阶段调用 persist_data/2</li>
+                        <li><strong>消息传播</strong>: 使用 no_persist_data/2 避免重复写入</li>
+                        <li><strong>时间戳同步</strong>: 基于逻辑时钟确保一致性</li>
+                        <li><strong>查询处理</strong>: 更新后立即处理待处理的查询请求</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 时间序列分析 -->
+            <div class="section">
+                <h2>⏰ 更新操作时间序列分析</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-number">4:03:29</span>
+                        <div>第1次更新 (person初始化)</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number">4:04:34</span>
+                        <div>第2次更新 (age字段)</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number">4:05:12</span>
+                        <div>第3次更新 (name字段)</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number">4:08:28</span>
+                        <div>第4次更新 (批量操作)</div>
+                    </div>
+                </div>
+
+                <h3>📈 性能特征分析</h3>
+                
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <strong>更新延迟模式</strong>
+                        <p>Node1 → Node2: ~37ms 延迟</p>
+                        <p>Node2 → Node3: ~24ms 延迟</p>
+                        <p>总链传播时间: ~61ms</p>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <strong>消息处理时间</strong>
+                        <p>pred_pre_update 处理: 1-3ms</p>
+                        <p>succ_update 处理: 2-5ms</p>
+                        <p>持久化操作: 10-15ms</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 消息类型与状态转换 -->
+            <div class="section">
+                <h2>📨 消息类型与状态转换分析</h2>
+                
+                <h3>🔄 消息流转模式</h3>
+                
+                <div class="code-block">
+<strong>消息类型定义:</strong>
+
+eh_update_msg_key: {timestamp, object_type, object_id}
+  ├── timestamp: 逻辑时钟 (1, 2, 3, 4...)
+  ├── object_type: 对象类型 (person, candidate)
+  └── object_id: 对象ID (10)
+
+eh_update_msg_data: {update_data, client_id, node_id, msg_ref}
+  ├── update_data: 实际更新数据 [{name,1,john}, {age,1,30}]
+  ├── client_id: 客户端进程ID
+  ├── node_id: 发起节点ID
+  └── msg_ref: 消息引用 #Ref<...>
+                </div>
+
+                <div class="node-info">
+                    <h4>🎭 状态转换事件</h4>
+                    <ul>
+                        <li><strong>pred_pre_update.valid_ring_msg</strong>: 中间节点验证通过</li>
+                        <li><strong>pred_pre_update.valid_tail_msg</strong>: TAIL节点验证通过</li>
+                        <li><strong>pred_pre_update.99</strong>: 前向传播完成</li>
+                        <li><strong>succ_update.99</strong>: 反向确认完成</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 冲突解决机制 -->
+            <div class="section">
+                <h2>⚔️ 写冲突解决机制</h2>
+                
+                <h3>🛡️ eh_node_timestamp 冲突检测</h3>
+                
+                <div class="code-block">
+<strong>冲突解决流程:</strong>
+
+1. 消息验证阶段:
+   ├── valid_pre_update_msg/2  # 检查pre_msg_data冲突
+   ├── valid_update_msg/2      # 检查msg_data冲突
+   └── check_data/2            # 检查时间戳和数据一致性
+
+2. 冲突解决策略:
+   ├── pre_update_conflict_resolver/2  # 前向传播冲突
+   ├── update_conflict_resolver/2      # 更新阶段冲突
+   └── resolve_conflict/5              # 基于节点ID的仲裁
+
+3. 时间戳管理:
+   ├── update_state_timestamp/2        # 更新逻辑时钟
+   ├── partition_on_timestamp_node_id/3 # 按时间戳分区
+   └── max(MsgTimestamp, LocalTimestamp) # 时钟同步
+                </div>
+
+                <div class="warning">
+                    <h4>⚠️ 冲突场景</h4>
+                    <p>当多个节点同时对同一对象发起更新时，系统使用节点ID进行确定性仲裁，确保所有节点达成一致的更新顺序。</p>
+                </div>
+            </div>
+
+            <!-- 事件系统分析 -->
+            <div class="section">
+                <h2>📡 事件通知系统</h2>
+                
+                <h3>🔔 eh_event 事件处理</h3>
+                
+                <div class="function-call">eh_event:event_notify(message, {eh_system_server, EventType, Data})</div>
+                <div class="function-call">eh_event:event_notify(state, {eh_system_server, StateEvent, State})</div>
+                
+                <div class="highlight">
+                    <h4>📋 事件类型统计</h4>
+                    <ul>
+                        <li><strong>消息事件</strong>: pred_pre_update.valid_*_msg (验证通过事件)</li>
+                        <li><strong>状态事件</strong>: pred_pre_update.99, succ_update.99 (阶段完成事件)</li>
+                        <li><strong>监控事件</strong>: 用于调试和性能监控</li>
+                        <li><strong>错误事件</strong>: 冲突解决和异常处理</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 总结与洞察 -->
+            <div class="section">
+                <h2>🎯 核心洞察与总结</h2>
+                
+                <div class="success">
+                    <h3>✅ CRAQ协议优势</h3>
+                    <ul>
+                        <li><strong>强一致性</strong>: 通过链式复制确保所有节点数据一致</li>
+                        <li><strong>高可用性</strong>: 支持节点故障时的自动恢复</li>
+                        <li><strong>负载分散</strong>: 读操作可在任意节点执行</li>
+                        <li><strong>确定性冲突解决</strong>: 基于时间戳和节点ID的仲裁机制</li>
+                    </ul>
+                </div>
+
+                <div class="highlight">
+                    <h3>🔬 技术特点</h3>
+                    <ul>
+                        <li><strong>消息驱动架构</strong>: 基于Erlang/OTP的actor模型</li>
+                        <li><strong>函数式设计</strong>: 无副作用的状态转换函数</li>
+                        <li><strong>容错机制</strong>: 完善的错误处理和恢复策略</li>
+                        <li><strong>可观测性</strong>: 详细的事件日志和状态跟踪</li>
+                    </ul>
+                </div>
+
+                <div class="code-block">
+<strong>函数调用图总结:</strong>
+
+客户端API层:
+└── erlang_craq:update/4
+
+系统服务层:
+├── eh_system_server:handle_cast/2
+├── eh_system_server:process_msg/9
+└── eh_system_server:send_msg/4
+
+消息处理层:
+├── eh_node_timestamp:valid_*_msg/2
+├── eh_update_msg:get_data_list/1
+└── eh_node_state:update_state_*/2
+
+持久化层:
+├── eh_persist_data:persist_data/2
+├── eh_repl_data_manager_api:update/3
+└── eh_storage_data_operation_api:*
+
+事件通知层:
+├── eh_event:event_notify/3
+├── eh_event:message/3
+└── eh_event:state/3
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

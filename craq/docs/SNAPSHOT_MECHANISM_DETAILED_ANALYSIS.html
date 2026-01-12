@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRAQ 快照 (Snapshot) 机制详解</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #3b82f6;
+            --accent-color: #f59e0b;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --code-bg: #1e293b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.7;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 3rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px rgba(37, 99, 235, 0.3);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        /* Navigation */
+        .nav-toc {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 1rem;
+            z-index: 100;
+        }
+
+        .nav-toc h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .nav-toc ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .nav-toc a {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: var(--bg-color);
+            color: var(--text-color);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .nav-toc a:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* Sections */
+        .section {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .section h2 {
+            color: var(--primary-color);
+            font-size: 1.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 3px solid var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section h3 {
+            color: var(--text-color);
+            font-size: 1.25rem;
+            margin: 1.5rem 0 1rem;
+        }
+
+        .section h4 {
+            color: var(--secondary-color);
+            font-size: 1.1rem;
+            margin: 1.25rem 0 0.75rem;
+        }
+
+        /* Code blocks */
+        pre {
+            background: var(--code-bg);
+            color: #e2e8f0;
+            padding: 1.5rem;
+            border-radius: 12px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        code {
+            font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+        }
+
+        :not(pre) > code {
+            background: #e0e7ff;
+            color: var(--primary-color);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        /* Syntax highlighting */
+        .keyword { color: #c678dd; }
+        .function { color: #61afef; }
+        .string { color: #98c379; }
+        .comment { color: #5c6370; font-style: italic; }
+        .number { color: #d19a66; }
+        .atom { color: #e5c07b; }
+        .variable { color: #e06c75; }
+        .operator { color: #56b6c2; }
+
+        /* Info boxes */
+        .info-box {
+            padding: 1.25rem;
+            border-radius: 12px;
+            margin: 1rem 0;
+            border-left: 4px solid;
+        }
+
+        .info-box.definition {
+            background: #eff6ff;
+            border-color: var(--primary-color);
+        }
+
+        .info-box.important {
+            background: #fef3c7;
+            border-color: var(--accent-color);
+        }
+
+        .info-box.success {
+            background: #d1fae5;
+            border-color: var(--success-color);
+        }
+
+        .info-box.danger {
+            background: #fee2e2;
+            border-color: var(--danger-color);
+        }
+
+        .info-box h4 {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.95rem;
+        }
+
+        th, td {
+            padding: 0.875rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: var(--bg-color);
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        tr:hover {
+            background: var(--bg-color);
+        }
+
+        /* Flow diagrams */
+        .flow-diagram {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            padding: 2rem;
+            border-radius: 12px;
+            margin: 1.5rem 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+        }
+
+        .flow-diagram pre {
+            background: transparent;
+            color: var(--text-color);
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Scenario cards */
+        .scenario-card {
+            background: var(--bg-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border: 2px solid var(--border-color);
+        }
+
+        .scenario-card.active {
+            border-color: var(--success-color);
+        }
+
+        .scenario-card h4 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0;
+        }
+
+        .scenario-card .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge.new { background: #dbeafe; color: #1d4ed8; }
+        .badge.same { background: #fef3c7; color: #b45309; }
+        .badge.old { background: #fee2e2; color: #b91c1c; }
+
+        /* Lists */
+        ul, ol {
+            margin: 0.75rem 0;
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin: 0.5rem 0;
+        }
+
+        /* Comparison */
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .comparison > div {
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .comparison .wrong {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+        }
+
+        .comparison .correct {
+            background: #d1fae5;
+            border: 1px solid #a7f3d0;
+        }
+
+        .comparison h5 {
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* State diagram */
+        .state-diagram {
+            background: linear-gradient(135deg, #fdf4ff, #f3e8ff);
+            padding: 2rem;
+            border-radius: 12px;
+            margin: 1.5rem 0;
+        }
+
+        .state-box {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: white;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            margin: 0.25rem;
+            font-weight: 600;
+        }
+
+        .state-box.ready {
+            background: var(--success-color);
+            color: white;
+            border-color: var(--success-color);
+        }
+
+        /* Summary cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, var(--bg-color), white);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .summary-card h4 {
+            color: var(--primary-color);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .header {
+                padding: 2rem;
+            }
+
+            .header h1 {
+                font-size: 1.75rem;
+            }
+
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-toc ul {
+                flex-direction: column;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Arrow indicators */
+        .arrow {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        /* Highlight */
+        .highlight {
+            background: linear-gradient(120deg, #fef08a 0%, #fef08a 100%);
+            background-size: 100% 40%;
+            background-repeat: no-repeat;
+            background-position: 0 90%;
+        }
+
+        /* Icon styles */
+        .icon {
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>📚 CRAQ 快照 (Snapshot) 机制详解</h1>
+            <p>深入理解 Erlang CRAQ 分布式存储系统中的快照同步机制</p>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav-toc">
+            <h3>📑 目录导航</h3>
+            <ul>
+                <li><a href="#section1">一、核心概念</a></li>
+                <li><a href="#section2">二、update_timestamp</a></li>
+                <li><a href="#section3">三、数据同步应用</a></li>
+                <li><a href="#section4">四、节点状态转换</a></li>
+                <li><a href="#section5">五、完整示例</a></li>
+                <li><a href="#section6">六、data_index 作用</a></li>
+                <li><a href="#section7">七、链式复制关系</a></li>
+                <li><a href="#section8">八、性能考虑</a></li>
+                <li><a href="#section9">九、总结</a></li>
+                <li><a href="#section10">十、代码引用</a></li>
+            </ul>
+        </nav>
+
+        <!-- Section 1: Core Concepts -->
+        <section id="section1" class="section">
+            <h2><span class="icon">📌</span> 一、快照的核心概念</h2>
+
+            <h3>1.1 定义</h3>
+            <div class="info-box definition">
+                <h4>🔹 快照 (Snapshot)</h4>
+                <p><strong>快照</strong>是 CRAQ 系统中用于<strong>数据同步的关键机制</strong>，它是一个时间戳和数据索引的组合。</p>
+            </div>
+
+            <pre><span class="variable">Snapshot</span> = {<span class="variable">Timestamp</span>, <span class="variable">DataIndexList</span>}
+           {    ↓          ↓        }
+           { <span class="comment">时间戳</span>   <span class="comment">索引列表</span>      }</pre>
+
+            <h3>1.2 快照的两个核心组成</h3>
+
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <h4>⏰ Timestamp（时间戳）</h4>
+                    <ul>
+                        <li>代表系统中最新处理的<strong>事务ID</strong></li>
+                        <li>所有更新操作都被赋予一个单调递增的时间戳</li>
+                        <li>新节点将只接收 &gt; 此时间戳的数据</li>
+                    </ul>
+                </div>
+                <div class="summary-card">
+                    <h4>📋 DataIndexList（数据索引列表）</h4>
+                    <ul>
+                        <li>结构: <code>[{{ObjectType, ObjectId}, DataIndex}, ...]</code></li>
+                        <li>记录<strong>每个对象</strong>在当前时间戳下的<strong>最新data_index</strong></li>
+                        <li>用于跳过已同步的数据</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="info-box important">
+                <h4>💡 示例</h4>
+                <pre>{<span class="number">100</span>, [{{<span class="atom">person</span>, <span class="number">10</span>}, <span class="number">3</span>}, {{<span class="atom">person</span>, <span class="number">11</span>}, <span class="number">2</span>}, {{<span class="atom">user</span>, <span class="number">5</span>}, <span class="number">1</span>}]}
+<span class="comment">%% 含义：</span>
+<span class="comment">%% - 时间戳 100 已同步</span>
+<span class="comment">%% - person:10 的最新索引是 3 (timestamp=100, data_index≤3 已同步)</span>
+<span class="comment">%% - person:11 的最新索引是 2</span>
+<span class="comment">%% - user:5 的最新索引是 1</span></pre>
+            </div>
+        </section>
+
+        <!-- Section 2: update_timestamp -->
+        <section id="section2" class="section">
+            <h2><span class="icon">🔄</span> 二、update_timestamp/2 的作用</h2>
+
+            <h3>2.1 函数职责</h3>
+            <p>维护快照的 <code>DataIndexList</code> 部分，确保在同一时间戳内<strong>正确追踪每个对象的最新索引</strong>。</p>
+
+            <h3>2.2 三种处理场景</h3>
+
+            <!-- Scenario 1 -->
+            <div class="scenario-card">
+                <h4><span class="badge new">场景 1</span> 时间戳递增（新事务开始）</h4>
+                <pre><span class="keyword">when</span> <span class="variable">EntryTimestamp</span> <span class="operator">></span> <span class="variable">Timestamp</span> <span class="operator">-></span>
+    {<span class="variable">EntryTimestamp</span>, [{{<span class="variable">ObjectType</span>, <span class="variable">ObjectId</span>}, <span class="variable">EntryDataIndex</span>}]}</pre>
+                
+                <div class="info-box definition">
+                    <h4>逻辑</h4>
+                    <ul>
+                        <li>进入<strong>新的时间纪元</strong></li>
+                        <li>旧时间戳下的索引记录<strong>全部丢弃</strong></li>
+                        <li>只保留<strong>新数据</strong>的信息</li>
+                    </ul>
+                </div>
+
+                <pre><span class="comment">%% 旧快照</span>
+{<span class="number">100</span>, [{{<span class="atom">person</span>, <span class="number">10</span>}, <span class="number">3</span>}, {{<span class="atom">person</span>, <span class="number">11</span>}, <span class="number">2</span>}]}
+
+<span class="comment">%% 新数据：timestamp=200, object={person, 12}, data_index=1</span>
+<span class="function">update_timestamp</span>(<span class="variable">new_data</span>, {<span class="number">100</span>, [...]})
+
+<span class="comment">%% 返回</span>
+{<span class="number">200</span>, [{{<span class="atom">person</span>, <span class="number">12</span>}, <span class="number">1</span>}]}
+<span class="comment">%% ↑ 时间戳提升到 200，列表完全更新</span></pre>
+            </div>
+
+            <!-- Scenario 2 -->
+            <div class="scenario-card active">
+                <h4><span class="badge same">场景 2</span> 时间戳相同（同事务继续）⭐ 重点</h4>
+                <pre><span class="keyword">when</span> <span class="variable">EntryTimestamp</span> <span class="operator">=:=</span> <span class="variable">Timestamp</span> <span class="operator">-></span>
+    <span class="variable">Object</span> = {<span class="variable">ObjectType</span>, <span class="variable">ObjectId</span>},
+    <span class="variable">List1</span> = [{<span class="variable">Object</span>, <span class="variable">EntryDataIndex</span>} | <span class="function">lists:keydelete</span>(<span class="variable">Object</span>, <span class="number">1</span>, <span class="variable">List</span>)],
+    {<span class="variable">Timestamp</span>, <span class="variable">List1</span>}</pre>
+
+                <div class="info-box important">
+                    <h4>逻辑（分步骤）</h4>
+                    <pre><span class="comment">%% Step 1: 标识当前对象</span>
+<span class="variable">Object</span> = {<span class="variable">ObjectType</span>, <span class="variable">ObjectId</span|}
+
+<span class="comment">%% Step 2: 从旧列表删除该对象的旧记录</span>
+<span class="function">lists:keydelete</span>(<span class="variable">Object</span>, <span class="number">1</span>, <span class="variable">List</span>)
+<span class="comment">%% 作用：删除列表中第1位元素为 Object 的所有项</span>
+
+<span class="comment">%% Step 3: 在列表头添加新的 {Object, NewDataIndex}</span>
+<span class="variable">List1</span> = [{<span class="variable">Object</span>, <span class="variable">EntryDataIndex</span>} | <span class="variable">OldListWithoutObject</span>]
+
+<span class="comment">%% Step 4: 保持时间戳不变，返回更新后的列表</span>
+{<span class="variable">Timestamp</span>, <span class="variable">List1</span>}</pre>
+                </div>
+
+                <h4>详细执行过程</h4>
+                <pre><span class="comment">%% 时间戳 100，处理 person:10 的三个字段更新</span>
+<span class="comment">%% 初始：Timestamp=100, List=[]</span>
+
+<span class="comment">%% 处理第1条：name 字段，data_index=1</span>
+<span class="function">lists:keydelete</span>({<span class="atom">person</span>,<span class="number">10</span>}, <span class="number">1</span>, [])  → []
+<span class="variable">List1</span> = [{<span class="atom">person</span>,<span class="number">10</span>}, <span class="number">1</span>] ++ []  = [{{<span class="atom">person</span>,<span class="number">10</span>}, <span class="number">1</span>}]
+<span class="comment">结果：{100, [{{person,10}, 1}]}</span>
+
+<span class="comment">%% 处理第2条：age 字段，data_index=2 (同对象，索引递增)</span>
+<span class="function">lists:keydelete</span>({<span class="atom">person</span>,<span class="number">10</span>}, <span class="number">1</span>, [{{<span class="atom">person</span>,<span class="number">10</span>}, <span class="number">1</span>}])  → []
+<span class="variable">List1</span> = [{<span class="atom">person</span>,<span class="number">10</span>}, <span class="number">2</span>] ++ []  = [{{<span class="atom">person</span>,<span class="number">10</span>}, <span class="number">2</span>}]
+<span class="comment">结果：{100, [{{person,10}, 2}]}</span>
+
+<span class="comment">%% 处理第3条：city 字段，data_index=3</span>
+<span class="function">lists:keydelete</span>({<span class="atom">person</span>,<span class="number">10</span>}, <span class="number">1</span>, [{{<span class="atom">person</span>,<span class="number">10</span>}, <span class="number">2</span>}])  → []
+<span class="variable">List1</span> = [{<span class="atom">person</span>,<span class="number">10</span>}, <span class="number">3</span>] ++ []  = [{{<span class="atom">person</span>,<span class="number">10</span>}, <span class="number">3</span>}]
+<span class="comment">结果：{100, [{{person,10}, 3}]}</span>
+
+<span class="comment">%% 最终快照：{100, [{{person,10}, 3}]}</span></pre>
+
+                <h4>关键点：为什么需要先删除再添加？</h4>
+                <div class="comparison">
+                    <div class="wrong">
+                        <h5>❌ 错误</h5>
+                        <p>直接添加</p>
+                        <code>[{{person,10}, 3}, {{person,10}, 2}, {{person,10}, 1}]</code>
+                    </div>
+                    <div class="correct">
+                        <h5>✅ 正确</h5>
+                        <p>先删后加</p>
+                        <code>[{{person,10}, 3}]</code>
+                        <p>只保留最新</p>
+                    </div>
+                </div>
+
+                <h4>多对象同时处理</h4>
+                <pre><span class="comment">%% 时间戳 100，同时处理多个对象</span>
+<span class="comment">%% 初始：Timestamp=100, List=[]</span>
+
+<span class="comment">%% 处理对象 A：data_index=1</span>
+<span class="variable">List1</span> = [{<span class="variable">A</span>, <span class="number">1</span>}]  →  {<span class="number">100</span>, [{<span class="variable">A</span>, <span class="number">1</span>}]}
+
+<span class="comment">%% 处理对象 B：data_index=1</span>
+<span class="function">lists:keydelete</span>({<span class="variable">B</span>}, <span class="number">1</span>, [{<span class="variable">A</span>, <span class="number">1</span>}])  → [{<span class="variable">A</span>, <span class="number">1</span>}]  <span class="comment">(未找到B)</span>
+<span class="variable">List1</span> = [{<span class="variable">B</span>, <span class="number">1</span>}] ++ [{<span class="variable">A</span>, <span class="number">1</span>}]  =  [{<span class="variable">B</span>, <span class="number">1</span>}, {<span class="variable">A</span>, <span class="number">1</span>}]
+<span class="comment">结果：{100, [{B, 1}, {A, 1}]}</span>
+
+<span class="comment">%% 再次处理对象 A：data_index=2 (同对象更新)</span>
+<span class="function">lists:keydelete</span>({<span class="variable">A</span>}, <span class="number">1</span>, [{<span class="variable">B</span>, <span class="number">1</span>}, {<span class="variable">A</span>, <span class="number">1</span>}])  → [{<span class="variable">B</span>, <span class="number">1</span>}]  <span class="comment">(删除A)</span>
+<span class="variable">List1</span> = [{<span class="variable">A</span>, <span class="number">2</span>}] ++ [{<span class="variable">B</span>, <span class="number">1</span>}]  =  [{<span class="variable">A</span>, <span class="number">2</span>}, {<span class="variable">B</span>, <span class="number">1</span>}]
+<span class="comment">结果：{100, [{A, 2}, {B, 1}]}  ✓ A的索引已更新</span></pre>
+            </div>
+
+            <!-- Scenario 3 -->
+            <div class="scenario-card">
+                <h4><span class="badge old">场景 3</span> 时间戳落后（过时数据丢弃）</h4>
+                <pre><span class="function">update_timestamp</span>(<span class="variable">_Entry</span>, {<span class="variable">Timestamp</span>, <span class="variable">List</span>}) <span class="operator">-></span>
+    {<span class="variable">Timestamp</span>, <span class="variable">List</span>}</pre>
+
+                <div class="info-box danger">
+                    <h4>逻辑</h4>
+                    <ul>
+                        <li>新数据的时间戳 &lt; 当前时间戳</li>
+                        <li><strong>忽略该数据</strong>，保持快照不变</li>
+                    </ul>
+                </div>
+
+                <pre><span class="comment">%% 当前快照</span>
+{<span class="number">100</span>, [{{<span class="atom">person</span>, <span class="number">10</span>}, <span class="number">3</span>}]}
+
+<span class="comment">%% 收到过时数据：timestamp=50</span>
+<span class="function">update_timestamp</span>(<span class="variable">old_data_with_ts_50</span>, {<span class="number">100</span>, [...]})
+
+<span class="comment">%% 返回 (不变)</span>
+{<span class="number">100</span>, [{{<span class="atom">person</span>, <span class="number">10</span>}, <span class="number">3</span>}]}</pre>
+            </div>
+        </section>
+
+        <!-- Section 3: Data Sync Application -->
+        <section id="section3" class="section">
+            <h2><span class="icon">🔗</span> 三、快照在数据同步中的应用</h2>
+
+            <h3>3.1 新节点加入的完整流程</h3>
+            <div class="flow-diagram">
+                <pre>
+新节点加入集群
+    ↓
+[STEP 1] 新节点向现有节点请求快照
+    ↓
+[STEP 2] 现有节点返回快照 {Timestamp, DataIndexList}
+    ↓
+[STEP 3] 新节点根据快照过滤增量数据
+    ↓
+[STEP 4] 新节点应用快照数据
+    ↓
+[STEP 5] 新节点进入就绪状态 (READY)
+                </pre>
+            </div>
+
+            <h3>3.2 请求快照的代码位置</h3>
+            <p><strong>文件：</strong> <code>src/eh_system_server.erl:399-409</code></p>
+            <pre><span class="function">process_snapshot_request</span>(<span class="variable">NodeList</span>, <span class="variable">NodeOrderList</span>, <span class="variable">Succ</span>, <span class="variable">State</span>) <span class="operator">-></span>
+    <span class="comment">%% 向后继节点请求快照</span>
+    <span class="keyword">case</span> <span class="variable">Succ</span> <span class="keyword">of</span>
+        <span class="atom">undefined</span> <span class="operator">-></span>
+            <span class="comment">%% 当前节点是尾节点，无后继</span>
+            <span class="variable">State</span>;
+        <span class="variable">_</span> <span class="operator">-></span>
+            <span class="comment">%% 发送快照请求到后继节点</span>
+            <span class="variable">ReplDataManager</span> = <span class="function">eh_system_config:get_repl_data_manager</span>(<span class="variable">AppConfig</span>),
+            {<span class="variable">Timestamp</span>, <span class="variable">DataIndexList</span>} = <span class="variable">ReplDataManager</span>:<span class="function">timestamp</span>(),
+            <span class="comment">%% 🔥 关键：包含当前时间戳和数据索引列表</span>
+            <span class="variable">Ref</span> = <span class="function">make_ref</span>(),
+            <span class="function">gen_server:cast</span>(
+                {<span class="atom">?EH_SYSTEM_SERVER</span>, <span class="variable">Succ</span>},
+                {<span class="atom">?EH_SNAPSHOT</span>, {<span class="variable">Node</span>, <span class="variable">NodeList</span>, <span class="variable">NodeOrderList</span>, <span class="variable">Ref</span>, {<span class="variable">Timestamp</span>, <span class="variable">DataIndexList</span>}}}
+            ),
+            <span class="variable">State</span>#<span class="atom">eh_system_state</span>{<span class="atom">snapshot_ref</span> = <span class="variable">Ref</span>}
+    <span class="keyword">end</span>.</pre>
+
+            <h3>3.3 生成快照数据的过程</h3>
+            <p><strong>文件：</strong> <code>src/eh_system_server.erl:112-123</code></p>
+            <pre><span class="function">handle_cast</span>({<span class="atom">?EH_SNAPSHOT</span>, {<span class="variable">Node</span>, <span class="variable">NodeList</span>, <span class="variable">NodeOrderList</span>, <span class="variable">Ref</span>, {<span class="variable">Timestamp</span>, <span class="variable">Snapshot</span>}}}, <span class="variable">State</span>) <span class="operator">-></span>
+    <span class="comment">%% 新节点请求快照</span>
+    <span class="variable">ReplDataManager</span> = <span class="function">eh_system_config:get_repl_data_manager</span>(<span class="variable">AppConfig</span>),
+    
+    <span class="comment">%% 🔥 核心：根据快照边界过滤数据</span>
+    <span class="variable">Q0</span> = <span class="variable">ReplDataManager</span>:<span class="function">snapshot</span>(<span class="variable">Timestamp</span>, <span class="variable">Snapshot</span>),
+    <span class="comment">%% 返回的 Q0 是一个队列，包含：</span>
+    <span class="comment">%%   - timestamp > Timestamp 的所有数据，或</span>
+    <span class="comment">%%   - timestamp = Timestamp 且 data_index > Snapshot 中对应值的数据</span>
+    
+    <span class="comment">%% 发送过滤后的数据给新节点</span>
+    <span class="function">gen_server:cast</span>(
+        {<span class="atom">?EH_SYSTEM_SERVER</span>, <span class="variable">Node</span>},
+        {<span class="atom">?EH_UPDATE_SNAPSHOT</span>, {<span class="variable">Ref</span>, <span class="variable">Q0</span>, <span class="variable">PendingPreMsgData</span>}}
+    ),
+    {<span class="atom">noreply</span>, <span class="variable">NewState</span>}.</pre>
+
+            <h3>3.4 快照数据过滤算法</h3>
+            <p><strong>文件：</strong> <code>src/eh_data_util.erl:57-77</code></p>
+            <pre><span class="function">snapshot_fun</span>({<span class="variable">CTimestamp</span>, <span class="variable">_CDataIndexList</span>, <span class="variable">StorageKey</span>}, 
+             #<span class="atom">eh_storage_value</span>{<span class="atom">timestamp</span>=<span class="variable">Timestamp</span>}=<span class="variable">StorageValue</span>, <span class="variable">Qo0</span>) 
+  <span class="keyword">when</span> <span class="variable">Timestamp</span> <span class="operator">></span> <span class="variable">CTimestamp</span> <span class="operator">-></span>
+    <span class="comment">%% 情况1：数据时间戳 > 快照时间戳</span>
+    <span class="comment">%% 直接包含该数据</span>
+    [<span class="function">storage_data</span>(<span class="variable">StorageKey</span>, <span class="variable">StorageValue</span>) | <span class="variable">Qo0</span>];
+
+<span class="function">snapshot_fun</span>({<span class="variable">CTimestamp</span>, <span class="variable">CDataIndexList</span>, #<span class="atom">eh_storage_key</span>{<span class="atom">object_type</span>=<span class="variable">ObjectType</span>, <span class="atom">object_id</span>=<span class="variable">ObjectId</span>}=<span class="variable">StorageKey</span>},
+             #<span class="atom">eh_storage_value</span>{<span class="atom">timestamp</span>=<span class="variable">Timestamp</span>, <span class="atom">data_index</span>=<span class="variable">DataIndex</span>}=<span class="variable">StorageValue</span>, <span class="variable">Qo0</span>)
+  <span class="keyword">when</span> <span class="variable">Timestamp</span> <span class="operator">=:=</span> <span class="variable">CTimestamp</span> <span class="operator">-></span>
+    <span class="comment">%% 情况2：数据时间戳 = 快照时间戳</span>
+    <span class="comment">%% 需要比较 data_index</span>
+    <span class="keyword">case</span> <span class="function">lists:keyfind</span>({<span class="variable">ObjectType</span>, <span class="variable">ObjectId</span>}, <span class="number">1</span>, <span class="variable">CDataIndexList</span>) <span class="keyword">of</span>
+        <span class="atom">false</span> <span class="operator">-></span>
+            <span class="comment">%% 对象未在快照中，说明是新对象</span>
+            [<span class="function">storage_data</span>(<span class="variable">StorageKey</span>, <span class="variable">StorageValue</span>) | <span class="variable">Qo0</span>];
+        {<span class="variable">_</span>, <span class="variable">CDataIndex</span>} <span class="keyword">when</span> <span class="variable">DataIndex</span> <span class="operator">></span> <span class="variable">CDataIndex</span> <span class="operator">-></span>
+            <span class="comment">%% 数据索引 > 快照中的索引，说明是新数据</span>
+            [<span class="function">storage_data</span>(<span class="variable">StorageKey</span>, <span class="variable">StorageValue</span>) | <span class="variable">Qo0</span>];
+        <span class="variable">_</span> <span class="operator">-></span>
+            <span class="comment">%% 数据已在快照中，跳过</span>
+            <span class="variable">Qo0</span>
+    <span class="keyword">end</span>;
+
+<span class="function">snapshot_fun</span>(<span class="variable">_</span>, <span class="variable">_</span>, <span class="variable">Qo0</span>) <span class="operator">-></span>
+    <span class="comment">%% 情况3：数据时间戳 < 快照时间戳</span>
+    <span class="comment">%% 完全忽略（过时数据）</span>
+    <span class="variable">Qo0</span>.</pre>
+        </section>
+
+        <!-- Section 4: Node State Transitions -->
+        <section id="section4" class="section">
+            <h2><span class="icon">🔀</span> 四、节点状态转换与快照</h2>
+
+            <h3>4.1 节点的五种状态</h3>
+            <pre><span class="keyword">-define</span>(<span class="atom">EH_NOT_READY</span>,      <span class="atom">eh_not_ready</span>).           <span class="comment">%% 初始状态</span>
+<span class="keyword">-define</span>(<span class="atom">EH_TRANSIENT</span>,      <span class="atom">eh_transient</span>).           <span class="comment">%% 已收到消息，未收快照</span>
+<span class="keyword">-define</span>(<span class="atom">EH_TRANSIENT_DU</span>,   <span class="atom">eh_transient_data_updated</span>).  <span class="comment">%% 收快照时已有消息</span>
+<span class="keyword">-define</span>(<span class="atom">EH_TRANSIENT_TU</span>,   <span class="atom">eh_transient_timestamp_updated</span>).  <span class="comment">%% 快照完成</span>
+<span class="keyword">-define</span>(<span class="atom">EH_READY</span>,          <span class="atom">eh_ready</span>).               <span class="comment">%% 就绪</span></pre>
+
+            <h3>4.2 状态转换流程</h3>
+            <div class="state-diagram">
+                <div style="text-align: center; line-height: 2.5;">
+                    <span class="state-box">NOT_READY</span> (初始化)<br>
+                    ↓<br>
+                    [新节点请求加入]<br>
+                    ↓<br>
+                    <span class="state-box">TRANSIENT</span> (接收消息和快照)<br>
+                    ↓ (收到消息)<br>
+                    <span class="state-box">TRANSIENT_DU</span> (已合并临时消息)<br>
+                    ↓<br>
+                    [收到快照数据]<br>
+                    ↓<br>
+                    <span class="state-box">TRANSIENT_TU</span> (快照处理完成)<br>
+                    ↓<br>
+                    <span class="state-box ready">READY</span> (就绪，可处理读写)
+                </div>
+            </div>
+
+            <h3>4.3 快照更新状态转换</h3>
+            <p><strong>文件：</strong> <code>src/eh_node_state.erl:43-48</code></p>
+            <pre><span class="function">update_state_snapshot</span>(#<span class="atom">eh_system_state</span>{<span class="atom">node_status</span>=<span class="atom">?EH_TRANSIENT</span>}=<span class="variable">State</span>) <span class="operator">-></span>
+    <span class="comment">%% 如果未收到消息，直接就绪</span>
+    <span class="function">update_state</span>(<span class="atom">?EH_TRANSIENT_DU</span>, <span class="variable">State</span>);
+
+<span class="function">update_state_snapshot</span>(#<span class="atom">eh_system_state</span>{<span class="atom">node_status</span>=<span class="atom">?EH_TRANSIENT_TU</span>}=<span class="variable">State</span>) <span class="operator">-></span>
+    <span class="comment">%% 如果已处理完所有消息和快照，变为就绪</span>
+    <span class="function">update_state</span>(<span class="atom">?EH_READY</span>, <span class="variable">State</span>);
+
+<span class="function">update_state_snapshot</span>(<span class="variable">State</span>) <span class="operator">-></span>
+    <span class="comment">%% 其他状态不变</span>
+    <span class="variable">State</span>.</pre>
+        </section>
+
+        <!-- Section 5: Complete Example -->
+        <section id="section5" class="section">
+            <h2><span class="icon">📝</span> 五、快照同步的具体例子</h2>
+
+            <h3>5.1 完整场景演示</h3>
+
+            <div class="info-box definition">
+                <h4>背景</h4>
+                <ul>
+                    <li>集群有 3 个节点：Node1 (头), Node2 (中), Node3 (尾)</li>
+                    <li>新节点 Node4 要加入</li>
+                    <li>集群已处理了 200 个事务</li>
+                </ul>
+            </div>
+
+            <h4>当前状态</h4>
+            <pre><span class="variable">Node2</span> 的快照：{<span class="number">200</span>, [{{<span class="atom">person</span>, <span class="number">10</span>}, <span class="number">5</span>}, {{<span class="atom">user</span>, <span class="number">3</span>}, <span class="number">2</span>}, {{<span class="atom">order</span>, <span class="number">1</span>}, <span class="number">3</span>}]}
+
+<span class="comment">含义：</span>
+<span class="comment">- 已同步到事务 200</span>
+<span class="comment">- person:10 最新到 data_index=5</span>
+<span class="comment">- user:3 最新到 data_index=2</span>
+<span class="comment">- order:1 最新到 data_index=3</span></pre>
+
+            <h4>Node4 加入的过程</h4>
+            <pre><span class="comment">%% [1] Node4 请求快照</span>
+{<span class="variable">Node4</span>} → {<span class="variable">Node2</span>}:
+    <span class="string">"请求快照"</span>
+
+<span class="comment">%% [2] Node2 返回快照和过滤数据</span>
+{<span class="variable">Node2</span>} → {<span class="variable">Node4</span>}:
+    <span class="variable">Snapshot</span> = {<span class="number">200</span>, [{{<span class="atom">person</span>, <span class="number">10</span>}, <span class="number">5</span>}, {{<span class="atom">user</span>, <span class="number">3</span>}, <span class="number">2</span>}, {{<span class="atom">order</span>, <span class="number">1</span>}, <span class="number">3</span>}]}
+    <span class="variable">FilteredData</span> = [
+        <span class="comment">% timestamp > 200 的所有数据</span>
+        {<span class="atom">person</span>, <span class="number">12</span>, <span class="number">201</span>, <span class="number">1</span>, <span class="atom">active</span>, <span class="atom">name</span>, <span class="string">"alice"</span>},    <span class="comment">% 新事务</span>
+        {<span class="atom">person</span>, <span class="number">12</span>, <span class="number">201</span>, <span class="number">2</span>, <span class="atom">active</span>, <span class="atom">age</span>, <span class="number">28</span>},
+        {<span class="atom">order</span>, <span class="number">2</span>, <span class="number">202</span>, <span class="number">1</span>, <span class="atom">active</span>, <span class="atom">amount</span>, <span class="number">1000</span>},
+        
+        <span class="comment">% timestamp = 200 且 data_index > 5 (但 person:10 只到 5，所以无此类数据)</span>
+        
+        <span class="comment">% 不包含：person:10 的所有数据 (已在快照中)</span>
+        <span class="comment">// person:10, 200, 1..5  ← 这些已在快照中</span>
+    ]
+
+<span class="comment">%% [3] Node4 应用快照</span>
+<span class="variable">Node4</span> 收到 <span class="variable">Snapshot</span>
+<span class="variable">Node4</span> 内存数据 = {
+    {<span class="atom">person</span>, <span class="number">10</span>}: [{<span class="atom">timestamp</span>=<span class="number">200</span>, <span class="atom">data_index</span>=<span class="number">5</span>}],  <span class="comment">% 来自快照</span>
+    {<span class="atom">person</span>, <span class="number">12</span>}: [{<span class="atom">timestamp</span>=<span class="number">201</span>, <span class="atom">data_index</span>=<span class="number">1</span>}, {<span class="atom">timestamp</span>=<span class="number">201</span>, <span class="atom">data_index</span>=<span class="number">2</span>}],  <span class="comment">% 来自增量</span>
+    {<span class="atom">user</span>, <span class="number">3</span>}:    [{<span class="atom">timestamp</span>=<span class="number">200</span>, <span class="atom">data_index</span>=<span class="number">2</span>}],
+    {<span class="atom">order</span>, <span class="number">1</span>}:   [{<span class="atom">timestamp</span>=<span class="number">200</span>, <span class="atom">data_index</span>=<span class="number">3</span>}],
+    {<span class="atom">order</span>, <span class="number">2</span>}:   [{<span class="atom">timestamp</span>=<span class="number">202</span>, <span class="atom">data_index</span>=<span class="number">1</span>}]
+}
+
+<span class="comment">%% [4] Node4 就绪</span>
+<span class="variable">Node4</span>.<span class="atom">status</span> = <span class="atom">READY</span></pre>
+
+            <h3>5.2 数据一致性保证</h3>
+            <div class="info-box success">
+                <h4>关键：新节点通过快照同步可以确保<strong>从快照点开始的所有数据都被收到</strong></h4>
+            </div>
+            <pre><span class="comment">%% 如果 Node4 宕机重启，重新加入</span>
+<span class="comment">%% 下一次快照可能是：{202, [{{person, 12}, 2}, {{order, 2}, 1}]}</span>
+
+<span class="comment">%% 从业务视角：</span>
+<span class="comment">%% - 200 以前的数据通过"快照"一次性加载</span>
+<span class="comment">%% - 200-202 的数据通过消息逐条同步</span>
+<span class="comment">%% - 保证了零数据丢失</span></pre>
+        </section>
+
+        <!-- Section 6: data_index Role -->
+        <section id="section6" class="section">
+            <h2><span class="icon">🔢</span> 六、data_index 在快照中的关键作用</h2>
+
+            <h3>6.1 为什么需要 data_index？</h3>
+            <p>同一时间戳内可能有<strong>多次操作</strong>作用于<strong>同一对象</strong>：</p>
+            <pre><span class="comment">%% 事务 100 内对 person:10 的三个操作</span>
+<span class="variable">UpdateList</span> = [
+    {<span class="atom">person</span>, <span class="number">10</span>, [{<span class="atom">name</span>, <span class="atom">active</span>, <span class="string">"john"</span>}]},   <span class="comment">% data_index=1</span>
+    {<span class="atom">person</span>, <span class="number">10</span>, [{<span class="atom">age</span>, <span class="atom">active</span>, <span class="number">25</span>}]},        <span class="comment">% data_index=2</span>
+    {<span class="atom">person</span>, <span class="number">10</span>, [{<span class="atom">city</span>, <span class="atom">active</span>, <span class="string">"beijing"</span>}]} <span class="comment">% data_index=3</span>
+]
+
+<span class="comment">%% 最终快照记录：</span>
+{<span class="number">100</span>, [{{<span class="atom">person</span>, <span class="number">10</span>}, <span class="number">3</span>}]}  ← <span class="comment">最新到第 3 个操作</span></pre>
+
+            <h3>6.2 快照过滤的精确性</h3>
+            <pre><span class="comment">%% 假设快照：{100, [{{person, 10}, 2}]}</span>
+
+<span class="comment">%% 待同步的数据：</span>
+[
+    {<span class="atom">person</span>, <span class="number">10</span>, <span class="number">100</span>, <span class="number">1</span>, ...},  ← <span class="comment">已有，跳过</span>
+    {<span class="atom">person</span>, <span class="number">10</span>, <span class="number">100</span>, <span class="number">2</span>, ...},  ← <span class="comment">已有，跳过</span>
+    {<span class="atom">person</span>, <span class="number">10</span>, <span class="number">100</span>, <span class="number">3</span>, ...},  ← <span class="comment">新！包含 ✓</span>
+    {<span class="atom">person</span>, <span class="number">10</span>, <span class="number">101</span>, <span class="number">1</span>, ...},  ← <span class="comment">新事务，包含 ✓</span>
+]</pre>
+        </section>
+
+        <!-- Section 7: Chain Replication -->
+        <section id="section7" class="section">
+            <h2><span class="icon">⛓️</span> 七、快照与链式复制的关系</h2>
+
+            <h3>7.1 CRAQ 链式复制的三个阶段</h3>
+            <div class="flow-diagram">
+                <pre>
+[HEAD] → [MIDDLE] → [TAIL]
+  ↓         ↓         ↓
+1.pre    2.receive  3.succ_confirm
+  ↓         ↓         ↓
+ 消息     转发消息   收到确认
+发出      到TAIL     后提交
+                </pre>
+            </div>
+
+            <h3>7.2 快照在链复制中的作用</h3>
+            <div class="info-box success">
+                <pre>
+新节点加入在 MIDDLE 位置
+    ↓
+需要快照来获得"之前"的全部数据
+    ↓
+保证从快照时刻起，所有"后续"消息都能看到
+
+好处：
+- 避免从 HEAD 重新复制所有历史数据
+- 只需传输关键检查点数据
+- 大幅减少网络流量
+                </pre>
+            </div>
+        </section>
+
+        <!-- Section 8: Performance -->
+        <section id="section8" class="section">
+            <h2><span class="icon">⚡</span> 八、性能考虑</h2>
+
+            <h3>8.1 快照的开销</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>方面</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>内存</strong></td>
+                        <td>快照本身很小（时间戳+列表），可快速生成</td>
+                    </tr>
+                    <tr>
+                        <td><strong>网络</strong></td>
+                        <td>增量数据比全量数据小得多</td>
+                    </tr>
+                    <tr>
+                        <td><strong>磁盘</strong></td>
+                        <td>无额外磁盘开销（快照不持久化）</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>8.2 优化建议</h3>
+            <pre><span class="comment">%% 定期生成快照检查点（类似数据库的 checkpoint）</span>
+<span class="comment">%% 防止 DataIndexList 无限增长</span>
+
+<span class="comment">%% 实现周期性快照清理：</span>
+<span class="keyword">every</span> <span class="variable">N</span> <span class="atom">transactions</span>:
+    <span class="variable">old_snapshot</span> = <span class="variable">current_snapshot</span>
+    <span class="function">GC</span>(<span class="variable">old_snapshot</span>)</pre>
+        </section>
+
+        <!-- Section 9: Summary -->
+        <section id="section9" class="section">
+            <h2><span class="icon">📊</span> 九、总结</h2>
+
+            <h3>9.1 快照的核心价值</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>价值</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>增量同步</strong></td>
+                        <td>新节点只需接收快照后的数据，而不是全量数据</td>
+                    </tr>
+                    <tr>
+                        <td><strong>一致性</strong></td>
+                        <td>快照作为"基准点"，保证后续所有数据都被正确处理</td>
+                    </tr>
+                    <tr>
+                        <td><strong>容错</strong></td>
+                        <td>快照点前的数据已确认，宕机后可从此点恢复</td>
+                    </tr>
+                    <tr>
+                        <td><strong>性能</strong></td>
+                        <td>减少数据传输量，加速新节点加入</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>9.2 update_timestamp/2 的核心作用</h3>
+            <pre><span class="comment">%% 维护快照中的 DataIndexList 部分</span>
+
+<span class="keyword">当时间戳递增时</span>：
+  {<span class="variable">OldTS</span>, <span class="variable">OldList</span>} → {<span class="variable">NewTS</span>, [<span class="variable">NewData</span>]}
+  <span class="comment">清空历史，记录新事务的起点</span>
+
+<span class="keyword">当时间戳相同时</span>：
+  <span class="comment">同一事务内多个操作</span>
+  <span class="comment">持续更新同对象的最新 data_index</span>
+  <span class="comment">通过 keydelete + prepend 确保去重</span>
+
+<span class="keyword">当时间戳落后时</span>：
+  <span class="comment">忽略过时数据</span>
+  <span class="comment">保持快照不变</span></pre>
+
+            <h3>9.3 快照同步的完整链条</h3>
+            <div class="flow-diagram">
+                <pre>
+请求快照 → 生成快照 → 过滤增量数据 → 传输到新节点 → 应用数据 → 状态转换 → 就绪
+   ↑        ↑            ↑             ↑            ↑        ↑      ↑
+  Node4   Node2    snapshot_fun    RPC消息   merge_data  状态机  READY
+                </pre>
+            </div>
+        </section>
+
+        <!-- Section 10: Code References -->
+        <section id="section10" class="section">
+            <h2><span class="icon">📁</span> 十、代码交叉引用</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>功能</th>
+                        <th>文件</th>
+                        <th>行号</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>快照数据结构</td>
+                        <td><code>erlang_craq.hrl</code></td>
+                        <td>131-139</td>
+                    </tr>
+                    <tr>
+                        <td>快照请求</td>
+                        <td><code>eh_system_server.erl</code></td>
+                        <td>99</td>
+                    </tr>
+                    <tr>
+                        <td>快照生成</td>
+                        <td><code>eh_system_server.erl</code></td>
+                        <td>112-123</td>
+                    </tr>
+                    <tr>
+                        <td>快照应用</td>
+                        <td><code>eh_system_server.erl</code></td>
+                        <td>125-138</td>
+                    </tr>
+                    <tr>
+                        <td>数据过滤</td>
+                        <td><code>eh_data_util.erl</code></td>
+                        <td>57-77</td>
+                    </tr>
+                    <tr>
+                        <td>索引更新</td>
+                        <td><code>eh_data_util.erl</code></td>
+                        <td>233-243</td>
+                    </tr>
+                    <tr>
+                        <td>状态转换</td>
+                        <td><code>eh_node_state.erl</code></td>
+                        <td>43-48</td>
+                    </tr>
+                    <tr>
+                        <td>数据同步</td>
+                        <td><code>eh_data_server.erl</code></td>
+                        <td>99-106</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Footer -->
+        <footer style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.9rem;">
+            <p>CRAQ 快照机制详解 | Erlang CRAQ 项目源码分析</p>
+            <p>生成时间: 2025-12-17</p>
+        </footer>
+    </div>
+
+    <script>
+        // Smooth scrolling for navigation
+        document.querySelectorAll('.nav-toc a').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+    </script>
+</body>
+</html>

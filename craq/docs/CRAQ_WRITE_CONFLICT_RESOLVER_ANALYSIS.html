@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRAQ写冲突解决机制分析 - eh_write_conflict_resolver_api</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.8;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 30px;
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            padding: 50px 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+        
+        .content {
+            padding: 50px;
+        }
+        
+        .section {
+            margin-bottom: 60px;
+        }
+        
+        .section-title {
+            color: #e74c3c;
+            font-size: 1.8em;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #e74c3c;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-title .icon {
+            margin-right: 15px;
+            font-size: 1.1em;
+        }
+        
+        .subsection-title {
+            color: #c0392b;
+            font-size: 1.4em;
+            margin: 35px 0 20px 0;
+            padding-left: 15px;
+            border-left: 4px solid #c0392b;
+        }
+        
+        /* 代码块样式 */
+        .code-container {
+            margin: 25px 0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+        
+        .code-header {
+            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+            color: #68d391;
+            padding: 15px 25px;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+            font-weight: 600;
+            border-bottom: 3px solid #e74c3c;
+            display: flex;
+            align-items: center;
+        }
+        
+        .code-header::before {
+            content: '📄';
+            margin-right: 12px;
+            font-size: 1.2em;
+        }
+        
+        .code-body {
+            background: #1e1e1e;
+            padding: 0;
+            overflow-x: auto;
+        }
+        
+        .code-body pre {
+            margin: 0;
+            padding: 25px 30px;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.9;
+            color: #d4d4d4;
+            white-space: pre;
+            overflow-x: auto;
+        }
+        
+        /* 语法高亮 */
+        .code-body .comment { color: #6a9955; font-style: italic; }
+        .code-body .keyword { color: #569cd6; font-weight: bold; }
+        .code-body .function { color: #dcdcaa; }
+        .code-body .variable { color: #9cdcfe; }
+        .code-body .atom { color: #ce9178; }
+        .code-body .string { color: #ce9178; }
+        .code-body .number { color: #b5cea8; }
+        .code-body .operator { color: #d4d4d4; }
+        .code-body .macro { color: #4ec9b0; }
+        .code-body .type { color: #4ec9b0; }
+        
+        .code-body .highlight-line {
+            background: rgba(231, 76, 60, 0.15);
+            display: block;
+            margin: 0 -30px;
+            padding: 0 30px;
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .code-body .step-comment {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        /* 关键点提示框 */
+        .key-point {
+            background: linear-gradient(135deg, #fdeaea 0%, #fadbd8 100%);
+            border: 2px solid #e74c3c;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.2);
+        }
+        
+        .key-point .title {
+            color: #922b21;
+            font-size: 1.2em;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .key-point .title::before {
+            content: '⚡';
+            margin-right: 10px;
+            font-size: 1.3em;
+        }
+        
+        .key-point p {
+            color: #641e16;
+            line-height: 1.8;
+        }
+        
+        .key-point code {
+            background: rgba(0,0,0,0.1);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            font-size: 0.9em;
+            color: #922b21;
+        }
+        
+        /* 表格样式 */
+        .table-container {
+            overflow-x: auto;
+            margin: 25px 0;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            font-size: 15px;
+        }
+        
+        .styled-table thead tr {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+        
+        .styled-table th {
+            padding: 18px 20px;
+            text-align: left;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .styled-table td {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .styled-table tbody tr:hover {
+            background: #fdeaea;
+        }
+        
+        /* 流程图 */
+        .flow-diagram {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px dashed #e74c3c;
+            border-radius: 15px;
+            padding: 40px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        
+        .conflict-box {
+            display: inline-block;
+            padding: 20px 30px;
+            margin: 10px;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+        }
+        
+        .result-box {
+            display: inline-block;
+            padding: 15px 25px;
+            margin: 10px;
+            background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%);
+            color: white;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4);
+        }
+        
+        .arrow {
+            font-size: 2em;
+            color: #e74c3c;
+            margin: 0 15px;
+            font-weight: bold;
+        }
+        
+        .vs-text {
+            font-size: 1.5em;
+            color: #e74c3c;
+            font-weight: bold;
+            margin: 0 20px;
+        }
+        
+        /* 内联代码 */
+        code {
+            background: #2d3748;
+            color: #68d391;
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            font-size: 0.88em;
+        }
+        
+        /* 列表 */
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+        
+        ul li {
+            padding: 12px 0 12px 35px;
+            position: relative;
+            line-height: 1.7;
+        }
+        
+        ul li::before {
+            content: '▸';
+            position: absolute;
+            left: 12px;
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        /* 信息框 */
+        .info-box {
+            background: linear-gradient(135deg, #e8f8f5 0%, #d1f2eb 100%);
+            border-left: 5px solid #1abc9c;
+            border-radius: 8px;
+            padding: 20px 25px;
+            margin: 25px 0;
+        }
+        
+        .info-box p {
+            color: #0e6655;
+            margin: 0;
+        }
+        
+        .info-box strong {
+            color: #0b5345;
+        }
+        
+        /* 架构图 */
+        .architecture-diagram {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 25px 0;
+            border: 1px solid #dee2e6;
+        }
+        
+        .layer {
+            background: white;
+            border: 2px solid #e74c3c;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        
+        .layer-title {
+            font-weight: bold;
+            color: #e74c3c;
+            margin-bottom: 10px;
+        }
+        
+        .layer-content {
+            font-family: 'SF Mono', monospace;
+            font-size: 14px;
+            color: #2d3748;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ CRAQ写冲突解决机制分析</h1>
+            <p>eh_write_conflict_resolver_api 模块深度剖析</p>
+        </div>
+        
+        <div class="content">
+            
+            <!-- ═══════════════════════════════════════════════════════════════
+                 第一部分: 架构概述
+                 ═══════════════════════════════════════════════════════════════ -->
+            <div class="section">
+                <h2 class="section-title"><span class="icon">🏗️</span>架构概述</h2>
+                
+                <div class="key-point">
+                    <div class="title">写冲突解决器的作用</div>
+                    <p>在CRAQ分布式系统中，当多个节点同时对同一数据进行写操作时，可能产生<strong>写冲突</strong>。<code>eh_write_conflict_resolver_api</code> 模块负责根据消息类型和时间戳，决定哪个写操作应该获胜。</p>
+                </div>
+                
+                <h3 class="subsection-title">模块层次结构</h3>
+                
+                <div class="architecture-diagram">
+                    <div class="layer">
+                        <div class="layer-title">📌 行为定义层 (Behaviour)</div>
+                        <div class="layer-content">eh_write_conflict_resolver.erl</div>
+                    </div>
+                    <div style="text-align: center; font-size: 2em; color: #e74c3c;">↓</div>
+                    <div class="layer">
+                        <div class="layer-title">📌 API实现层 (Implementation)</div>
+                        <div class="layer-content">eh_write_conflict_resolver_api.erl</div>
+                    </div>
+                    <div style="text-align: center; font-size: 2em; color: #e74c3c;">↓</div>
+                    <div class="layer">
+                        <div class="layer-title">📌 调用层 (Caller)</div>
+                        <div class="layer-content">eh_node_timestamp.erl → resolve_conflict()</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 第二部分: 行为定义
+                 ═══════════════════════════════════════════════════════════════ -->
+            <div class="section">
+                <h2 class="section-title"><span class="icon">📋</span>行为定义 (Behaviour)</h2>
+                
+                <div class="code-container">
+                    <div class="code-header">src/eh_write_conflict_resolver.erl - 行为定义模块</div>
+                    <div class="code-body">
+<pre>
+<span class="comment">%%═══════════════════════════════════════════════════════════════════════════</span>
+<span class="comment">%% 写冲突解决器行为定义</span>
+<span class="comment">%% 功能: 定义写冲突解决的回调接口</span>
+<span class="comment">%%═══════════════════════════════════════════════════════════════════════════</span>
+
+<span class="keyword">-module</span>(<span class="atom">eh_write_conflict_resolver</span>).
+
+<span class="comment">%% 定义回调函数规范</span>
+<span class="comment">%% 输入: Value1 - 第一个冲突值 (来自新消息)</span>
+<span class="comment">%%       Value2 - 第二个冲突值 (来自已存在消息)</span>
+<span class="comment">%% 输出: 获胜的值</span>
+<span class="keyword">-callback</span> <span class="function">resolve</span>(
+    <span class="variable">Value1</span> :: <span class="type">term</span>(),
+    <span class="variable">Value2</span> :: <span class="type">term</span>()
+) -> <span class="type">term</span>().
+</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 第三部分: API实现
+                 ═══════════════════════════════════════════════════════════════ -->
+            <div class="section">
+                <h2 class="section-title"><span class="icon">⚡</span>API实现 (核心代码)</h2>
+                
+                <div class="code-container">
+                    <div class="code-header">src/eh_write_conflict_resolver_api.erl - 冲突解决实现</div>
+                    <div class="code-body">
+<pre>
+<span class="comment">%%═══════════════════════════════════════════════════════════════════════════</span>
+<span class="comment">%% 写冲突解决器API实现</span>
+<span class="comment">%% 功能: 根据消息类型决定哪个写操作获胜</span>
+<span class="comment">%%═══════════════════════════════════════════════════════════════════════════</span>
+
+<span class="keyword">-module</span>(<span class="atom">eh_write_conflict_resolver_api</span>).
+
+<span class="keyword">-behavior</span>(<span class="atom">eh_write_conflict_resolver</span>).
+
+<span class="keyword">-export</span>([<span class="function">resolve</span>/<span class="number">2</span>]).
+
+<span class="keyword">-include</span>(<span class="string">"erlang_craq.hrl"</span>).
+
+<span class="comment">%%───────────────────────────────────────────────────────────────────────────</span>
+<span class="step-comment">%% 🔥 情况1: 两个都是预更新消息 (pre_update vs pre_update)</span>
+<span class="comment">%%───────────────────────────────────────────────────────────────────────────</span>
+<span class="highlight-line"><span class="keyword">resolve</span>(</span>
+<span class="highlight-line">    {<span class="macro">?EH_PRED_PRE_UPDATE</span>, <span class="variable">Value1</span>},</span>
+<span class="highlight-line">    {<span class="macro">?EH_PRED_PRE_UPDATE</span>, <span class="variable">Value2</span>}</span>
+<span class="highlight-line">) -></span>
+<span class="highlight-line">    <span class="function">max</span>(<span class="variable">Value1</span>, <span class="variable">Value2</span>);</span>
+    <span class="comment">%% 策略: 取较大的节点ID获胜</span>
+    <span class="comment">%% 原因: 保证确定性，避免活锁</span>
+
+<span class="comment">%%───────────────────────────────────────────────────────────────────────────</span>
+<span class="step-comment">%% 🔥 情况2: 预更新 vs 已确认更新 (pre_update vs succ_update)</span>
+<span class="comment">%%───────────────────────────────────────────────────────────────────────────</span>
+<span class="highlight-line"><span class="keyword">resolve</span>(</span>
+<span class="highlight-line">    {<span class="macro">?EH_PRED_PRE_UPDATE</span>, <span class="variable">_Value1</span>},</span>
+<span class="highlight-line">    {<span class="macro">?EH_SUCC_UPDATE</span>, <span class="variable">Value2</span>}</span>
+<span class="highlight-line">) -></span>
+<span class="highlight-line">    <span class="variable">Value2</span>;</span>
+    <span class="comment">%% 策略: 已确认的更新获胜</span>
+    <span class="comment">%% 原因: succ_update 已经过尾节点确认，具有更高优先级</span>
+
+<span class="comment">%%───────────────────────────────────────────────────────────────────────────</span>
+<span class="step-comment">%% 🔥 情况3: 已确认更新 vs 预更新 (succ_update vs pre_update)</span>
+<span class="comment">%%───────────────────────────────────────────────────────────────────────────</span>
+<span class="highlight-line"><span class="keyword">resolve</span>(</span>
+<span class="highlight-line">    {<span class="macro">?EH_SUCC_UPDATE</span>, <span class="variable">Value1</span>},</span>
+<span class="highlight-line">    {<span class="macro">?EH_PRED_PRE_UPDATE</span>, <span class="variable">_Value2</span>}</span>
+<span class="highlight-line">) -></span>
+<span class="highlight-line">    <span class="variable">Value1</span>.</span>
+    <span class="comment">%% 策略: 已确认的更新获胜</span>
+    <span class="comment">%% 原因: succ_update 已经过尾节点确认，具有更高优先级</span>
+</pre>
+                    </div>
+                </div>
+
+                <h3 class="subsection-title">消息类型定义</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">include/erlang_craq.hrl - 宏定义</div>
+                    <div class="code-body">
+<pre>
+<span class="comment">%% 消息类型宏定义</span>
+<span class="keyword">-define</span>(<span class="macro">EH_PRED_PRE_UPDATE</span>,    <span class="atom">eh_pred_pre_update</span>).
+    <span class="comment">%% 预更新消息: 从前驱节点传来，尚未经过尾节点确认</span>
+
+<span class="keyword">-define</span>(<span class="macro">EH_SUCC_UPDATE</span>,        <span class="atom">eh_succ_update</span>).
+    <span class="comment">%% 确认更新消息: 从后继节点传来，已经过尾节点确认</span>
+</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 第四部分: 冲突解决策略
+                 ═══════════════════════════════════════════════════════════════ -->
+            <div class="section">
+                <h2 class="section-title"><span class="icon">🎯</span>冲突解决策略</h2>
+                
+                <h3 class="subsection-title">三种冲突场景</h3>
+                
+                <div class="table-container">
+                    <table class="styled-table">
+                        <thead>
+                            <tr>
+                                <th>场景</th>
+                                <th>新消息类型</th>
+                                <th>已存在消息类型</th>
+                                <th>解决策略</th>
+                                <th>获胜者</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>场景1</strong></td>
+                                <td><code>eh_pred_pre_update</code></td>
+                                <td><code>eh_pred_pre_update</code></td>
+                                <td>比较节点ID大小</td>
+                                <td>max(Value1, Value2)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>场景2</strong></td>
+                                <td><code>eh_pred_pre_update</code></td>
+                                <td><code>eh_succ_update</code></td>
+                                <td>已确认优先</td>
+                                <td>Value2 (已确认)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>场景3</strong></td>
+                                <td><code>eh_succ_update</code></td>
+                                <td><code>eh_pred_pre_update</code></td>
+                                <td>已确认优先</td>
+                                <td>Value1 (已确认)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 class="subsection-title">场景1: 预更新 vs 预更新</h3>
+                
+                <div class="flow-diagram">
+                    <div class="conflict-box">
+                        eh_pred_pre_update<br>
+                        <small>Node1 发起的写操作</small>
+                    </div>
+                    <span class="vs-text">VS</span>
+                    <div class="conflict-box">
+                        eh_pred_pre_update<br>
+                        <small>Node2 发起的写操作</small>
+                    </div>
+                    <br><br>
+                    <span class="arrow">↓</span>
+                    <br><br>
+                    <div class="result-box">
+                        获胜者: max(Node1, Node2)<br>
+                        <small>节点ID较大者获胜</small>
+                    </div>
+                </div>
+
+                <h3 class="subsection-title">场景2/3: 预更新 vs 已确认更新</h3>
+                
+                <div class="flow-diagram">
+                    <div class="conflict-box">
+                        eh_pred_pre_update<br>
+                        <small>未确认的写操作</small>
+                    </div>
+                    <span class="vs-text">VS</span>
+                    <div class="result-box">
+                        eh_succ_update<br>
+                        <small>已确认的写操作</small>
+                    </div>
+                    <br><br>
+                    <span class="arrow">↓</span>
+                    <br><br>
+                    <div class="result-box">
+                        获胜者: eh_succ_update<br>
+                        <small>已确认的更新始终获胜</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 第五部分: 调用链分析
+                 ═══════════════════════════════════════════════════════════════ -->
+            <div class="section">
+                <h2 class="section-title"><span class="icon">🔗</span>调用链分析</h2>
+                
+                <h3 class="subsection-title">核心调用函数: resolve_conflict</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">src/eh_node_timestamp.erl:203-230 - 冲突解决调用点</div>
+                    <div class="code-body">
+<pre>
+<span class="comment">%%═══════════════════════════════════════════════════════════════════════════</span>
+<span class="comment">%% 冲突解决核心函数</span>
+<span class="comment">%% 功能: 检测并解决写冲突</span>
+<span class="comment">%%═══════════════════════════════════════════════════════════════════════════</span>
+<span class="keyword">resolve_conflict</span>(
+    <span class="variable">MsgListTag</span>,      <span class="comment">%% 新消息的类型标签</span>
+    <span class="variable">MsgMapTag</span>,       <span class="comment">%% 已存在消息的类型标签</span>
+    <span class="variable">UMsgList</span>,        <span class="comment">%% 新的更新消息列表</span>
+    <span class="variable">MsgMap</span>,          <span class="comment">%% 已存在的消息映射</span>
+    <span class="operator">#</span><span class="atom">eh_system_state</span>{<span class="atom">app_config</span> <span class="operator">=</span> <span class="variable">AppConfig</span>}
+) <span class="operator">-></span>
+
+    <span class="comment">%% Step 1: 获取消息参数</span>
+    {<span class="variable">MsgTimestamp</span>, <span class="variable">_</span>, <span class="variable">MsgNodeId</span>, <span class="variable">_</span>} <span class="operator">=</span> 
+        <span class="function">eh_update_msg:get_msg_param</span>(<span class="variable">UMsgList</span>),
+
+    <span class="comment">%% Step 2: 检查是否存在冲突消息</span>
+    <span class="operator">#</span><span class="atom">eh_update_msg_data</span>{
+        <span class="atom">node_id</span>   <span class="operator">=</span> <span class="variable">EMsgNodeId</span>,
+        <span class="atom">client_id</span> <span class="operator">=</span> <span class="variable">EClientId</span>,
+        <span class="atom">msg_ref</span>   <span class="operator">=</span> <span class="variable">EMsgRef</span>
+    } <span class="operator">=</span> <span class="function">eh_update_msg:exist_msg_list</span>(<span class="variable">UMsgList</span>, <span class="variable">MsgMap</span>),
+
+    <span class="comment">%% Step 3: 判断冲突类型</span>
+    <span class="keyword">case</span> {<span class="variable">EMsgNodeId</span>, <span class="variable">EMsgNodeId</span> <span class="operator">=:=</span> <span class="variable">MsgNodeId</span>} <span class="keyword">of</span>
+
+        {<span class="atom">undefined</span>, <span class="variable">_</span>} <span class="operator">-></span>
+            <span class="comment">%% 情况A: 不存在冲突消息，直接通过</span>
+            {<span class="atom">true</span>, <span class="variable">MsgMap</span>};
+
+        {<span class="variable">_</span>, <span class="atom">true</span>} <span class="operator">-></span>
+            <span class="comment">%% 情况B: 同一节点的消息，不算冲突</span>
+            {<span class="atom">true</span>, <span class="variable">MsgMap</span>};
+
+        {<span class="variable">_</span>, <span class="variable">_</span>} <span class="operator">-></span>
+            <span class="comment">%% 情况C: 不同节点的消息，需要解决冲突</span>
+<span class="highlight-line">            <span class="variable">ConflictResolver</span> <span class="operator">=</span> </span>
+<span class="highlight-line">                <span class="function">eh_system_config:get_write_conflict_resolver</span>(<span class="variable">AppConfig</span>),</span>
+<span class="highlight-line">            </span>
+<span class="highlight-line">            <span class="comment">%% 🔥 调用冲突解决器</span></span>
+<span class="highlight-line">            <span class="variable">ResolvedNodeId</span> <span class="operator">=</span> <span class="variable">ConflictResolver</span>:<span class="function">resolve</span>(</span>
+<span class="highlight-line">                {<span class="variable">MsgListTag</span>, <span class="variable">MsgNodeId</span>},    <span class="comment">%% 新消息: {类型, 节点ID}</span></span>
+<span class="highlight-line">                {<span class="variable">MsgMapTag</span>, <span class="variable">EMsgNodeId</span>}     <span class="comment">%% 旧消息: {类型, 节点ID}</span></span>
+<span class="highlight-line">            ),</span>
+
+            <span class="comment">%% Step 4: 根据解决结果处理</span>
+            <span class="keyword">case</span> <span class="variable">ResolvedNodeId</span> <span class="operator">=:=</span> <span class="variable">MsgNodeId</span> <span class="keyword">of</span>
+                <span class="atom">true</span> <span class="operator">-></span>
+                    <span class="comment">%% 新消息获胜，移除旧消息</span>
+                    {<span class="variable">TMsgMap</span>, <span class="variable">FMsgMap</span>} <span class="operator">=</span> 
+                        <span class="function">eh_update_msg:partition_on_timestamp_node_id</span>(
+                            <span class="variable">MsgTimestamp</span>, 
+                            <span class="variable">EMsgNodeId</span>, 
+                            <span class="variable">MsgMap</span>
+                        ),
+                    <span class="comment">%% 通知失败的客户端</span>
+                    ...
+                    {<span class="atom">true</span>, <span class="variable">FMsgMap</span>};
+
+                <span class="atom">false</span> <span class="operator">-></span>
+                    <span class="comment">%% 旧消息获胜，拒绝新消息</span>
+                    {<span class="atom">false</span>, <span class="variable">MsgMap</span>}
+            <span class="keyword">end</span>
+    <span class="keyword">end</span>.
+</pre>
+                    </div>
+                </div>
+
+                <h3 class="subsection-title">两个冲突解决入口函数</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">src/eh_node_timestamp.erl:232-245 - 预更新和更新冲突解决器</div>
+                    <div class="code-body">
+<pre>
+<span class="comment">%%═══════════════════════════════════════════════════════════════════════════</span>
+<span class="comment">%% 预更新消息的冲突解决</span>
+<span class="comment">%% 场景: 收到来自前驱节点的预更新消息</span>
+<span class="comment">%%═══════════════════════════════════════════════════════════════════════════</span>
+<span class="keyword">pre_update_conflict_resolver</span>(
+    <span class="variable">UMsgList</span>,
+    <span class="operator">#</span><span class="atom">eh_system_state</span>{
+        <span class="atom">pre_msg_data</span> <span class="operator">=</span> <span class="variable">PreMsgData</span>,
+        <span class="atom">msg_data</span>     <span class="operator">=</span> <span class="variable">MsgData</span>
+    } <span class="operator">=</span> <span class="variable">State</span>
+) <span class="operator">-></span>
+
+    <span class="comment">%% Step 1: 与其他预更新消息检查冲突</span>
+<span class="highlight-line">    {<span class="variable">Flag1</span>, <span class="variable">PreMsgData1</span>} <span class="operator">=</span> <span class="function">resolve_conflict</span>(</span>
+<span class="highlight-line">        <span class="macro">?EH_PRED_PRE_UPDATE</span>,    <span class="comment">%% 新消息类型</span></span>
+<span class="highlight-line">        <span class="macro">?EH_PRED_PRE_UPDATE</span>,    <span class="comment">%% 对比消息类型</span></span>
+<span class="highlight-line">        <span class="variable">UMsgList</span>,</span>
+<span class="highlight-line">        <span class="variable">PreMsgData</span>,</span>
+<span class="highlight-line">        <span class="variable">State</span></span>
+<span class="highlight-line">    ),</span>
+
+    <span class="comment">%% Step 2: 如果通过，再与已确认消息检查冲突</span>
+    <span class="variable">Flag3</span> <span class="operator">=</span> <span class="keyword">case</span> <span class="variable">Flag1</span> <span class="keyword">of</span>
+        <span class="atom">true</span> <span class="operator">-></span>
+<span class="highlight-line">            {<span class="variable">Flag2</span>, <span class="variable">_</span>} <span class="operator">=</span> <span class="function">resolve_conflict</span>(</span>
+<span class="highlight-line">                <span class="macro">?EH_PRED_PRE_UPDATE</span>,    <span class="comment">%% 新消息类型</span></span>
+<span class="highlight-line">                <span class="macro">?EH_SUCC_UPDATE</span>,        <span class="comment">%% 对比消息类型</span></span>
+<span class="highlight-line">                <span class="variable">UMsgList</span>,</span>
+<span class="highlight-line">                <span class="variable">MsgData</span>,</span>
+<span class="highlight-line">                <span class="variable">State</span></span>
+<span class="highlight-line">            ),</span>
+            <span class="variable">Flag2</span>;
+        <span class="atom">false</span> <span class="operator">-></span>
+            <span class="atom">false</span>
+    <span class="keyword">end</span>,
+
+    {<span class="variable">Flag3</span>, <span class="variable">State</span><span class="operator">#</span><span class="atom">eh_system_state</span>{<span class="atom">pre_msg_data</span> <span class="operator">=</span> <span class="variable">PreMsgData1</span>}}.
+
+
+<span class="comment">%%═══════════════════════════════════════════════════════════════════════════</span>
+<span class="comment">%% 确认更新消息的冲突解决</span>
+<span class="comment">%% 场景: 收到来自后继节点的确认更新消息</span>
+<span class="comment">%%═══════════════════════════════════════════════════════════════════════════</span>
+<span class="keyword">update_conflict_resolver</span>(
+    <span class="variable">UMsgList</span>,
+    <span class="operator">#</span><span class="atom">eh_system_state</span>{<span class="atom">pre_msg_data</span> <span class="operator">=</span> <span class="variable">PreMsgData</span>} <span class="operator">=</span> <span class="variable">State</span>
+) <span class="operator">-></span>
+
+    <span class="comment">%% 与预更新消息检查冲突 (确认更新始终获胜)</span>
+<span class="highlight-line">    {<span class="variable">Flag1</span>, <span class="variable">PreMsgData1</span>} <span class="operator">=</span> <span class="function">resolve_conflict</span>(</span>
+<span class="highlight-line">        <span class="macro">?EH_SUCC_UPDATE</span>,        <span class="comment">%% 新消息类型 (已确认)</span></span>
+<span class="highlight-line">        <span class="macro">?EH_PRED_PRE_UPDATE</span>,    <span class="comment">%% 对比消息类型 (未确认)</span></span>
+<span class="highlight-line">        <span class="variable">UMsgList</span>,</span>
+<span class="highlight-line">        <span class="variable">PreMsgData</span>,</span>
+<span class="highlight-line">        <span class="variable">State</span></span>
+<span class="highlight-line">    ),</span>
+
+    {<span class="variable">Flag1</span>, <span class="variable">State</span><span class="operator">#</span><span class="atom">eh_system_state</span>{<span class="atom">pre_msg_data</span> <span class="operator">=</span> <span class="variable">PreMsgData1</span>}}.
+</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 第六部分: 完整调用链
+                 ═══════════════════════════════════════════════════════════════ -->
+            <div class="section">
+                <h2 class="section-title"><span class="icon">🔄</span>完整调用链</h2>
+                
+                <div class="flow-diagram">
+                    <div style="text-align: left; font-family: 'SF Mono', monospace; line-height: 2.2; font-size: 14px;">
+                        <strong>收到更新消息</strong><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+                        <code>valid_pre_update_msg</code> 或 <code>valid_update_msg</code><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+                        <code>valid_msg</code> (通用验证函数)<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+                        <span style="background: #fdeaea; padding: 5px 10px; border-radius: 5px;">
+                            <code>pre_update_conflict_resolver</code> 或 <code>update_conflict_resolver</code>
+                        </span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+                        <span style="background: #fdeaea; padding: 5px 10px; border-radius: 5px;">
+                            <code>resolve_conflict</code> (核心冲突检测)
+                        </span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+                        <code>eh_system_config:get_write_conflict_resolver</code><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+                        <span style="background: #e74c3c; color: white; padding: 5px 15px; border-radius: 5px; font-weight: bold;">
+                            🔥 ConflictResolver:resolve({Tag1, NodeId1}, {Tag2, NodeId2})
+                        </span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+                        <span style="background: #27ae60; color: white; padding: 5px 10px; border-radius: 5px;">
+                            返回获胜的 NodeId
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 第七部分: 设计原理
+                 ═══════════════════════════════════════════════════════════════ -->
+            <div class="section">
+                <h2 class="section-title"><span class="icon">💡</span>设计原理</h2>
+                
+                <ul>
+                    <li><strong>已确认优先原则</strong>: <code>eh_succ_update</code> 消息已经过尾节点确认，代表已提交的事务，因此始终优先于未确认的 <code>eh_pred_pre_update</code></li>
+                    <li><strong>确定性解决</strong>: 当两个预更新消息冲突时，使用 <code>max()</code> 函数比较节点ID，保证所有节点得出相同结论</li>
+                    <li><strong>可插拔设计</strong>: 通过 <code>-behavior(eh_write_conflict_resolver)</code> 定义接口，允许自定义冲突解决策略</li>
+                    <li><strong>配置驱动</strong>: 冲突解决器通过 <code>eh_system_config</code> 配置，支持运行时替换</li>
+                </ul>
+                
+                <div class="info-box">
+                    <p><strong>💡 核心思想:</strong> CRAQ的写冲突解决机制遵循"<strong>已确认优先，确定性仲裁</strong>"原则。已经过尾节点确认的更新具有最高优先级；对于未确认的并发写操作，使用节点ID的字典序进行确定性仲裁，确保分布式环境下所有节点对冲突解决结果达成一致。</p>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</body>
+</html>

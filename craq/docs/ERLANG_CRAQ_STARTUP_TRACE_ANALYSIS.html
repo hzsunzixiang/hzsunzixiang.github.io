@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erlang CRAQ 三节点启动Trace分析</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .node-section {
+            margin-bottom: 40px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .node-header {
+            padding: 15px 25px;
+            font-weight: bold;
+            font-size: 1.3em;
+            color: white;
+        }
+        
+        .node1 { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        .node2 { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+        .node3 { background: linear-gradient(135deg, #f39c12, #e67e22); }
+        
+        .trace-content {
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .call-graph {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .process-info {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            margin-right: 10px;
+        }
+        
+        .function-call {
+            margin: 8px 0;
+            padding: 8px 12px;
+            background: #ecf0f1;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .timestamp {
+            color: #7f8c8d;
+            font-size: 0.8em;
+            margin-right: 10px;
+        }
+        
+        .summary {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+        
+        .summary h3 {
+            margin-top: 0;
+            font-size: 1.5em;
+        }
+        
+        .flow-diagram {
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .flow-step {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 25px;
+            font-weight: bold;
+        }
+        
+        .arrow {
+            font-size: 1.5em;
+            color: #3498db;
+            margin: 0 10px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+        
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        .highlight {
+            background: #f1c40f;
+            color: #2c3e50;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        .module-group {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .module-name {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .function-list {
+            margin-left: 20px;
+        }
+        
+        .function-item {
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+            color: #34495e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Erlang CRAQ 三节点启动Trace分析</h1>
+            <p>基于 trace_log.2025/trace_log.start.app 目录的函数调用图分析</p>
+        </div>
+        
+        <div class="content">
+            <!-- 统计概览 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">3</div>
+                    <div class="stat-label">节点数量</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">23</div>
+                    <div class="stat-label">跟踪模块</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">285</div>
+                    <div class="stat-label">Node1 函数调用</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">167</div>
+                    <div class="stat-label">Node2 函数调用</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">143</div>
+                    <div class="stat-label">Node3 函数调用</div>
+                </div>
+            </div>
+
+            <!-- 启动流程概览 -->
+            <div class="summary">
+                <h3>🔄 启动流程概览</h3>
+                <div class="flow-diagram">
+                    <div class="flow-step">文件名初始化</div>
+                    <span class="arrow">→</span>
+                    <div class="flow-step">数据服务器启动</div>
+                    <span class="arrow">→</span>
+                    <div class="flow-step">存储数据读取</div>
+                    <span class="arrow">→</span>
+                    <div class="flow-step">系统服务器启动</div>
+                    <span class="arrow">→</span>
+                    <div class="flow-step">事件系统启动</div>
+                </div>
+                
+                <p><strong>核心启动序列：</strong></p>
+                <ol>
+                    <li><code>eh_file_name</code> - 文件名管理和版本控制</li>
+                    <li><code>eh_data_server</code> - 数据服务器进程启动</li>
+                    <li><code>eh_storage_data_operation_api</code> - 存储操作API</li>
+                    <li><code>eh_persist_storage_data</code> - 持久化存储</li>
+                    <li><code>eh_system_server</code> - 系统服务器</li>
+                    <li><code>eh_event</code> - 事件处理系统</li>
+                </ol>
+            </div>
+
+            <!-- Node 1 分析 -->
+            <div class="node-section">
+                <div class="node-header node1">
+                    📍 Node 1 (ec_n1@rabbitmq4-1) - 启动时间: 2:52:01.973047
+                </div>
+                <div class="trace-content">
+                    <div class="call-graph">
+                        <h4>🔍 主要函数调用序列</h4>
+                        
+                        <div class="module-group">
+                            <div class="module-name">eh_file_name 模块 (文件名管理)</div>
+                            <div class="function-list">
+                                <div class="function-item">• get_file_name/2 - 获取文件名</div>
+                                <div class="function-item">• get_full_file_name/2 - 获取完整文件名</div>
+                                <div class="function-item">• get_full_versioned_file_names/2 - 获取版本化文件名</div>
+                                <div class="function-item">• get_file_names/2 - 批量获取文件名</div>
+                                <div class="function-item">• get_version/2 - 获取版本信息</div>
+                            </div>
+                        </div>
+                        
+                        <div class="module-group">
+                            <div class="module-name">eh_data_server 模块 (数据服务器)</div>
+                            <div class="function-list">
+                                <div class="function-item">• start_link/1 - 启动数据服务器进程</div>
+                                <div class="function-item">• init/1 - 初始化数据服务器状态</div>
+                            </div>
+                        </div>
+                        
+                        <div class="module-group">
+                            <div class="module-name">eh_storage_data_operation_api 模块 (存储操作)</div>
+                            <div class="function-list">
+                                <div class="function-item">• read_all/2, read_all/3 - 读取所有数据</div>
+                                <div class="function-item">• open/1 - 打开存储文件</div>
+                                <div class="function-item">• read/5 - 读取指定数据</div>
+                                <div class="function-item">• close/1 - 关闭存储文件</div>
+                            </div>
+                        </div>
+                        
+                        <div class="module-group">
+                            <div class="module-name">eh_persist_storage_data 模块 (持久化存储)</div>
+                            <div class="function-list">
+                                <div class="function-item">• open_data_file/1 - 打开数据文件</div>
+                                <div class="function-item">• read_data/3 - 读取数据内容</div>
+                                <div class="function-item">• close_data_file/1 - 关闭数据文件</div>
+                            </div>
+                        </div>
+                        
+                        <div class="code-block">
+<strong>关键调用序列 (Node 1):</strong>
+2:52:01.973047 &lt;0.855.0&gt; eh_file_name:get_file_name/2
+2:52:01.974641 &lt;0.856.0&gt; eh_data_server:start_link/1
+2:52:01.974699 &lt;0.857.0&gt; eh_data_server:init/1
+2:52:01.977110 &lt;0.857.0&gt; eh_storage_data_operation_api:read_all/2
+2:52:01.980369 &lt;0.856.0&gt; eh_system_server:start_link/1
+2:52:01.980429 &lt;0.855.0&gt; eh_event:start_link/0
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Node 2 分析 -->
+            <div class="node-section">
+                <div class="node-header node2">
+                    📍 Node 2 (ec_n2@rabbitmq4-2) - 启动时间: 2:55:18.439300
+                </div>
+                <div class="trace-content">
+                    <div class="call-graph">
+                        <h4>🔍 主要函数调用序列</h4>
+                        
+                        <div class="code-block">
+<strong>关键调用序列 (Node 2):</strong>
+2:55:18.439300 &lt;0.326.0&gt; eh_file_name:get_file_name/2
+2:55:18.440580 &lt;0.327.0&gt; eh_data_server:start_link/1
+2:55:18.440622 &lt;0.328.0&gt; eh_data_server:init/1
+2:55:18.443693 &lt;0.328.0&gt; eh_storage_data_operation_api:read_all/2
+2:55:18.447783 &lt;0.327.0&gt; eh_system_server:start_link/1
+2:55:18.447851 &lt;0.326.0&gt; eh_event:start_link/0
+                        </div>
+                        
+                        <p><strong>特点：</strong></p>
+                        <ul>
+                            <li>启动模式与Node 1相同，但调用数量较少</li>
+                            <li>文件名处理较为简化</li>
+                            <li>存储操作集中在单次读取</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Node 3 分析 -->
+            <div class="node-section">
+                <div class="node-header node3">
+                    📍 Node 3 (ec_n3@rabbitmq4-3) - 启动时间: 2:59:06.155931
+                </div>
+                <div class="trace-content">
+                    <div class="call-graph">
+                        <h4>🔍 主要函数调用序列</h4>
+                        
+                        <div class="code-block">
+<strong>关键调用序列 (Node 3):</strong>
+2:59:06.155931 &lt;0.730.0&gt; eh_file_name:get_file_name/2
+2:59:06.157583 &lt;0.731.0&gt; eh_data_server:start_link/1
+2:59:06.157767 &lt;0.732.0&gt; eh_data_server:init/1
+2:59:06.160223 &lt;0.732.0&gt; eh_storage_data_operation_api:read_all/2
+2:59:06.164597 &lt;0.731.0&gt; eh_system_server:start_link/1
+2:59:06.164783 &lt;0.730.0&gt; eh_event:start_link/0
+                        </div>
+                        
+                        <p><strong>特点：</strong></p>
+                        <ul>
+                            <li>启动最为简洁，调用次数最少</li>
+                            <li>文件操作相对较少</li>
+                            <li>快速完成核心组件初始化</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 函数调用图分析 -->
+            <div class="summary">
+                <h3>📊 函数调用图分析</h3>
+                
+                <div class="code-block">
+<strong>启动流程函数调用图:</strong>
+
+┌─────────────────┐
+│  应用启动入口    │
+└─────────┬───────┘
+          │
+          ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│ eh_file_name    │───▶│ eh_data_server   │───▶│ eh_system_server│
+│ 文件名管理      │    │ 数据服务器       │    │ 系统服务器      │
+└─────────────────┘    └─────────┬────────┘    └─────────────────┘
+          │                      │                      │
+          ▼                      ▼                      ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│ get_file_name   │    │ start_link       │    │ start_link      │
+│ get_full_name   │    │ init             │    │ init            │
+│ get_version     │    └─────────┬────────┘    └─────────────────┘
+└─────────────────┘              │
+                                 ▼
+                    ┌──────────────────┐
+                    │ Storage API      │
+                    │ 存储操作接口     │
+                    └─────────┬────────┘
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │ eh_persist_data  │
+                    │ 持久化存储       │
+                    └──────────────────┘
+                </div>
+                
+                <h4>🎯 关键发现</h4>
+                <ul>
+                    <li><strong>一致的启动模式：</strong>三个节点都遵循相同的启动序列</li>
+                    <li><strong>进程隔离：</strong>每个节点使用不同的进程ID范围</li>
+                    <li><strong>文件系统初始化：</strong>大量的文件名和版本管理调用</li>
+                    <li><strong>存储系统预热：</strong>启动时进行数据文件的读取操作</li>
+                    <li><strong>模块化设计：</strong>清晰的模块边界和职责分离</li>
+                </ul>
+                
+                <h4>📈 性能特征</h4>
+                <ul>
+                    <li><strong>Node 1：</strong>285次函数调用，最详细的初始化过程</li>
+                    <li><strong>Node 2：</strong>167次函数调用，中等复杂度</li>
+                    <li><strong>Node 3：</strong>143次函数调用，最简洁的启动</li>
+                    <li><strong>启动时间差：</strong>约3分钟间隔，符合分布式部署模式</li>
+                </ul>
+            </div>
+
+            <!-- 跟踪配置信息 -->
+            <div class="summary">
+                <h3>⚙️ Trace配置信息</h3>
+                
+                <div class="code-block">
+<strong>跟踪的模块列表:</strong>
+eh_aq_query_handler_api, eh_data_server, eh_dirty_read_query_handler_api,
+eh_event, eh_failure_detector_api, eh_failure_detector, eh_file_name,
+eh_node_state, eh_node_timestamp, eh_no_wait_query_handler_api,
+eh_persist_data, eh_persist_storage_data, eh_query_handler,
+eh_repl_data_manager_api, eh_repl_data_manager, eh_storage_data_api,
+eh_storage_data, eh_storage_data_operation_api, eh_system_server,
+eh_wait_query_handler_api, eh_write_conflict_resolver_api,
+eh_write_conflict_resolver, erlang_craq_validate
+
+<strong>跟踪配置:</strong>
+- 最大跟踪数量: 10000
+- 作用域: local
+- 参数显示: arity
+- 输出格式: 时间戳 + 进程ID + 模块:函数/参数数量
+                </div>
+                
+                <p><strong>分析结论：</strong></p>
+                <p>三个节点的启动过程展现了CRAQ系统的分布式特性和模块化设计。每个节点都独立完成自己的初始化过程，
+                包括文件系统管理、数据服务器启动、存储系统初始化和事件处理系统的建立。这种设计保证了系统的高可用性和容错能力。</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  jekyll:
+    image: jekyll/jekyll:4.2.2
+    container_name: jekyll-blog
+    command: jekyll serve --watch --force_polling --host 0.0.0.0 --livereload
+    ports:
+      - "4000:4000"
+      - "35729:35729"  # LiveReload port
+    volumes:
+      - .:/srv/jekyll
+    environment:
+      - JEKYLL_ENV=development
+    stdin_open: true
+    tty: true

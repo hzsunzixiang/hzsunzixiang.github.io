@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erlang CRAQ PDF 文档翻译与解释</title>
+    <script src="https://cdn.jsdelivr.net/npm/html-docx-js/dist/html-docx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 40px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #2c3e50;
+            padding-bottom: 20px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+        
+        .download-btn {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 20px 0;
+            transition: background-color 0.3s;
+        }
+        
+        .download-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+        
+        .section h2 {
+            color: #2c3e50;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+        }
+        
+        .section h3 {
+            color: #34495e;
+            font-size: 1.3em;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .section h4 {
+            color: #7f8c8d;
+            font-size: 1.1em;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+        
+        .original-text {
+            background-color: #f8f9fa;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .translation {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 3px;
+        }
+        
+        .explanation {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 3px;
+        }
+        
+        .code-block {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 3px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .highlight {
+            background-color: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        table th {
+            background-color: #34495e;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+        
+        table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+        }
+        
+        table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .mermaid-container {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 Erlang CRAQ PDF 文档翻译与解释</h1>
+            <p>Chain Replication with Apportioned Query - 高吞吐量原子存储系统</p>
+            <button class="download-btn" onclick="exportToWord()">📥 下载为 Word 文档</button>
+        </div>
+        
+        <!-- 第一页：系统介绍 -->
+        <div class="section">
+            <h2>第一页：系统介绍</h2>
+            
+            <h3>原文内容</h3>
+            <div class="original-text">
+                <strong>Chain Replication with Apportioned Query</strong><br>
+                <strong>High Throughput Atomic Store</strong><br><br>
+                
+                <strong>Introduction</strong><br>
+                It is an atomic, high throughput, resilient distributed store. It will always be consistent and available despite of server failures (CA).<br><br>
+                
+                It assumes that a point-to-point communication is always available between all the servers (partition intolerant). A failure detection mechanism is setup to detect any server failure and system will continue to work as long as at least one server is available.<br><br>
+                
+                Clients can read and write concurrently using any server thus making it a high throughput store. It prevents concurrent update on the same object to maintain consistency.<br><br>
+                
+                It solves the read-inversion problem and prevents any read from returning an old value after an earlier read returned a new value.
+            </div>
+            
+            <h3>中文翻译</h3>
+            <div class="translation">
+                <strong>链式复制与分散查询</strong><br>
+                <strong>高吞吐量原子存储系统</strong><br><br>
+                
+                <strong>系统介绍</strong><br>
+                这是一个原子性的、高吞吐量的、具有弹性的分布式存储系统。它在服务器故障的情况下始终保持一致性和可用性（CA）。<br><br>
+                
+                系统假设所有服务器之间始终存在点对点通信（不容忍分区）。系统设置了故障检测机制来检测任何服务器故障，只要至少有一个服务器可用，系统就会继续工作。<br><br>
+                
+                客户端可以使用任何服务器并发地进行读写操作，从而使其成为高吞吐量存储系统。它防止对同一对象的并发更新以维护一致性。<br><br>
+                
+                它解决了读反演问题，防止在早期读取返回新值后，任何读取返回旧值。
+            </div>
+            
+            <h3>详细解释</h3>
+            <div class="explanation">
+                <h4>🎯 核心特性</h4>
+                <ul>
+                    <li><strong>原子性（Atomic）</strong>：所有操作要么完全成功，要么完全失败</li>
+                    <li><strong>高吞吐量（High Throughput）</strong>：支持大量并发读写操作</li>
+                    <li><strong>弹性（Resilient）</strong>：能够容忍服务器故障并自动恢复</li>
+                    <li><strong>CA 特性</strong>：在 CAP 定理中选择了一致性（Consistency）和可用性（Availability）</li>
+                </ul>
+                
+                <h4>🔧 系统假设</h4>
+                <ul>
+                    <li><strong>网络假设</strong>：假设服务器间通信始终可用（不容忍网络分区）</li>
+                    <li><strong>故障模型</strong>：只处理服务器故障，不处理网络分区</li>
+                    <li><strong>最小可用性</strong>：至少需要一个服务器可用</li>
+                </ul>
+                
+                <h4>💡 关键创新</h4>
+                <ul>
+                    <li><strong>并发访问</strong>：客户端可以通过任何服务器进行读写</li>
+                    <li><strong>冲突避免</strong>：防止对同一对象的并发更新</li>
+                    <li><strong>读一致性</strong>：解决读反演问题，确保读取的单调性</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- 第二页：系统架构 -->
+        <div class="section">
+            <h2>第二页：系统架构</h2>
+            
+            <h3>原文内容</h3>
+            <div class="original-text">
+                N1 … Ni are system servers and they maintain all the state information needed to facilitate the CRAQ features.<br><br>
+                
+                D1 … Di are data servers and they facilitate the persistence of data. It is a schema-less, column-oriented data store.<br><br>
+                
+                Clients can interact with any system server through a given API. System servers interact with their local data server for query and persistence of data.<br><br>
+                
+                System servers are arranged in a ring and they communicate with their successor (clock-wise) in pre-write phase and with their predecessor (anti clock-wise) in write phase.<br><br>
+                
+                In this implementation, there is no fixed head/tail node but for every update message, the originator node becomes the head node and the predecessor of the originator node becomes tail node thus clients can use any node to make updates.
+            </div>
+            
+            <h3>中文翻译</h3>
+            <div class="translation">
+                N1 … Ni 是系统服务器，它们维护促进 CRAQ 功能所需的所有状态信息。<br><br>
+                
+                D1 … Di 是数据服务器，它们负责数据的持久化。这是一个无模式的、面向列的数据存储。<br><br>
+                
+                客户端可以通过给定的 API 与任何系统服务器交互。系统服务器与其本地数据服务器交互以进行数据查询和持久化。<br><br>
+                
+                系统服务器排列成环形，它们在预写阶段与其后继节点（顺时针）通信，在写阶段与其前驱节点（逆时针）通信。<br><br>
+                
+                在这个实现中，没有固定的头/尾节点，但对于每个更新消息，发起节点成为头节点，发起节点的前驱节点成为尾节点，因此客户端可以使用任何节点进行更新。
+            </div>
+            
+            <h3>系统架构图</h3>
+            <div class="mermaid-container">
+                <div class="mermaid">
+                    graph TB
+                    subgraph "客户端层"
+                        C1[Client 1]
+                        C2[Client 2]
+                    end
+                    
+                    subgraph "系统服务器环"
+                        N1[N1<br/>系统服务器]
+                        N2[N2<br/>系统服务器]
+                        N3[N3<br/>系统服务器]
+                        N4[N4<br/>系统服务器]
+                        N5[N5<br/>系统服务器]
+                    end
+                    
+                    subgraph "数据服务器层"
+                        D1[D1<br/>数据服务器]
+                        D2[D2<br/>数据服务器]
+                        D3[D3<br/>数据服务器]
+                        D4[D4<br/>数据服务器]
+                        D5[D5<br/>数据服务器]
+                    end
+                    
+                    %% 客户端连接
+                    C1 --> N1
+                    C1 --> N3
+                    C2 --> N2
+                    C2 --> N4
+                    
+                    %% 环形连接（顺时针）
+                    N1 -->|预写阶段| N2
+                    N2 -->|预写阶段| N3
+                    N3 -->|预写阶段| N4
+                    N4 -->|预写阶段| N5
+                    N5 -->|预写阶段| N1
+                    
+                    %% 反向连接（逆时针）
+                    N2 -.->|写阶段| N1
+                    N3 -.->|写阶段| N2
+                    N4 -.->|写阶段| N3
+                    N5 -.->|写阶段| N4
+                    N1 -.->|写阶段| N5
+                    
+                    %% 本地数据服务器连接
+                    N1 --- D1
+                    N2 --- D2
+                    N3 --- D3
+                    N4 --- D4
+                    N5 --- D5
+                    
+                    style N1 fill:#e8f4f8
+                    style N2 fill:#e8f4f8
+                    style N3 fill:#e8f4f8
+                    style N4 fill:#e8f4f8
+                    style N5 fill:#e8f4f8
+                    style D1 fill:#d4edda
+                    style D2 fill:#d4edda
+                    style D3 fill:#d4edda
+                    style D4 fill:#d4edda
+                    style D5 fill:#d4edda
+                </div>
+            </div>
+            
+            <h3>详细解释</h3>
+            <div class="explanation">
+                <h4>🏗️ 架构组件</h4>
+                <ul>
+                    <li><strong>系统服务器（N1-Ni）</strong>：
+                        <ul>
+                            <li>维护 CRAQ 协议的状态信息</li>
+                            <li>处理客户端请求</li>
+                            <li>管理消息传递和一致性</li>
+                        </ul>
+                    </li>
+                    <li><strong>数据服务器（D1-Di）</strong>：
+                        <ul>
+                            <li>负责数据的实际存储</li>
+                            <li>无模式设计，支持灵活的数据结构</li>
+                            <li>面向列的存储，优化查询性能</li>
+                        </ul>
+                    </li>
+                </ul>
+                
+                <h4>🔄 消息传递机制</h4>
+                <ul>
+                    <li><strong>预写阶段（Pre-write Phase）</strong>：
+                        <ul>
+                            <li>消息沿环顺时针传播</li>
+                            <li>从发起节点到其前驱节点</li>
+                            <li>准备数据更新</li>
+                        </ul>
+                    </li>
+                    <li><strong>写阶段（Write Phase）</strong>：
+                        <ul>
+                            <li>消息沿环逆时针传播</li>
+                            <li>从尾节点回到头节点</li>
+                            <li>确认数据已提交</li>
+                        </ul>
+                    </li>
+                </ul>
+                
+                <h4>💡 动态头尾节点</h4>
+                <ul>
+                    <li><strong>灵活性</strong>：没有固定的头尾节点</li>
+                    <li><strong>负载均衡</strong>：任何节点都可以作为更新的起点</li>
+                    <li><strong>高可用性</strong>：避免单点故障</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- 第三页：配置说明 -->
+        <div class="section">
+            <h2>第三页：配置说明（sys.config）</h2>
+            
+            <h3>配置参数详解</h3>
+            <table>
+                <tr>
+                    <th>配置参数</th>
+                    <th>说明</th>
+                    <th>可选值</th>
+                </tr>
+                <tr>
+                    <td><code>replication_type</code></td>
+                    <td>复制类型（仅用于文档目的）</td>
+                    <td>craq</td>
+                </tr>
+                <tr>
+                    <td><code>node_order</code></td>
+                    <td>节点排序方式</td>
+                    <td>sorted（按节点值排序）<br>user_defined（用户定义顺序）</td>
+                </tr>
+                <tr>
+                    <td><code>failure_detector</code></td>
+                    <td>故障检测模块名称</td>
+                    <td>eh_failure_detector_api</td>
+                </tr>
+                <tr>
+                    <td><code>repl_data_manager</code></td>
+                    <td>复制数据管理器模块</td>
+                    <td>eh_repl_data_manager_api</td>
+                </tr>
+                <tr>
+                    <td><code>storage_data</code></td>
+                    <td>存储数据格式模块</td>
+                    <td>eh_storage_data_api</td>
+                </tr>
+                <tr>
+                    <td><code>write_conflict_resolver</code></td>
+                    <td>写冲突解决模块</td>
+                    <td>eh_write_conflict_resolver_api</td>
+                </tr>
+                <tr>
+                    <td><code>unique_id_generator</code></td>
+                    <td>唯一ID生成器模块</td>
+                    <td>eh_unique_id_generator_api</td>
+                </tr>
+            </table>
+            
+            <h3>查询处理器选项</h3>
+            <div class="explanation">
+                <h4>🔍 query_handler 模块选项</h4>
+                <ul>
+                    <li><strong>eh_wait_query_handler_api</strong>：
+                        <ul>
+                            <li>等待新值持久化后再响应客户端</li>
+                            <li>提供强一致性保证</li>
+                            <li>延迟较高但数据最新</li>
+                        </ul>
+                    </li>
+                    <li><strong>eh_no_wait_query_handler_api</strong>：
+                        <ul>
+                            <li>立即响应，不等待更新完成</li>
+                            <li>告知客户端对象正在更新中</li>
+                            <li>延迟低但可能读不到最新数据</li>
+                        </ul>
+                    </li>
+                    <li><strong>eh_dirty_read_query_handler_api</strong>：
+                        <ul>
+                            <li>立即返回现有的旧值（脏读）</li>
+                            <li>最低延迟</li>
+                            <li>可能读到过时数据</li>
+                        </ul>
+                    </li>
+                    <li><strong>eh_aq_query_handler_api</strong>：
+                        <ul>
+                            <li>将查询请求发送到尾节点响应</li>
+                            <li>分散查询负载</li>
+                            <li>平衡性能和一致性</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- 第四-五页：系统设置和API -->
+        <div class="section">
+            <h2>第四-五页：系统设置和API</h2>
+            
+            <h3>系统启动步骤</h3>
+            <div class="code-block">
+# 1. 创建 erlang_craq 主目录
+mkdir erlang_craq_home
+cd erlang_craq_home
+
+# 2. 创建 ebin 子目录并复制文件
+mkdir ebin
+cp *.beam *.app ebin/
+
+# 3. 创建测试目录
+mkdir craq_test/ebin
+cp test_*.beam craq_test/ebin/
+
+# 4. 启动分布式节点
+./craq_erl.sh ec_n1
+> erlang_craq:start().
+
+# 5. 在不同终端启动更多节点
+./craq_erl.sh ec_n2
+> erlang_craq:start().
+
+./craq_erl.sh ec_n3
+> erlang_craq:start().
+            </div>
+            
+            <h3>核心API说明</h3>
+            <div class="explanation">
+                <h4>📋 setup_repl - 设置复制环</h4>
+                <div class="code-block">
+erlang_craq:setup_repl(NodeList).
+
+% 示例
+N1 = 'ec_n1@hostname'.
+N2 = 'ec_n2@hostname'.
+N3 = 'ec_n3@hostname'.
+NodeList = [N1, N2, N3].
+erlang_craq:setup_repl(NodeList).
+                </div>
+                
+                <h4>✏️ update - 数据更新</h4>
+                <div class="code-block">
+% 单对象更新
+erlang_craq:update(Node, ObjectType, ObjectId, [{Col1, Val1}, {Col2, Val2}]).
+
+% 示例
+erlang_craq:update(N1, person, 10, [{name, john}, {age, 30}, {gender, male}]).
+
+% 更新和删除列
+erlang_craq:update(Node, ObjectType, ObjectId, UpdateColList, DeleteColList).
+
+% 迷你事务（多对象更新）
+erlang_craq:update(Node, UpdateList).
+                </div>
+                
+                <h4>🔍 query - 数据查询</h4>
+                <div class="code-block">
+erlang_craq:query(Node, ObjectType, ObjectId).
+
+% 示例
+erlang_craq:query(N1, person, 10).
+% 返回: [{ok, {person,10,[{name,john},{age,30},{gender,male}]}}]
+                </div>
+                
+                <h4>🗑️ delete - 数据删除</h4>
+                <div class="code-block">
+% 删除列
+erlang_craq:delete(Node, ObjectType, ObjectId, DeleteColList).
+
+% 删除整个对象
+erlang_craq:delete(Node, ObjectType, ObjectId).
+                </div>
+            </div>
+        </div>
+        
+        <!-- 第六-七页：写冲突和数据管理 -->
+        <div class="section">
+            <h2>第六-七页：写冲突处理和数据管理</h2>
+            
+            <h3>写冲突解决机制</h3>
+            <div class="explanation">
+                <h4>⚡ 冲突场景</h4>
+                <ul>
+                    <li><strong>同对象并发更新</strong>：2个或更多节点同时更新同一对象</li>
+                    <li><strong>迷你事务冲突</strong>：包含相同对象的并发迷你事务</li>
+                </ul>
+                
+                <h4>🏆 冲突解决规则</h4>
+                <ul>
+                    <li><strong>预写阶段冲突</strong>：
+                        <ul>
+                            <li>所有更新都在预写阶段</li>
+                            <li>发起节点值最高的更新获胜</li>
+                        </ul>
+                    </li>
+                    <li><strong>混合阶段冲突</strong>：
+                        <ul>
+                            <li>部分更新在预写阶段，部分在写阶段</li>
+                            <li>写阶段的更新获胜（只能有一个写阶段更新）</li>
+                        </ul>
+                    </li>
+                </ul>
+                
+                <h4>💾 数据检查点和版本控制</h4>
+                <ul>
+                    <li><strong>定期检查</strong>：每隔一定数量的更新条目检查数据文件</li>
+                    <li><strong>腐败检测</strong>：检测数据文件是否损坏</li>
+                    <li><strong>文件版本化</strong>：
+                        <ul>
+                            <li>无损坏：关闭当前文件，创建新版本文件</li>
+                            <li>有损坏：截断文件到正确位置，节点退出环</li>
+                        </ul>
+                    </li>
+                    <li><strong>增量恢复</strong>：重新加入的节点从后继节点获取增量快照</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- 第八-十页：测试示例 -->
+        <div class="section">
+            <h2>第八-十页：手动测试示例</h2>
+            
+            <h3>完整测试流程</h3>
+            <div class="code-block">
+# 1. 清理数据文件
+rm *.data
+
+# 2. 启动服务器节点
+# 终端1
+./craq_erl.sh ec_n1
+> erlang_craq:start().
+
+# 终端2
+./craq_erl.sh ec_n2
+> erlang_craq:start().
+
+# 终端3
+./craq_erl.sh ec_n3
+> erlang_craq:start().
+
+# 3. 启动客户端并设置复制环
+# 终端4
+./craq_erl.sh ec_c1
+> N1 = 'ec_n1@hostname'.
+> N2 = 'ec_n2@hostname'.
+> N3 = 'ec_n3@hostname'.
+> NL = [N1, N2, N3].
+> erlang_craq:setup_repl(NL).
+
+# 4. 插入测试数据
+> erlang_craq:update(N1, candidate, 10, [{name,donald_trump},{party,republican}]).
+% 返回: [{ok, {[{candidate, 10}], updated}}]
+
+# 5. 验证数据一致性
+> erlang_craq:query(N1, candidate, 10).
+> erlang_craq:query(N2, candidate, 10).
+> erlang_craq:query(N3, candidate, 10).
+% 所有查询应返回相同结果
+
+# 6. 测试更多更新
+> erlang_craq:update(N2, candidate, 20, [{name,hillary_clinton},{party,democrat}]).
+> erlang_craq:update(N3, candidate, 30, [{name,ted_cruz},{party,republican}]).
+
+# 7. 测试迷你事务
+> erlang_craq:update(N1, [{candidate, 40, [{name,bernie_sanders},{party,democrat}]},
+                          {candidate, 50, [{name,marco_rubio},{party,republican}]}]).
+            </div>
+            
+            <h3>并发测试</h3>
+            <div class="explanation">
+                <h4>✅ 成功的并发更新（不同对象）</h4>
+                <div class="code-block">
+> erlang_craq:multi_update([N1, N2, N3],
+    [[{candidate,10,[{name,donald_trump},{party,republican}]},
+      {candidate,20,[{name,hillary_clinton},{party,democrat}]}],
+     [{candidate,30,[{name,ted_cruz},{party,republican}]},
+      {candidate,40,[{name,bernie_sanders},{party,democrat}]}],
+     [{candidate,50,[{name,marco_rubio},{party,republican}]},
+      {candidate,60,[{name,ben_carson},{party,republican}]}]]).
+
+% 预期结果：所有更新成功
+[{ok,{[{candidate,10},{candidate,20}],updated}},
+ {ok,{[{candidate,30},{candidate,40}],updated}},
+ {ok,{[{candidate,50},{candidate,60}],updated}}]
+                </div>
+                
+                <h4>❌ 冲突的并发更新（相同对象）</h4>
+                <div class="code-block">
+> erlang_craq:multi_update([N1, N2, N3],
+    [[{candidate,10,[{name,donald_trump},{party,republican}]},
+      {candidate,20,[{name,hillary_clinton},{party,democrat}]}],
+     [{candidate,30,[{name,ted_cruz},{party,republican}]},
+      {candidate,20,[{name,hillary_clinton},{party,democrat}]}],  % 冲突
+     [{candidate,50,[{name,marco_rubio},{party,republican}]},
+      {candidate,20,[{name,hillary_clinton},{party,democrat}]}]]). % 冲突
+
+% 预期结果：只有一个更新成功，其他被拒绝
+[{error,{[{candidate,10},{candidate,20}],being_updated}},
+ {error,{[{candidate,30},{candidate,20}],being_updated}},
+ {ok,{[{candidate,50},{candidate,20}],updated}}]
+                </div>
+            </div>
+        </div>
+        
+        <!-- 第十一页：自动化测试 -->
+        <div class="section">
+            <h2>第十一页：自动化测试</h2>
+            
+            <h3>自动化测试架构</h3>
+            <div class="explanation">
+                <h4>🎯 测试目标</h4>
+                <ul>
+                    <li>验证系统在节点动态变化下的一致性</li>
+                    <li>测试高并发数据写入的正确性</li>
+                    <li>验证故障恢复机制</li>
+                </ul>
+                
+                <h4>👥 测试角色</h4>
+                <ul>
+                    <li><strong>故障注入客户端</strong>：
+                        <ul>
+                            <li>每5秒随机关闭或启动一个服务器</li>
+                            <li>执行15-20次故障注入操作</li>
+                            <li>测试结束时恢复所有下线节点</li>
+                        </ul>
+                    </li>
+                    <li><strong>数据写入客户端（至少2个）</strong>：
+                        <ul>
+                            <li>每秒写入5条数据</li>
+                            <li>总共写入400-500条数据</li>
+                            <li>随机选择节点、对象类型、ID和值</li>
+                            <li>容忍节点下线导致的超时</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            
+            <h3>测试执行步骤</h3>
+            <div class="code-block">
+# 1. 清理环境
+rm *.data
+
+# 2. 启动6个终端
+
+# 终端1-3：服务器节点
+./craq_erl.sh ec_n1
+> erlang_craq:start().
+
+./craq_erl.sh ec_n2
+> erlang_craq:start().
+
+./craq_erl.sh ec_n3
+> erlang_craq:start().
+
+# 终端4-5：数据写入客户端
+./craq_erl.sh ec_c1
+> NL = ['ec_n1@hostname', 'ec_n2@hostname', 'ec_n3@hostname'].
+# 准备但不执行：erlang_craq_test:data_entries(NL).
+
+./craq_erl.sh ec_c2
+> NL = ['ec_n1@hostname', 'ec_n2@hostname', 'ec_n3@hostname'].
+# 准备但不执行：erlang_craq_test:data_entries(NL).
+
+# 终端6：故障注入和协调客户端
+./craq_erl.sh ec_c3
+> NL = ['ec_n1@hostname', 'ec_n2@hostname', 'ec_n3@hostname'].
+> erlang_craq:setup_repl(NL).
+> erlang_craq_test:node_change(NL).
+
+# 3. 启动数据写入（在终端4和5执行）
+> erlang_craq_test:data_entries(NL).
+
+# 4. 验证一致性（所有客户端完成后在终端6执行）
+> erlang_craq_validate:check_data(NL).
+# 预期结果：valid
+            </div>
+            
+            <h3>测试验证</h3>
+            <div class="explanation">
+                <h4>✅ 成功标准</h4>
+                <ul>
+                    <li><strong>数据一致性</strong>：所有存活节点的数据完全一致</li>
+                    <li><strong>完整性</strong>：没有数据丢失或损坏</li>
+                    <li><strong>可用性</strong>：系统在故障期间仍能提供服务</li>
+                </ul>
+                
+                <h4>❌ 失败指标</h4>
+                <ul>
+                    <li>验证命令返回非"valid"结果</li>
+                    <li>数据文件大小不一致</li>
+                    <li>查询返回不一致的结果</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- 总结 -->
+        <div class="section">
+            <h2>📋 文档总结</h2>
+            
+            <h3>系统特点</h3>
+            <div class="explanation">
+                <h4>🎯 核心优势</h4>
+                <ul>
+                    <li><strong>高吞吐量</strong>：支持任意节点的并发读写</li>
+                    <li><strong>强一致性</strong>：保证数据的原子性和一致性</li>
+                    <li><strong>动态头尾</strong>：没有固定的头尾节点，提高可用性</li>
+                    <li><strong>故障恢复</strong>：自动检测故障并支持增量恢复</li>
+                    <li><strong>灵活配置</strong>：支持多种查询模式和日志框架</li>
+                </ul>
+                
+                <h4>⚠️ 系统限制</h4>
+                <ul>
+                    <li><strong>网络假设</strong>：不容忍网络分区</li>
+                    <li><strong>最小可用性</strong>：至少需要一个节点可用</li>
+                    <li><strong>写冲突</strong>：同对象的并发更新会被拒绝</li>
+                </ul>
+                
+                <h4>🔧 适用场景</h4>
+                <ul>
+                    <li><strong>高并发读写</strong>：需要大量并发操作的应用</li>
+                    <li><strong>强一致性要求</strong>：对数据一致性要求严格的系统</li>
+                    <li><strong>可靠网络环境</strong>：网络分区概率较低的环境</li>
+                    <li><strong>动态负载</strong>：需要负载均衡的分布式应用</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Erlang CRAQ PDF 文档翻译与解释 | 基于 erlang_craq.pdf</p>
+            <p>翻译日期：2024年12月 | 版本：1.0</p>
+        </div>
+    </div>
+    
+    <script>
+        // 初始化 Mermaid
+        mermaid.initialize({ startOnLoad: true });
+        
+        function exportToWord() {
+            const loadingMsg = document.createElement('div');
+            loadingMsg.style.position = 'fixed';
+            loadingMsg.style.top = '50%';
+            loadingMsg.style.left = '50%';
+            loadingMsg.style.transform = 'translate(-50%, -50%)';
+            loadingMsg.style.background = 'rgba(0,0,0,0.8)';
+            loadingMsg.style.color = 'white';
+            loadingMsg.style.padding = '20px';
+            loadingMsg.style.borderRadius = '5px';
+            loadingMsg.style.zIndex = '1000';
+            loadingMsg.textContent = '正在导出 Word 文档...';
+            document.body.appendChild(loadingMsg);
+            
+            try {
+                const content = document.documentElement.outerHTML;
+                const converted = htmlDocx.asBlob(content);
+                saveAs(converted, 'Erlang_CRAQ_PDF翻译解释.docx');
+                
+                document.body.removeChild(loadingMsg);
+                alert('Word 文档导出成功！');
+            } catch (error) {
+                console.error('导出失败:', error);
+                document.body.removeChild(loadingMsg);
+                alert('导出过程中出现错误: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

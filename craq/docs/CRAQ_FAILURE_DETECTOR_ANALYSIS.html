@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRAQ 故障检测机制详细分析</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            line-height: 1.8;
+            padding: 40px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #00d4ff, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+        
+        h2 {
+            color: #00d4ff;
+            font-size: 1.8em;
+            margin: 40px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #00d4ff33;
+        }
+        
+        h3 {
+            color: #7c3aed;
+            font-size: 1.4em;
+            margin: 30px 0 15px 0;
+        }
+        
+        h4 {
+            color: #10b981;
+            font-size: 1.2em;
+            margin: 20px 0 10px 0;
+        }
+        
+        .code-block {
+            background: #0d1117;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            overflow-x: auto;
+            border: 1px solid #30363d;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .code-header {
+            background: linear-gradient(90deg, #238636, #1f6feb);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px 8px 0 0;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9em;
+            margin: 20px 0 0 0;
+        }
+        
+        .code-block.with-header {
+            border-radius: 0 0 12px 12px;
+            margin-top: 0;
+        }
+        
+        pre {
+            margin: 0;
+            font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        code {
+            font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+        }
+        
+        .line {
+            display: block;
+            padding: 2px 0;
+        }
+        
+        .line-number {
+            display: inline-block;
+            width: 45px;
+            color: #6e7681;
+            text-align: right;
+            padding-right: 15px;
+            user-select: none;
+            border-right: 1px solid #30363d;
+            margin-right: 15px;
+        }
+        
+        .highlight-line {
+            background: linear-gradient(90deg, #fbbf2433 0%, transparent 100%);
+            border-left: 3px solid #fbbf24;
+            margin-left: -25px;
+            padding-left: 22px;
+        }
+        
+        .keyword { color: #ff7b72; font-weight: bold; }
+        .function { color: #d2a8ff; }
+        .variable { color: #79c0ff; }
+        .atom { color: #ffa657; }
+        .string { color: #a5d6ff; }
+        .comment { color: #8b949e; font-style: italic; }
+        .macro { color: #ff7b72; }
+        .number { color: #79c0ff; }
+        .operator { color: #ff7b72; }
+        .record { color: #7ee787; }
+        .step-comment { color: #fbbf24; font-weight: bold; }
+        
+        .info-box {
+            background: linear-gradient(135deg, #1e3a5f 0%, #1a2744 100%);
+            border-left: 4px solid #00d4ff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .warning-box {
+            background: linear-gradient(135deg, #5f3a1e 0%, #442a17 100%);
+            border-left: 4px solid #fbbf24;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .success-box {
+            background: linear-gradient(135deg, #1e5f3a 0%, #17442a 100%);
+            border-left: 4px solid #10b981;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: #0d1117;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        th {
+            background: linear-gradient(90deg, #238636, #1f6feb);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #30363d;
+        }
+        
+        tr:hover {
+            background: #161b22;
+        }
+        
+        .flow-diagram {
+            background: #0d1117;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 20px 0;
+            text-align: center;
+            border: 1px solid #30363d;
+        }
+        
+        .flow-step {
+            display: inline-block;
+            background: linear-gradient(135deg, #238636, #1f6feb);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            margin: 10px;
+            font-weight: bold;
+        }
+        
+        .flow-arrow {
+            display: inline-block;
+            color: #fbbf24;
+            font-size: 1.5em;
+            margin: 0 10px;
+            vertical-align: middle;
+        }
+        
+        .architecture-diagram {
+            background: #0d1117;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 20px 0;
+            border: 1px solid #30363d;
+        }
+        
+        .arch-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        
+        .arch-box {
+            background: linear-gradient(135deg, #1e3a5f, #16213e);
+            border: 2px solid #00d4ff;
+            border-radius: 10px;
+            padding: 15px 25px;
+            margin: 10px;
+            text-align: center;
+            min-width: 150px;
+        }
+        
+        .arch-box.highlight {
+            border-color: #fbbf24;
+            background: linear-gradient(135deg, #5f3a1e, #442a17);
+        }
+        
+        .arch-box.success {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #1e5f3a, #17442a);
+        }
+        
+        .arch-arrow {
+            color: #fbbf24;
+            font-size: 2em;
+            margin: 0 15px;
+        }
+        
+        .arch-arrow-down {
+            color: #fbbf24;
+            font-size: 2em;
+            display: block;
+            text-align: center;
+        }
+        
+        .inline-code {
+            background: #30363d;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9em;
+            color: #79c0ff;
+        }
+        
+        ul {
+            margin: 15px 0 15px 30px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, #1e3a5f 0%, #16213e 100%);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid #30363d;
+        }
+        
+        .summary-card h4 {
+            margin-top: 0;
+            color: #00d4ff;
+        }
+        
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+            margin: 20px 0;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, #00d4ff, #7c3aed);
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin: 20px 0;
+            padding: 15px 20px;
+            background: #0d1117;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 20px;
+            width: 12px;
+            height: 12px;
+            background: #00d4ff;
+            border-radius: 50%;
+            border: 2px solid #1a1a2e;
+        }
+        
+        .timeline-item.highlight::before {
+            background: #fbbf24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 CRAQ 故障检测机制详细分析</h1>
+        <p class="subtitle">基于 Erlang 进程监控的分布式故障检测实现</p>
+
+        <!-- ========== 概述 ========== -->
+        <h2>📋 一、机制概述</h2>
+        
+        <div class="info-box">
+            <strong>核心原理：</strong>CRAQ 系统使用 Erlang 的 <code class="inline-code">monitor/2</code> 机制来监控集群中其他节点的 <code class="inline-code">eh_system_server</code> 进程。当被监控进程崩溃或节点断开时，监控进程会收到 <code class="inline-code">{'DOWN', ...}</code> 消息，从而触发故障处理流程。
+        </div>
+
+        <div class="summary-grid">
+            <div class="summary-card">
+                <h4>🎯 监控目标</h4>
+                <p>监控集群中所有其他节点的 <code class="inline-code">eh_system_server</code> 进程</p>
+            </div>
+            <div class="summary-card">
+                <h4>⚡ 检测方式</h4>
+                <p>基于 Erlang 原生的进程监控机制 (<code class="inline-code">monitor/demonitor</code>)</p>
+            </div>
+            <div class="summary-card">
+                <h4>🔄 响应策略</h4>
+                <p>自动重新计算拓扑关系，处理未完成的消息</p>
+            </div>
+        </div>
+
+        <!-- ========== 架构设计 ========== -->
+        <h2>🏗️ 二、架构设计</h2>
+
+        <h3>2.1 模块层次结构</h3>
+        
+        <div class="architecture-diagram">
+            <div class="arch-row">
+                <div class="arch-box highlight">
+                    <strong>eh_failure_detector</strong><br>
+                    <small>行为定义 (Behaviour)</small>
+                </div>
+            </div>
+            <div class="arch-arrow-down">⬇️ 实现</div>
+            <div class="arch-row">
+                <div class="arch-box success">
+                    <strong>eh_failure_detector_api</strong><br>
+                    <small>默认实现</small>
+                </div>
+            </div>
+            <div class="arch-arrow-down">⬇️ 调用</div>
+            <div class="arch-row">
+                <div class="arch-box">
+                    <strong>eh_system_server</strong><br>
+                    <small>handle_cast (设置监控)</small>
+                </div>
+                <div class="arch-arrow">→</div>
+                <div class="arch-box">
+                    <strong>eh_system_server</strong><br>
+                    <small>handle_info (处理故障)</small>
+                </div>
+            </div>
+        </div>
+
+        <h3>2.2 可插拔设计</h3>
+        
+        <div class="success-box">
+            <strong>设计优势：</strong>通过 Erlang Behaviour 机制，故障检测器可以被替换为自定义实现，例如基于心跳的检测器或基于 gossip 协议的检测器。
+        </div>
+
+        <!-- ========== 行为定义 ========== -->
+        <h2>📜 三、行为定义 (Behaviour)</h2>
+
+        <div class="code-header">📄 src/eh_failure_detector.erl (行为定义)</div>
+        <div class="code-block with-header">
+<pre>
+<span class="line"><span class="line-number">19</span><span class="keyword">-module</span>(<span class="atom">eh_failure_detector</span>).</span>
+<span class="line"><span class="line-number">20</span></span>
+<span class="line"><span class="line-number">21</span><span class="keyword">-include</span>(<span class="string">"erlang_craq.hrl"</span>).</span>
+<span class="line"><span class="line-number">22</span></span>
+<span class="line"><span class="line-number">23</span><span class="comment">%% 回调函数1: 设置对多个节点的监控</span></span>
+<span class="line highlight-line"><span class="line-number">24</span><span class="keyword">-callback</span> <span class="function">set</span>(<span class="variable">Node</span> :: <span class="atom">atom</span>(), <span class="variable">ReplRing</span> :: <span class="atom">list</span>()) -> <span class="atom">ok</span>.</span>
+<span class="line"><span class="line-number">25</span></span>
+<span class="line"><span class="line-number">26</span><span class="comment">%% 回调函数2: 设置对单个节点的监控</span></span>
+<span class="line highlight-line"><span class="line-number">27</span><span class="keyword">-callback</span> <span class="function">set</span>(<span class="variable">Node</span> :: <span class="atom">atom</span>()) -> <span class="atom">ok</span>.</span>
+<span class="line"><span class="line-number">28</span></span>
+<span class="line"><span class="line-number">29</span><span class="comment">%% 回调函数3: 检测消息是否为故障通知</span></span>
+<span class="line highlight-line"><span class="line-number">30</span><span class="keyword">-callback</span> <span class="function">detect</span>(<span class="variable">Msg</span> :: <span class="atom">term</span>()) -> <span class="atom">ok</span> | {<span class="macro">?EH_NODEDOWN</span>, <span class="atom">atom</span>()}.</span>
+</pre>
+        </div>
+
+        <div class="info-box">
+            <strong>三个回调函数：</strong>
+            <ul>
+                <li><code class="inline-code">set/2</code> - 集群初始化时，设置对所有其他节点的监控</li>
+                <li><code class="inline-code">set/1</code> - 新节点加入时，设置对单个节点的监控</li>
+                <li><code class="inline-code">detect/1</code> - 检测收到的消息是否为节点故障通知</li>
+            </ul>
+        </div>
+
+        <!-- ========== 默认实现 ========== -->
+        <h2>⚙️ 四、默认实现 (API)</h2>
+
+        <div class="code-header">📄 src/eh_failure_detector_api.erl (默认实现)</div>
+        <div class="code-block with-header">
+<pre>
+<span class="line"><span class="line-number">19</span><span class="keyword">-module</span>(<span class="atom">eh_failure_detector_api</span>).</span>
+<span class="line"><span class="line-number">20</span></span>
+<span class="line"><span class="line-number">21</span><span class="keyword">-behavior</span>(<span class="atom">eh_failure_detector</span>).</span>
+<span class="line"><span class="line-number">22</span></span>
+<span class="line"><span class="line-number">23</span><span class="keyword">-export</span>([<span class="function">set</span>/<span class="number">2</span>,</span>
+<span class="line"><span class="line-number">24</span>         <span class="function">set</span>/<span class="number">1</span>,</span>
+<span class="line"><span class="line-number">25</span>         <span class="function">detect</span>/<span class="number">1</span>]).</span>
+<span class="line"><span class="line-number">26</span></span>
+<span class="line"><span class="line-number">27</span><span class="keyword">-include</span>(<span class="string">"erlang_craq.hrl"</span>).</span>
+<span class="line"><span class="line-number">28</span></span>
+<span class="line"><span class="line-number">29</span><span class="comment">%% ═══════════════════════════════════════════════════════════════</span></span>
+<span class="line"><span class="line-number">30</span><span class="comment">%% 🔧 函数1: 设置对多个节点的监控 (集群初始化时调用)</span></span>
+<span class="line"><span class="line-number">31</span><span class="comment">%% ═══════════════════════════════════════════════════════════════</span></span>
+<span class="line highlight-line"><span class="line-number">32</span><span class="function">set</span>(<span class="variable">Node</span>, <span class="variable">NodeList</span>) -></span>
+<span class="line"><span class="line-number">33</span>    <span class="comment">%% Step 1: 从节点列表中移除自己</span></span>
+<span class="line"><span class="line-number">34</span>    <span class="variable">NewNodeList</span> = <span class="function">lists:delete</span>(<span class="variable">Node</span>, <span class="variable">NodeList</span>),</span>
+<span class="line"><span class="line-number">35</span></span>
+<span class="line"><span class="line-number">36</span>    <span class="comment">%% Step 2: 对每个其他节点的 eh_system_server 进程建立监控</span></span>
+<span class="line highlight-line"><span class="line-number">37</span>    <span class="function">lists:foreach</span>(</span>
+<span class="line highlight-line"><span class="line-number">38</span>        <span class="keyword">fun</span>(<span class="variable">N</span>) -></span>
+<span class="line highlight-line"><span class="line-number">39</span>            <span class="function">monitor</span>(<span class="atom">process</span>, {<span class="macro">?EH_SYSTEM_SERVER</span>, <span class="variable">N</span>})</span>
+<span class="line highlight-line"><span class="line-number">40</span>        <span class="keyword">end</span>,</span>
+<span class="line highlight-line"><span class="line-number">41</span>        <span class="variable">NewNodeList</span></span>
+<span class="line"><span class="line-number">42</span>    ),</span>
+<span class="line"><span class="line-number">43</span>    <span class="atom">ok</span>.</span>
+<span class="line"><span class="line-number">44</span></span>
+<span class="line"><span class="line-number">45</span><span class="comment">%% ═══════════════════════════════════════════════════════════════</span></span>
+<span class="line"><span class="line-number">46</span><span class="comment">%% 🔧 函数2: 设置对单个节点的监控 (新节点加入时调用)</span></span>
+<span class="line"><span class="line-number">47</span><span class="comment">%% ═══════════════════════════════════════════════════════════════</span></span>
+<span class="line highlight-line"><span class="line-number">48</span><span class="function">set</span>(<span class="variable">Node</span>) -></span>
+<span class="line highlight-line"><span class="line-number">49</span>    <span class="function">monitor</span>(<span class="atom">process</span>, {<span class="macro">?EH_SYSTEM_SERVER</span>, <span class="variable">Node</span>}).</span>
+<span class="line"><span class="line-number">50</span></span>
+<span class="line"><span class="line-number">51</span><span class="comment">%% ═══════════════════════════════════════════════════════════════</span></span>
+<span class="line"><span class="line-number">52</span><span class="comment">%% 🔧 函数3: 检测故障消息</span></span>
+<span class="line"><span class="line-number">53</span><span class="comment">%% ═══════════════════════════════════════════════════════════════</span></span>
+<span class="line highlight-line"><span class="line-number">54</span><span class="function">detect</span>({<span class="atom">'DOWN'</span>, <span class="variable">MRef</span>, <span class="atom">process</span>, {<span class="macro">?EH_SYSTEM_SERVER</span>, <span class="variable">Node</span>}, <span class="variable">_Reason</span>}) -></span>
+<span class="line"><span class="line-number">55</span>    <span class="comment">%% Step 1: 取消监控引用，清理资源</span></span>
+<span class="line"><span class="line-number">56</span>    <span class="function">demonitor</span>(<span class="variable">MRef</span>, [<span class="atom">flush</span>]),</span>
+<span class="line"><span class="line-number">57</span></span>
+<span class="line"><span class="line-number">58</span>    <span class="comment">%% Step 2: 返回故障节点信息</span></span>
+<span class="line highlight-line"><span class="line-number">59</span>    {<span class="macro">?EH_NODEDOWN</span>, <span class="variable">Node</span>};</span>
+<span class="line"><span class="line-number">60</span></span>
+<span class="line"><span class="line-number">61</span><span class="comment">%% 非故障消息，返回 ok</span></span>
+<span class="line"><span class="line-number">62</span><span class="function">detect</span>(<span class="variable">_</span>) -></span>
+<span class="line"><span class="line-number">63</span>    <span class="atom">ok</span>.</span>
+</pre>
+        </div>
+
+        <h3>4.1 关键技术点</h3>
+
+        <table>
+            <tr>
+                <th>技术点</th>
+                <th>说明</th>
+                <th>代码位置</th>
+            </tr>
+            <tr>
+                <td><code class="inline-code">monitor(process, {Name, Node})</code></td>
+                <td>监控远程节点上的命名进程</td>
+                <td>第 39 行, 第 49 行</td>
+            </tr>
+            <tr>
+                <td><code class="inline-code">{'DOWN', MRef, process, Pid, Reason}</code></td>
+                <td>进程崩溃或节点断开时收到的消息格式</td>
+                <td>第 54 行</td>
+            </tr>
+            <tr>
+                <td><code class="inline-code">demonitor(MRef, [flush])</code></td>
+                <td>取消监控并清理消息队列中的相关消息</td>
+                <td>第 56 行</td>
+            </tr>
+            <tr>
+                <td><code class="inline-code">?EH_SYSTEM_SERVER</code></td>
+                <td>被监控的进程名，定义为 <code class="inline-code">eh_system_server</code></td>
+                <td>erlang_craq.hrl:62</td>
+            </tr>
+        </table>
+
+        <!-- ========== 调用点分析 ========== -->
+        <h2>📍 五、调用点分析</h2>
+
+        <h3>5.1 监控设置调用点 (集群初始化)</h3>
+
+        <div class="code-header">📄 src/eh_system_server.erl:77-89 (集群设置时建立监控)</div>
+        <div class="code-block with-header">
+<pre>
+<span class="line"><span class="line-number">77</span><span class="function">handle_cast</span>({<span class="macro">?EH_SETUP_REPL</span>, <span class="variable">ReplRing</span>},</span>
+<span class="line"><span class="line-number">78</span>            <span class="record">#eh_system_state</span>{<span class="atom">app_config</span>=<span class="variable">AppConfig</span>}=<span class="variable">State</span>) -></span>
+<span class="line"><span class="line-number">79</span></span>
+<span class="line"><span class="line-number">80</span>    <span class="comment">%% 🔧 Step 1: 获取节点信息</span></span>
+<span class="line"><span class="line-number">81</span>    <span class="variable">NodeId</span> = <span class="function">eh_system_config:get_node_id</span>(<span class="variable">AppConfig</span>),</span>
+<span class="line"><span class="line-number">82</span>    <span class="variable">NodeOrder</span> = <span class="function">eh_system_config:get_node_order</span>(<span class="variable">AppConfig</span>),</span>
+<span class="line"><span class="line-number">83</span></span>
+<span class="line"><span class="line-number">84</span>    <span class="comment">%% 🔧 Step 2: 计算拓扑关系</span></span>
+<span class="line"><span class="line-number">85</span>    {<span class="variable">ReplRing1</span>, <span class="variable">ReplRingOrder1</span>, <span class="variable">Pred</span>, <span class="variable">Succ</span>} =</span>
+<span class="line"><span class="line-number">86</span>        <span class="function">eh_repl_ring:get_ordered_list_pred_succ</span>(</span>
+<span class="line"><span class="line-number">87</span>            <span class="variable">NodeId</span>, <span class="variable">ReplRing</span>, <span class="variable">ReplRing</span>, <span class="variable">NodeOrder</span></span>
+<span class="line"><span class="line-number">88</span>        ),</span>
+<span class="line"><span class="line-number">89</span></span>
+<span class="line"><span class="line-number">90</span>    <span class="comment">%% 🔧 Step 3: 获取故障检测器模块</span></span>
+<span class="line highlight-line"><span class="line-number">91</span>    <span class="variable">FailureDetector</span> = <span class="function">eh_system_config:get_failure_detector</span>(<span class="variable">AppConfig</span>),</span>
+<span class="line"><span class="line-number">92</span></span>
+<span class="line"><span class="line-number">93</span>    <span class="comment">%% 🔥 Step 4: 关键行 - 建立对所有其他节点的监控</span></span>
+<span class="line highlight-line"><span class="line-number">94</span>    <span class="variable">FailureDetector</span>:<span class="function">set</span>(<span class="variable">NodeId</span>, <span class="variable">ReplRing</span>),</span>
+<span class="line"><span class="line-number">95</span></span>
+<span class="line"><span class="line-number">96</span>    <span class="comment">%% ... 后续状态更新 ...</span></span>
+</pre>
+        </div>
+
+        <h3>5.2 故障检测调用点 (消息处理)</h3>
+
+        <div class="code-header">📄 src/eh_system_server.erl:238-285 (故障检测与处理)</div>
+        <div class="code-block with-header">
+<pre>
+<span class="line"><span class="line-number">238</span><span class="function">handle_info</span>(<span class="variable">Msg</span>,</span>
+<span class="line"><span class="line-number">239</span>            <span class="record">#eh_system_state</span>{</span>
+<span class="line"><span class="line-number">240</span>                <span class="atom">repl_ring</span>=<span class="variable">ReplRing</span>,</span>
+<span class="line"><span class="line-number">241</span>                <span class="atom">repl_ring_order</span>=<span class="variable">ReplRingOrder</span>,</span>
+<span class="line"><span class="line-number">242</span>                <span class="atom">predecessor</span>=<span class="variable">Pred</span>,</span>
+<span class="line"><span class="line-number">243</span>                <span class="atom">successor</span>=<span class="variable">Succ</span>,</span>
+<span class="line"><span class="line-number">244</span>                <span class="atom">pre_msg_data</span>=<span class="variable">PreMsgData</span>,</span>
+<span class="line"><span class="line-number">245</span>                <span class="atom">msg_data</span>=<span class="variable">MsgData</span>,</span>
+<span class="line"><span class="line-number">246</span>                <span class="atom">app_config</span>=<span class="variable">AppConfig</span></span>
+<span class="line"><span class="line-number">247</span>            }=<span class="variable">State</span>) -></span>
+<span class="line"><span class="line-number">248</span></span>
+<span class="line"><span class="line-number">249</span>    <span class="comment">%% 🔧 Step 1: 获取故障检测器模块</span></span>
+<span class="line highlight-line"><span class="line-number">250</span>    <span class="variable">FailureDetector</span> = <span class="function">eh_system_config:get_failure_detector</span>(<span class="variable">AppConfig</span>),</span>
+<span class="line"><span class="line-number">251</span></span>
+<span class="line"><span class="line-number">252</span>    <span class="comment">%% 🔥 Step 2: 关键行 - 检测消息是否为故障通知</span></span>
+<span class="line highlight-line"><span class="line-number">253</span>    <span class="variable">NewState9</span> = <span class="keyword">case</span> <span class="variable">FailureDetector</span>:<span class="function">detect</span>(<span class="variable">Msg</span>) <span class="keyword">of</span></span>
+<span class="line"><span class="line-number">254</span></span>
+<span class="line"><span class="line-number">255</span>        <span class="comment">%% ═══════════════════════════════════════════════════════</span></span>
+<span class="line"><span class="line-number">256</span>        <span class="comment">%% 🚨 检测到节点故障</span></span>
+<span class="line"><span class="line-number">257</span>        <span class="comment">%% ═══════════════════════════════════════════════════════</span></span>
+<span class="line highlight-line"><span class="line-number">258</span>        {<span class="macro">?EH_NODEDOWN</span>, <span class="variable">DownNode</span>} -></span>
+<span class="line"><span class="line-number">259</span></span>
+<span class="line"><span class="line-number">260</span>            <span class="comment">%% Step 2.1: 记录故障事件</span></span>
+<span class="line"><span class="line-number">261</span>            <span class="function">event_data</span>(</span>
+<span class="line"><span class="line-number">262</span>                <span class="string">"failure"</span>,</span>
+<span class="line"><span class="line-number">263</span>                <span class="atom">node_down</span>,</span>
+<span class="line"><span class="line-number">264</span>                <span class="function">eh_system_util:get_node_name</span>(<span class="variable">DownNode</span>),</span>
+<span class="line"><span class="line-number">265</span>                <span class="variable">AppConfig</span></span>
+<span class="line"><span class="line-number">266</span>            ),</span>
+<span class="line"><span class="line-number">267</span></span>
+<span class="line"><span class="line-number">268</span>            <span class="comment">%% Step 2.2: 获取当前节点信息</span></span>
+<span class="line"><span class="line-number">269</span>            <span class="variable">NodeId</span> = <span class="function">eh_system_config:get_node_id</span>(<span class="variable">AppConfig</span>),</span>
+<span class="line"><span class="line-number">270</span>            <span class="variable">NodeOrder</span> = <span class="function">eh_system_config:get_node_order</span>(<span class="variable">AppConfig</span>),</span>
+<span class="line"><span class="line-number">271</span></span>
+<span class="line"><span class="line-number">272</span>            <span class="comment">%% 🔥 Step 2.3: 从复制环中移除故障节点</span></span>
+<span class="line highlight-line"><span class="line-number">273</span>            {<span class="variable">NewReplRing</span>, <span class="variable">_</span>} = <span class="function">eh_repl_ring:drop</span>(</span>
+<span class="line highlight-line"><span class="line-number">274</span>                <span class="variable">DownNode</span>, <span class="variable">ReplRing</span>, <span class="variable">ReplRingOrder</span>, <span class="variable">NodeOrder</span></span>
+<span class="line highlight-line"><span class="line-number">275</span>            ),</span>
+<span class="line"><span class="line-number">276</span></span>
+<span class="line"><span class="line-number">277</span>            <span class="comment">%% 🔥 Step 2.4: 重新计算前驱和后继节点</span></span>
+<span class="line highlight-line"><span class="line-number">278</span>            <span class="variable">NewPred</span> = <span class="function">eh_repl_ring:predecessor</span>(</span>
+<span class="line highlight-line"><span class="line-number">279</span>                <span class="variable">NodeId</span>, <span class="variable">NewReplRing</span>, <span class="variable">ReplRingOrder</span>, <span class="variable">NodeOrder</span></span>
+<span class="line highlight-line"><span class="line-number">280</span>            ),</span>
+<span class="line highlight-line"><span class="line-number">281</span>            <span class="variable">NewSucc</span> = <span class="function">eh_repl_ring:successor</span>(</span>
+<span class="line highlight-line"><span class="line-number">282</span>                <span class="variable">NodeId</span>, <span class="variable">NewReplRing</span>, <span class="variable">ReplRingOrder</span>, <span class="variable">NodeOrder</span></span>
+<span class="line highlight-line"><span class="line-number">283</span>            ),</span>
+<span class="line"><span class="line-number">284</span></span>
+<span class="line"><span class="line-number">285</span>            <span class="comment">%% Step 2.5: 更新状态</span></span>
+<span class="line"><span class="line-number">286</span>            <span class="variable">NewState1</span> = <span class="variable">State</span><span class="record">#eh_system_state</span>{</span>
+<span class="line"><span class="line-number">287</span>                <span class="atom">repl_ring</span>=<span class="variable">NewReplRing</span>,</span>
+<span class="line"><span class="line-number">288</span>                <span class="atom">predecessor</span>=<span class="variable">NewPred</span>,</span>
+<span class="line"><span class="line-number">289</span>                <span class="atom">successor</span>=<span class="variable">NewSucc</span></span>
+<span class="line"><span class="line-number">290</span>            },</span>
+<span class="line"><span class="line-number">291</span></span>
+<span class="line"><span class="line-number">292</span>            <span class="comment">%% Step 2.6: 根据情况处理未完成的消息</span></span>
+<span class="line"><span class="line-number">293</span>            <span class="comment">%% ... (见下一节详细分析)</span></span>
+<span class="line"><span class="line-number">294</span></span>
+<span class="line"><span class="line-number">295</span>        <span class="comment">%% 非故障消息，保持原状态</span></span>
+<span class="line"><span class="line-number">296</span>        <span class="variable">_</span> -></span>
+<span class="line"><span class="line-number">297</span>            <span class="variable">State</span></span>
+<span class="line"><span class="line-number">298</span>    <span class="keyword">end</span>,</span>
+<span class="line"><span class="line-number">299</span></span>
+<span class="line"><span class="line-number">300</span>    {<span class="atom">noreply</span>, <span class="variable">NewState9</span>}.</span>
+</pre>
+        </div>
+
+        <!-- ========== 故障处理策略 ========== -->
+        <h2>🛠️ 六、故障处理策略</h2>
+
+        <h3>6.1 四种故障场景</h3>
+
+        <div class="code-header">📄 src/eh_system_server.erl:256-279 (故障场景处理)</div>
+        <div class="code-block with-header">
+<pre>
+<span class="line"><span class="line-number">256</span><span class="variable">NewState3</span> = <span class="keyword">case</span> {</span>
+<span class="line"><span class="line-number">257</span>    <span class="variable">NewSucc</span>,                                     <span class="comment">%% 新的后继节点</span></span>
+<span class="line"><span class="line-number">258</span>    <span class="function">eh_node_state:snapshot_state</span>(<span class="variable">NewState1</span>),    <span class="comment">%% 当前快照状态</span></span>
+<span class="line"><span class="line-number">259</span>    <span class="variable">Succ</span> =:= <span class="variable">DownNode</span>,                           <span class="comment">%% 后继节点是否故障</span></span>
+<span class="line"><span class="line-number">260</span>    <span class="variable">Pred</span> =:= <span class="variable">DownNode</span>                            <span class="comment">%% 前驱节点是否故障</span></span>
+<span class="line"><span class="line-number">261</span>} <span class="keyword">of</span></span>
+<span class="line"><span class="line-number">262</span></span>
+<span class="line"><span class="line-number">263</span>    <span class="comment">%% ─────────────────────────────────────────────────────────────</span></span>
+<span class="line"><span class="line-number">264</span>    <span class="comment">%% 场景1: 当前节点成为新的尾节点 (无后继 + 状态就绪)</span></span>
+<span class="line"><span class="line-number">265</span>    <span class="comment">%% ─────────────────────────────────────────────────────────────</span></span>
+<span class="line highlight-line"><span class="line-number">266</span>    {<span class="atom">undefined</span>, <span class="macro">?EH_READY</span>, <span class="variable">_</span>, <span class="variable">_</span>} -></span>
+<span class="line"><span class="line-number">267</span>        <span class="comment">%% 处理所有待确认的消息</span></span>
+<span class="line"><span class="line-number">268</span>        <span class="function">process_down_msg</span>(<span class="variable">NewState1</span>);</span>
+<span class="line"><span class="line-number">269</span></span>
+<span class="line"><span class="line-number">270</span>    <span class="comment">%% ─────────────────────────────────────────────────────────────</span></span>
+<span class="line"><span class="line-number">271</span>    <span class="comment">%% 场景2: 快照未就绪 + 后继节点故障</span></span>
+<span class="line"><span class="line-number">272</span>    <span class="comment">%% ─────────────────────────────────────────────────────────────</span></span>
+<span class="line highlight-line"><span class="line-number">273</span>    {<span class="variable">_</span>, <span class="macro">?EH_NOT_READY</span>, <span class="atom">true</span>, <span class="variable">_</span>} -></span>
+<span class="line"><span class="line-number">274</span>        <span class="comment">%% 向新的后继节点请求快照</span></span>
+<span class="line"><span class="line-number">275</span>        <span class="function">process_snapshot_request</span>(</span>
+<span class="line"><span class="line-number">276</span>            <span class="variable">NewReplRing</span>, <span class="variable">ReplRingOrder</span>, <span class="variable">NewSucc</span>, <span class="variable">NewState1</span></span>
+<span class="line"><span class="line-number">277</span>        );</span>
+<span class="line"><span class="line-number">278</span></span>
+<span class="line"><span class="line-number">279</span>    <span class="comment">%% ─────────────────────────────────────────────────────────────</span></span>
+<span class="line"><span class="line-number">280</span>    <span class="comment">%% 场景3: 状态就绪 + 后继节点故障 + 前驱节点正常</span></span>
+<span class="line"><span class="line-number">281</span>    <span class="comment">%% ─────────────────────────────────────────────────────────────</span></span>
+<span class="line highlight-line"><span class="line-number">282</span>    {<span class="variable">_</span>, <span class="macro">?EH_READY</span>, <span class="atom">true</span>, <span class="atom">false</span>} -></span>
+<span class="line"><span class="line-number">283</span>        <span class="comment">%% 重新发送预更新消息给新的后继节点</span></span>
+<span class="line"><span class="line-number">284</span>        <span class="function">send_down_msg</span>(</span>
+<span class="line"><span class="line-number">285</span>            <span class="macro">?EH_PRED_PRE_UPDATE</span>,</span>
+<span class="line"><span class="line-number">286</span>            <span class="keyword">fun</span> <span class="function">eh_persist_data:no_persist_data</span>/<span class="number">2</span>,</span>
+<span class="line"><span class="line-number">287</span>            <span class="keyword">fun</span> <span class="function">send_pre_update_msg</span>/<span class="number">4</span>,</span>
+<span class="line"><span class="line-number">288</span>            <span class="keyword">fun</span> <span class="function">eh_persist_data:persist_data</span>/<span class="number">2</span>,</span>
+<span class="line"><span class="line-number">289</span>            <span class="keyword">fun</span> <span class="function">send_update_msg</span>/<span class="number">4</span>,</span>
+<span class="line"><span class="line-number">290</span>            <span class="variable">PreMsgData</span>,</span>
+<span class="line"><span class="line-number">291</span>            <span class="variable">NewState1</span></span>
+<span class="line"><span class="line-number">292</span>        );</span>
+<span class="line"><span class="line-number">293</span></span>
+<span class="line"><span class="line-number">294</span>    <span class="comment">%% ─────────────────────────────────────────────────────────────</span></span>
+<span class="line"><span class="line-number">295</span>    <span class="comment">%% 场景4: 状态就绪 + 前驱节点故障 + 后继节点正常</span></span>
+<span class="line"><span class="line-number">296</span>    <span class="comment">%% ─────────────────────────────────────────────────────────────</span></span>
+<span class="line highlight-line"><span class="line-number">297</span>    {<span class="variable">_</span>, <span class="macro">?EH_READY</span>, <span class="atom">false</span>, <span class="atom">true</span>} -></span>
+<span class="line"><span class="line-number">298</span>        <span class="comment">%% 重新发送确认消息给新的前驱节点</span></span>
+<span class="line"><span class="line-number">299</span>        <span class="function">send_down_msg</span>(</span>
+<span class="line"><span class="line-number">300</span>            <span class="macro">?EH_SUCC_UPDATE</span>,</span>
+<span class="line"><span class="line-number">301</span>            <span class="keyword">fun</span> <span class="function">eh_persist_data:no_persist_data</span>/<span class="number">2</span>,</span>
+<span class="line"><span class="line-number">302</span>            <span class="keyword">fun</span> <span class="function">send_update_msg</span>/<span class="number">4</span>,</span>
+<span class="line"><span class="line-number">303</span>            <span class="keyword">fun</span> <span class="function">eh_persist_data:no_persist_data</span>/<span class="number">2</span>,</span>
+<span class="line"><span class="line-number">304</span>            <span class="keyword">fun</span> <span class="function">reply_to_client</span>/<span class="number">4</span>,</span>
+<span class="line"><span class="line-number">305</span>            <span class="variable">MsgData</span>,</span>
+<span class="line"><span class="line-number">306</span>            <span class="variable">NewState1</span></span>
+<span class="line"><span class="line-number">307</span>        );</span>
+<span class="line"><span class="line-number">308</span></span>
+<span class="line"><span class="line-number">309</span>    <span class="comment">%% ─────────────────────────────────────────────────────────────</span></span>
+<span class="line"><span class="line-number">310</span>    <span class="comment">%% 场景5: 其他情况，仅更新拓扑</span></span>
+<span class="line"><span class="line-number">311</span>    <span class="comment">%% ─────────────────────────────────────────────────────────────</span></span>
+<span class="line"><span class="line-number">312</span>    {<span class="variable">_</span>, <span class="variable">_</span>, <span class="variable">_</span>, <span class="variable">_</span>} -></span>
+<span class="line"><span class="line-number">313</span>        <span class="variable">NewState1</span></span>
+<span class="line"><span class="line-number">314</span><span class="keyword">end</span>,</span>
+</pre>
+        </div>
+
+        <h3>6.2 故障场景总结</h3>
+
+        <table>
+            <tr>
+                <th>场景</th>
+                <th>条件</th>
+                <th>处理策略</th>
+            </tr>
+            <tr>
+                <td><strong>成为新尾节点</strong></td>
+                <td>NewSucc = undefined, 状态就绪</td>
+                <td>处理所有待确认消息，直接回复客户端</td>
+            </tr>
+            <tr>
+                <td><strong>快照未就绪</strong></td>
+                <td>状态未就绪, 后继故障</td>
+                <td>向新后继请求数据快照</td>
+            </tr>
+            <tr>
+                <td><strong>后继节点故障</strong></td>
+                <td>状态就绪, 后继故障, 前驱正常</td>
+                <td>重新发送预更新消息给新后继</td>
+            </tr>
+            <tr>
+                <td><strong>前驱节点故障</strong></td>
+                <td>状态就绪, 前驱故障, 后继正常</td>
+                <td>重新发送确认消息给新前驱</td>
+            </tr>
+            <tr>
+                <td><strong>其他情况</strong></td>
+                <td>不影响当前节点的直接邻居</td>
+                <td>仅更新拓扑信息</td>
+            </tr>
+        </table>
+
+        <!-- ========== 完整流程图 ========== -->
+        <h2>🔄 七、完整流程图</h2>
+
+        <div class="flow-diagram">
+            <div style="text-align: left; max-width: 800px; margin: 0 auto;">
+                <h4 style="color: #00d4ff; margin-bottom: 20px;">7.1 监控建立流程</h4>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <strong>Step 1: 集群初始化</strong><br>
+                        <code class="inline-code">erlang_craq:setup_repl([Node1, Node2, Node3])</code>
+                    </div>
+                    <div class="timeline-item">
+                        <strong>Step 2: 广播设置消息</strong><br>
+                        <code class="inline-code">gen_server:abcast(NodeList, eh_system_server, {eh_setup_repl, NodeList})</code>
+                    </div>
+                    <div class="timeline-item highlight">
+                        <strong>Step 3: 建立进程监控</strong><br>
+                        <code class="inline-code">FailureDetector:set(NodeId, ReplRing)</code><br>
+                        对每个其他节点调用 <code class="inline-code">monitor(process, {eh_system_server, Node})</code>
+                    </div>
+                    <div class="timeline-item">
+                        <strong>Step 4: 完成拓扑设置</strong><br>
+                        保存前驱、后继节点信息，状态变为 <code class="inline-code">eh_ready</code>
+                    </div>
+                </div>
+
+                <h4 style="color: #fbbf24; margin-top: 40px; margin-bottom: 20px;">7.2 故障检测流程</h4>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <strong>Step 1: 节点崩溃或网络断开</strong><br>
+                        被监控的 <code class="inline-code">eh_system_server</code> 进程不可达
+                    </div>
+                    <div class="timeline-item highlight">
+                        <strong>Step 2: 收到 DOWN 消息</strong><br>
+                        <code class="inline-code">{'DOWN', MRef, process, {eh_system_server, DownNode}, Reason}</code>
+                    </div>
+                    <div class="timeline-item highlight">
+                        <strong>Step 3: 故障检测器识别</strong><br>
+                        <code class="inline-code">FailureDetector:detect(Msg)</code> 返回 <code class="inline-code">{nodedown, DownNode}</code>
+                    </div>
+                    <div class="timeline-item">
+                        <strong>Step 4: 更新拓扑</strong><br>
+                        从复制环移除故障节点，重新计算前驱后继
+                    </div>
+                    <div class="timeline-item">
+                        <strong>Step 5: 处理未完成消息</strong><br>
+                        根据故障场景选择合适的恢复策略
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 关键代码位置汇总 ========== -->
+        <h2>📍 八、关键代码位置汇总</h2>
+
+        <table>
+            <tr>
+                <th>文件</th>
+                <th>行号</th>
+                <th>函数/定义</th>
+                <th>作用</th>
+            </tr>
+            <tr>
+                <td><code class="inline-code">eh_failure_detector.erl</code></td>
+                <td>23-27</td>
+                <td>callback 定义</td>
+                <td>定义故障检测器行为接口</td>
+            </tr>
+            <tr>
+                <td><code class="inline-code">eh_failure_detector_api.erl</code></td>
+                <td>29-32</td>
+                <td><code class="inline-code">set/2</code></td>
+                <td>建立对多个节点的监控</td>
+            </tr>
+            <tr>
+                <td><code class="inline-code">eh_failure_detector_api.erl</code></td>
+                <td>34-35</td>
+                <td><code class="inline-code">set/1</code></td>
+                <td>建立对单个节点的监控</td>
+            </tr>
+            <tr>
+                <td><code class="inline-code">eh_failure_detector_api.erl</code></td>
+                <td>37-41</td>
+                <td><code class="inline-code">detect/1</code></td>
+                <td>检测 DOWN 消息并返回故障节点</td>
+            </tr>
+            <tr>
+                <td><code class="inline-code">eh_system_server.erl</code></td>
+                <td>82-84</td>
+                <td>handle_cast (setup_repl)</td>
+                <td>集群初始化时调用 set/2</td>
+            </tr>
+            <tr>
+                <td><code class="inline-code">eh_system_server.erl</code></td>
+                <td>238-285</td>
+                <td>handle_info</td>
+                <td>接收 DOWN 消息并处理故障</td>
+            </tr>
+            <tr>
+                <td><code class="inline-code">eh_system_server.erl</code></td>
+                <td>256-279</td>
+                <td>case 分支</td>
+                <td>根据场景选择恢复策略</td>
+            </tr>
+            <tr>
+                <td><code class="inline-code">erlang_craq.hrl</code></td>
+                <td>27</td>
+                <td><code class="inline-code">?EH_NODEDOWN</code></td>
+                <td>故障标识宏定义 (nodedown)</td>
+            </tr>
+            <tr>
+                <td><code class="inline-code">erlang_craq.hrl</code></td>
+                <td>62</td>
+                <td><code class="inline-code">?EH_SYSTEM_SERVER</code></td>
+                <td>被监控进程名 (eh_system_server)</td>
+            </tr>
+        </table>
+
+        <!-- ========== 设计特点 ========== -->
+        <h2>💡 九、设计特点总结</h2>
+
+        <div class="summary-grid">
+            <div class="summary-card">
+                <h4>🔌 可插拔架构</h4>
+                <p>通过 Behaviour 机制，可以替换为自定义的故障检测实现，如心跳检测、gossip 协议等。</p>
+            </div>
+            <div class="summary-card">
+                <h4>⚡ 即时响应</h4>
+                <p>利用 Erlang 原生的进程监控机制，故障发生时立即收到通知，无需轮询。</p>
+            </div>
+            <div class="summary-card">
+                <h4>🔄 自动恢复</h4>
+                <p>检测到故障后自动重新计算拓扑，处理未完成的消息，保证系统一致性。</p>
+            </div>
+            <div class="summary-card">
+                <h4>🎯 精确监控</h4>
+                <p>只监控 <code class="inline-code">eh_system_server</code> 进程，避免不必要的监控开销。</p>
+            </div>
+        </div>
+
+        <div class="success-box">
+            <strong>核心优势：</strong>
+            <ul>
+                <li><strong>零延迟检测</strong>: 进程崩溃或节点断开时立即触发</li>
+                <li><strong>资源高效</strong>: 使用 Erlang 内置机制，无额外网络开销</li>
+                <li><strong>容错设计</strong>: 自动处理各种故障场景，保证数据一致性</li>
+                <li><strong>扩展灵活</strong>: 可插拔设计支持自定义检测策略</li>
+            </ul>
+        </div>
+
+    </div>
+</body>
+</html>

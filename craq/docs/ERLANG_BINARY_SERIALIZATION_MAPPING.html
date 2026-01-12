@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erlang二进制序列化数据映射解析</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .section {
+            background: white;
+            margin: 20px 0;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border-left: 5px solid #667eea;
+        }
+        .mapping-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .mapping-table th, .mapping-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .mapping-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .byte-highlight {
+            background-color: #ffeb3b;
+            font-weight: bold;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .source-highlight {
+            background-color: #c8e6c9;
+            font-weight: bold;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .format-highlight {
+            background-color: #ffcdd2;
+            font-weight: bold;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .binary-breakdown {
+            background: #e8f5e8;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .erlang-format {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .visual-mapping {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .byte-box {
+            display: inline-block;
+            padding: 5px 8px;
+            margin: 2px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+            min-width: 25px;
+        }
+        .version-byte { background-color: #ffcdd2; }
+        .tuple-byte { background-color: #f8bbd9; }
+        .atom-byte { background-color: #e1bee7; }
+        .length-byte { background-color: #c5cae9; }
+        .string-byte { background-color: #bbdefb; }
+        .int-byte { background-color: #b2dfdb; }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔍 Erlang二进制序列化数据映射解析</h1>
+        <p>逐字节分析term_to_binary如何将源数据转换为二进制格式</p>
+    </div>
+
+    <div class="section">
+        <h2>📋 源数据结构</h2>
+        <div class="code-block">
+<span class="source-highlight">{eh_storage_data, person, 10, 1, 1, 1, name, john}</span>
+
+字段解析:
+- 记录名称: eh_storage_data (atom, 15字符)
+- 对象类型: person (atom, 6字符)  
+- 对象ID: 10 (integer)
+- 时间戳: 1 (integer)
+- 字段ID: 1 (integer)
+- 活跃状态: 1 (integer)
+- 字段名: name (atom, 4字符)
+- 字段值: john (atom, 4字符)
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🔢 二进制数据完整映射</h2>
+        
+        <div class="binary-breakdown">
+            <h3>📦 原始二进制数据 (48字节)</h3>
+            <div class="code-block">
+131,104,8,119,15,101,104,95,115,116,111,114,97,103,101,95,100,97,116,97,119,
+6,112,101,114,115,111,110,97,10,97,1,97,1,97,1,119,4,110,97,109,101,119,4,
+106,111,104,110
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color version-byte"></div>
+                <span>版本标识</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color tuple-byte"></div>
+                <span>Tuple标识</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color atom-byte"></div>
+                <span>Atom标识</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color length-byte"></div>
+                <span>长度字段</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color string-byte"></div>
+                <span>字符串数据</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color int-byte"></div>
+                <span>小整数</span>
+            </div>
+        </div>
+
+        <div class="visual-mapping">
+            <div class="byte-box version-byte">131</div>
+            <div class="byte-box tuple-byte">104</div>
+            <div class="byte-box tuple-byte">8</div>
+            <div class="byte-box atom-byte">119</div>
+            <div class="byte-box length-byte">15</div>
+            <div class="byte-box string-byte">101</div>
+            <div class="byte-box string-byte">104</div>
+            <div class="byte-box string-byte">95</div>
+            <div class="byte-box string-byte">115</div>
+            <div class="byte-box string-byte">116</div>
+            <div class="byte-box string-byte">111</div>
+            <div class="byte-box string-byte">114</div>
+            <div class="byte-box string-byte">97</div>
+            <div class="byte-box string-byte">103</div>
+            <div class="byte-box string-byte">101</div>
+            <div class="byte-box string-byte">95</div>
+            <div class="byte-box string-byte">100</div>
+            <div class="byte-box string-byte">97</div>
+            <div class="byte-box string-byte">116</div>
+            <div class="byte-box string-byte">97</div>
+            <div class="byte-box atom-byte">119</div>
+            <div class="byte-box length-byte">6</div>
+            <div class="byte-box string-byte">112</div>
+            <div class="byte-box string-byte">101</div>
+            <div class="byte-box string-byte">114</div>
+            <div class="byte-box string-byte">115</div>
+            <div class="byte-box string-byte">111</div>
+            <div class="byte-box string-byte">110</div>
+            <div class="byte-box int-byte">97</div>
+            <div class="byte-box int-byte">10</div>
+            <div class="byte-box int-byte">97</div>
+            <div class="byte-box int-byte">1</div>
+            <div class="byte-box int-byte">97</div>
+            <div class="byte-box int-byte">1</div>
+            <div class="byte-box int-byte">97</div>
+            <div class="byte-box int-byte">1</div>
+            <div class="byte-box atom-byte">119</div>
+            <div class="byte-box length-byte">4</div>
+            <div class="byte-box string-byte">110</div>
+            <div class="byte-box string-byte">97</div>
+            <div class="byte-box string-byte">109</div>
+            <div class="byte-box string-byte">101</div>
+            <div class="byte-box atom-byte">119</div>
+            <div class="byte-box length-byte">4</div>
+            <div class="byte-box string-byte">106</div>
+            <div class="byte-box string-byte">111</div>
+            <div class="byte-box string-byte">104</div>
+            <div class="byte-box string-byte">110</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🔍 逐字节详细映射表</h2>
+        
+        <table class="mapping-table">
+            <tr>
+                <th>字节位置</th>
+                <th>十进制值</th>
+                <th>十六进制</th>
+                <th>ASCII字符</th>
+                <th>Erlang格式含义</th>
+                <th>对应源数据</th>
+            </tr>
+            <tr>
+                <td>0</td>
+                <td><span class="byte-highlight">131</span></td>
+                <td>0x83</td>
+                <td>-</td>
+                <td><span class="format-highlight">外部格式版本标识</span></td>
+                <td>Erlang二进制格式标识</td>
+            </tr>
+            <tr>
+                <td>1</td>
+                <td><span class="byte-highlight">104</span></td>
+                <td>0x68</td>
+                <td>h</td>
+                <td><span class="format-highlight">LARGE_TUPLE_EXT</span></td>
+                <td>8元素tuple开始</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td><span class="byte-highlight">8</span></td>
+                <td>0x08</td>
+                <td>-</td>
+                <td><span class="format-highlight">Tuple元素数量</span></td>
+                <td>8个字段的record</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td><span class="byte-highlight">119</span></td>
+                <td>0x77</td>
+                <td>w</td>
+                <td><span class="format-highlight">ATOM_UTF8_EXT</span></td>
+                <td>atom开始标识</td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td><span class="byte-highlight">15</span></td>
+                <td>0x0F</td>
+                <td>-</td>
+                <td><span class="format-highlight">Atom长度</span></td>
+                <td>"eh_storage_data"长度</td>
+            </tr>
+            <tr>
+                <td>5-19</td>
+                <td>101,104,95,115,116,111,114,97,103,101,95,100,97,116,97</td>
+                <td>-</td>
+                <td><span class="source-highlight">eh_storage_data</span></td>
+                <td><span class="format-highlight">Atom字符串</span></td>
+                <td>记录名称</td>
+            </tr>
+            <tr>
+                <td>20</td>
+                <td><span class="byte-highlight">119</span></td>
+                <td>0x77</td>
+                <td>w</td>
+                <td><span class="format-highlight">ATOM_UTF8_EXT</span></td>
+                <td>第2个atom开始</td>
+            </tr>
+            <tr>
+                <td>21</td>
+                <td><span class="byte-highlight">6</span></td>
+                <td>0x06</td>
+                <td>-</td>
+                <td><span class="format-highlight">Atom长度</span></td>
+                <td>"person"长度</td>
+            </tr>
+            <tr>
+                <td>22-27</td>
+                <td>112,101,114,115,111,110</td>
+                <td>-</td>
+                <td><span class="source-highlight">person</span></td>
+                <td><span class="format-highlight">Atom字符串</span></td>
+                <td>对象类型</td>
+            </tr>
+            <tr>
+                <td>28</td>
+                <td><span class="byte-highlight">97</span></td>
+                <td>0x61</td>
+                <td>a</td>
+                <td><span class="format-highlight">SMALL_INTEGER_EXT</span></td>
+                <td>小整数标识</td>
+            </tr>
+            <tr>
+                <td>29</td>
+                <td><span class="byte-highlight">10</span></td>
+                <td>0x0A</td>
+                <td>-</td>
+                <td><span class="format-highlight">整数值</span></td>
+                <td><span class="source-highlight">10</span> (对象ID)</td>
+            </tr>
+            <tr>
+                <td>30</td>
+                <td><span class="byte-highlight">97</span></td>
+                <td>0x61</td>
+                <td>a</td>
+                <td><span class="format-highlight">SMALL_INTEGER_EXT</span></td>
+                <td>小整数标识</td>
+            </tr>
+            <tr>
+                <td>31</td>
+                <td><span class="byte-highlight">1</span></td>
+                <td>0x01</td>
+                <td>-</td>
+                <td><span class="format-highlight">整数值</span></td>
+                <td><span class="source-highlight">1</span> (timestamp)</td>
+            </tr>
+            <tr>
+                <td>32</td>
+                <td><span class="byte-highlight">97</span></td>
+                <td>0x61</td>
+                <td>a</td>
+                <td><span class="format-highlight">SMALL_INTEGER_EXT</span></td>
+                <td>小整数标识</td>
+            </tr>
+            <tr>
+                <td>33</td>
+                <td><span class="byte-highlight">1</span></td>
+                <td>0x01</td>
+                <td>-</td>
+                <td><span class="format-highlight">整数值</span></td>
+                <td><span class="source-highlight">1</span> (field_id)</td>
+            </tr>
+            <tr>
+                <td>34</td>
+                <td><span class="byte-highlight">97</span></td>
+                <td>0x61</td>
+                <td>a</td>
+                <td><span class="format-highlight">SMALL_INTEGER_EXT</span></td>
+                <td>小整数标识</td>
+            </tr>
+            <tr>
+                <td>35</td>
+                <td><span class="byte-highlight">1</span></td>
+                <td>0x01</td>
+                <td>-</td>
+                <td><span class="format-highlight">整数值</span></td>
+                <td><span class="source-highlight">1</span> (active)</td>
+            </tr>
+            <tr>
+                <td>36</td>
+                <td><span class="byte-highlight">119</span></td>
+                <td>0x77</td>
+                <td>w</td>
+                <td><span class="format-highlight">ATOM_UTF8_EXT</span></td>
+                <td>第6个atom开始</td>
+            </tr>
+            <tr>
+                <td>37</td>
+                <td><span class="byte-highlight">4</span></td>
+                <td>0x04</td>
+                <td>-</td>
+                <td><span class="format-highlight">Atom长度</span></td>
+                <td>"name"长度</td>
+            </tr>
+            <tr>
+                <td>38-41</td>
+                <td>110,97,109,101</td>
+                <td>-</td>
+                <td><span class="source-highlight">name</span></td>
+                <td><span class="format-highlight">Atom字符串</span></td>
+                <td>字段名称</td>
+            </tr>
+            <tr>
+                <td>42</td>
+                <td><span class="byte-highlight">119</span></td>
+                <td>0x77</td>
+                <td>w</td>
+                <td><span class="format-highlight">ATOM_UTF8_EXT</span></td>
+                <td>第7个atom开始</td>
+            </tr>
+            <tr>
+                <td>43</td>
+                <td><span class="byte-highlight">4</span></td>
+                <td>0x04</td>
+                <td>-</td>
+                <td><span class="format-highlight">Atom长度</span></td>
+                <td>"john"长度</td>
+            </tr>
+            <tr>
+                <td>44-47</td>
+                <td>106,111,104,110</td>
+                <td>-</td>
+                <td><span class="source-highlight">john</span></td>
+                <td><span class="format-highlight">Atom字符串</span></td>
+                <td>字段值</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>🔧 Erlang外部格式标识符</h2>
+        
+        <div class="erlang-format">
+            <h3>📚 关键格式标识符解释</h3>
+            <table class="mapping-table">
+                <tr>
+                    <th>标识符</th>
+                    <th>十进制值</th>
+                    <th>含义</th>
+                    <th>后续数据</th>
+                </tr>
+                <tr>
+                    <td>VERSION_MAGIC</td>
+                    <td>131</td>
+                    <td>Erlang外部格式版本</td>
+                    <td>固定值，标识二进制格式</td>
+                </tr>
+                <tr>
+                    <td>LARGE_TUPLE_EXT</td>
+                    <td>104</td>
+                    <td>大型tuple(>255元素)</td>
+                    <td>1字节元素数量</td>
+                </tr>
+                <tr>
+                    <td>ATOM_UTF8_EXT</td>
+                    <td>119</td>
+                    <td>UTF-8编码atom</td>
+                    <td>1字节长度 + UTF-8字符串</td>
+                </tr>
+                <tr>
+                    <td>SMALL_INTEGER_EXT</td>
+                    <td>97</td>
+                    <td>0-255范围整数</td>
+                    <td>1字节整数值</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🎯 映射关系总结</h2>
+        
+        <div class="binary-breakdown">
+            <h3>📊 数据结构对应关系</h3>
+            <div class="code-block">
+源数据: {eh_storage_data, person, 10, 1, 1, 1, name, john}
+         ↓ term_to_binary ↓
+二进制: [131][104,8][119,15,eh_storage_data][119,6,person][97,10][97,1][97,1][97,1][119,4,name][119,4,john]
+         ↑     ↑      ↑                      ↑              ↑     ↑     ↑     ↑     ↑          ↑
+       版本  8元组   atom(15字符)           atom(6字符)    int10  int1  int1  int1  atom(4字符) atom(4字符)
+            </div>
+        </div>
+
+        <div class="erlang-format">
+            <h3>💡 关键观察</h3>
+            <ul>
+                <li><strong>高效编码</strong>: 小整数(0-255)只需2字节(标识符+值)</li>
+                <li><strong>自描述</strong>: 每个数据类型都有明确的标识符</li>
+                <li><strong>长度前缀</strong>: atom使用长度前缀，支持变长字符串</li>
+                <li><strong>UTF-8支持</strong>: 使用119标识符支持Unicode字符</li>
+                <li><strong>紧凑存储</strong>: 48字节存储8个字段的复杂结构</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🔍 验证方法</h2>
+        
+        <div class="code-block">
+%% 在Erlang shell中验证
+1> Data = {eh_storage_data,person,10,1,1,1,name,john}.
+2> Binary = term_to_binary(Data).
+3> byte_size(Binary).
+48
+4> binary_to_list(Binary).
+[131,104,8,119,15,101,104,95,115,116,111,114,97,103,101,95,100,97,116,97,119,
+ 6,112,101,114,115,111,110,97,10,97,1,97,1,97,1,119,4,110,97,109,101,119,4,
+ 106,111,104,110]
+5> binary_to_term(Binary).
+{eh_storage_data,person,10,1,1,1,name,john}
+        </div>
+    </div>
+</body>
+</html>

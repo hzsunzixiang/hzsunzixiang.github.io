@@ -55,13 +55,7 @@
           </a>
         </li>
         <li class="nav-item">
-          <a href="/categories/" class="nav-link {% if page.url contains "/categories" %}active{% endif %}">
-            <i class="material-icons nav-icon">folder</i>
-            <span class="nav-text">分类</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="/craq/" class="nav-link {% if page.url contains "/craq" %}active{% endif %}">
+          <a href="/categories/" class="nav-link {% if page.url contains "/categories" or page.url contains "/craq" %}active{% endif %}">
             <i class="material-icons nav-icon">storage</i>
             <span class="nav-text">CRAQ</span>
           </a>
@@ -166,7 +160,7 @@
             <ul class="footer-links">
               <li><a href="{{ "/" | relative_url }}">首页</a></li>
               <li><a href="/archive/">归档</a></li>
-              <li><a href="/craq/">CRAQ</a></li>
+              <li><a href="/categories/">CRAQ</a></li>
               <li><a href="/about/">关于</a></li>
             </ul>
           </div>

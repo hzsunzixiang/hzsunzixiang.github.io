@@ -23,91 +23,176 @@
   {% feed_meta %}
 </head>
 
-<body class="indigo-theme">
-  <header class="site-header">
-    <nav class="navbar">
-      <div class="nav-container">
-        <div class="nav-brand">
-          <a href="{{ "/" | relative_url }}" class="brand-link">
-            <span class="brand-icon">🌟</span>
-            <span class="brand-text">{{ site.title }}</span>
-          </a>
-        </div>
-        
-        <div class="nav-menu" id="nav-menu">
+<body class="indigo-theme sidebar-layout">
+  <!-- Sidebar Navigation -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <a href="{{ "/" | relative_url }}" class="brand-link">
+          <div class="brand-avatar">
+            <span class="avatar-text">ZS</span>
+          </div>
+          <div class="brand-info">
+            <h3 class="brand-name">{{ site.title }}</h3>
+            <p class="brand-subtitle">Developer & Blogger</p>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <ul class="nav-list">
+        <li class="nav-item">
           <a href="{{ "/" | relative_url }}" class="nav-link {% if page.url == "/" %}active{% endif %}">
-            <i class="material-icons">home</i>
-            <span>Home</span>
+            <i class="material-icons nav-icon">home</i>
+            <span class="nav-text">首页</span>
           </a>
+        </li>
+        <li class="nav-item">
           <a href="/archive/" class="nav-link {% if page.url contains "/archive" %}active{% endif %}">
-            <i class="material-icons">archive</i>
-            <span>Archive</span>
+            <i class="material-icons nav-icon">archive</i>
+            <span class="nav-text">归档</span>
           </a>
+        </li>
+        <li class="nav-item">
           <a href="/categories/" class="nav-link {% if page.url contains "/categories" %}active{% endif %}">
-            <i class="material-icons">folder</i>
-            <span>Categories</span>
+            <i class="material-icons nav-icon">folder</i>
+            <span class="nav-text">分类</span>
           </a>
+        </li>
+        <li class="nav-item">
           <a href="/about/" class="nav-link {% if page.url contains "/about" %}active{% endif %}">
-            <i class="material-icons">person</i>
-            <span>About</span>
+            <i class="material-icons nav-icon">person</i>
+            <span class="nav-text">关于</span>
           </a>
-        </div>
-        
-        <div class="nav-toggle" id="nav-toggle">
-          <span class="nav-toggle-line"></span>
-          <span class="nav-toggle-line"></span>
-          <span class="nav-toggle-line"></span>
+        </li>
+      </ul>
+
+      <div class="nav-section">
+        <h4 class="nav-section-title">最新文章</h4>
+        <ul class="nav-list recent-posts">
+          {% for post in site.posts limit:5 %}
+          <li class="nav-item">
+            <a href="{{ post.url | relative_url }}" class="nav-link recent-post-link">
+              <div class="recent-post-info">
+                <span class="recent-post-title">{{ post.title | truncate: 30 }}</span>
+                <span class="recent-post-date">{{ post.date | date: "%m-%d" }}</span>
+              </div>
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="nav-section">
+        <h4 class="nav-section-title">标签云</h4>
+        <div class="tag-cloud">
+          {% assign tags = site.tags | sort %}
+          {% for tag in tags limit:10 %}
+            <a href="/categories/#{{ tag[0] | slugify }}" class="tag-item">
+              {{ tag[0] }}
+              <span class="tag-count">{{ tag[1] | size }}</span>
+            </a>
+          {% endfor %}
         </div>
       </div>
     </nav>
-  </header>
 
-  <main class="site-main">
-    {{ content }}
-  </main>
+    <div class="sidebar-footer">
+      <div class="social-links">
+        {% if site.github_username %}
+          <a href="https://github.com/{{ site.github_username }}" target="_blank" rel="noopener" class="social-link">
+            <i class="material-icons">code</i>
+          </a>
+        {% endif %}
+        {% if site.twitter_username %}
+          <a href="https://twitter.com/{{ site.twitter_username }}" target="_blank" rel="noopener" class="social-link">
+            <i class="material-icons">alternate_email</i>
+          </a>
+        {% endif %}
+        <a href="mailto:{{ site.email }}" class="social-link">
+          <i class="material-icons">email</i>
+        </a>
+      </div>
+      <p class="copyright">&copy; {{ 'now' | date: "%Y" }} {{ site.title }}</p>
+    </div>
+  </aside>
 
-  <footer class="site-footer">
-    <div class="footer-container">
-      <div class="footer-content">
-        <div class="footer-section">
-          <h3>{{ site.title }}</h3>
-          <p>{{ site.description }}</p>
-        </div>
-        
-        <div class="footer-section">
-          <h4>Quick Links</h4>
-          <ul class="footer-links">
-            <li><a href="{{ "/" | relative_url }}">Home</a></li>
-            <li><a href="/archive/">Archive</a></li>
-            <li><a href="/about/">About</a></li>
-          </ul>
-        </div>
-        
-        <div class="footer-section">
-          <h4>Connect</h4>
-          <div class="social-links">
-            {% if site.github_username %}
-              <a href="https://github.com/{{ site.github_username }}" target="_blank" rel="noopener">
-                <i class="material-icons">code</i>
-              </a>
-            {% endif %}
-            {% if site.twitter_username %}
-              <a href="https://twitter.com/{{ site.twitter_username }}" target="_blank" rel="noopener">
-                <i class="material-icons">alternate_email</i>
-              </a>
-            {% endif %}
-            <a href="mailto:{{ site.email }}">
-              <i class="material-icons">email</i>
-            </a>
-          </div>
-        </div>
+  <!-- Mobile Header -->
+  <header class="mobile-header">
+    <div class="mobile-nav-container">
+      <button class="sidebar-toggle" id="sidebar-toggle">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+      </button>
+      
+      <div class="mobile-brand">
+        <a href="{{ "/" | relative_url }}" class="brand-link">
+          <span class="brand-text">{{ site.title }}</span>
+        </a>
       </div>
       
-      <div class="footer-bottom">
-        <p>&copy; {{ 'now' | date: "%Y" }} {{ site.title }}. Built with Jekyll and ❤️</p>
+      <div class="mobile-actions">
+        <button class="search-toggle" id="search-toggle">
+          <i class="material-icons">search</i>
+        </button>
       </div>
     </div>
-  </footer>
+  </header>
+
+  <!-- Main Content Area -->
+  <div class="main-wrapper">
+    <main class="site-main">
+      {{ content }}
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-container">
+        <div class="footer-content">
+          <div class="footer-section">
+            <h3>{{ site.title }}</h3>
+            <p>{{ site.description }}</p>
+          </div>
+          
+          <div class="footer-section">
+            <h4>快速链接</h4>
+            <ul class="footer-links">
+              <li><a href="{{ "/" | relative_url }}">首页</a></li>
+              <li><a href="/archive/">归档</a></li>
+              <li><a href="/about/">关于</a></li>
+            </ul>
+          </div>
+          
+          <div class="footer-section">
+            <h4>联系方式</h4>
+            <div class="social-links">
+              {% if site.github_username %}
+                <a href="https://github.com/{{ site.github_username }}" target="_blank" rel="noopener">
+                  <i class="material-icons">code</i>
+                </a>
+              {% endif %}
+              {% if site.twitter_username %}
+                <a href="https://twitter.com/{{ site.twitter_username }}" target="_blank" rel="noopener">
+                  <i class="material-icons">alternate_email</i>
+                </a>
+              {% endif %}
+              <a href="mailto:{{ site.email }}">
+                <i class="material-icons">email</i>
+              </a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="footer-bottom">
+          <p>&copy; {{ 'now' | date: "%Y" }} {{ site.title }}. Built with Jekyll and ❤️</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Sidebar Overlay for Mobile -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
   <!-- Back to top button -->
   <button class="back-to-top" id="back-to-top">

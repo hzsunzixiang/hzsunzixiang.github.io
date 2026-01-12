@@ -1,14 +1,33 @@
-// Indigo Theme JavaScript
+// Indigo Theme JavaScript with Sidebar
 
 document.addEventListener('DOMContentLoaded', function() {
-  // Mobile Navigation Toggle
-  const navToggle = document.getElementById('nav-toggle');
-  const navMenu = document.getElementById('nav-menu');
+  // Sidebar Toggle for Mobile
+  const sidebarToggle = document.getElementById('sidebar-toggle');
+  const sidebar = document.getElementById('sidebar');
+  const sidebarOverlay = document.getElementById('sidebar-overlay');
   
-  if (navToggle && navMenu) {
-    navToggle.addEventListener('click', function() {
-      navMenu.classList.toggle('active');
-      navToggle.classList.toggle('active');
+  if (sidebarToggle && sidebar && sidebarOverlay) {
+    // Toggle sidebar
+    sidebarToggle.addEventListener('click', function() {
+      sidebar.classList.toggle('active');
+      sidebarOverlay.classList.toggle('active');
+      document.body.classList.toggle('sidebar-open');
+    });
+    
+    // Close sidebar when clicking overlay
+    sidebarOverlay.addEventListener('click', function() {
+      sidebar.classList.remove('active');
+      sidebarOverlay.classList.remove('active');
+      document.body.classList.remove('sidebar-open');
+    });
+    
+    // Close sidebar on window resize if mobile
+    window.addEventListener('resize', function() {
+      if (window.innerWidth > 768) {
+        sidebar.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
+        document.body.classList.remove('sidebar-open');
+      }
     });
   }
 
@@ -55,30 +74,30 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // Add Ripple Effect to Buttons
+  // Add Ripple Effect to Interactive Elements
   function createRipple(event) {
-    const button = event.currentTarget;
+    const element = event.currentTarget;
     const circle = document.createElement('span');
-    const diameter = Math.max(button.clientWidth, button.clientHeight);
+    const diameter = Math.max(element.clientWidth, element.clientHeight);
     const radius = diameter / 2;
 
     circle.style.width = circle.style.height = `${diameter}px`;
-    circle.style.left = `${event.clientX - button.offsetLeft - radius}px`;
-    circle.style.top = `${event.clientY - button.offsetTop - radius}px`;
+    circle.style.left = `${event.clientX - element.offsetLeft - radius}px`;
+    circle.style.top = `${event.clientY - element.offsetTop - radius}px`;
     circle.classList.add('ripple');
 
-    const ripple = button.getElementsByClassName('ripple')[0];
+    const ripple = element.getElementsByClassName('ripple')[0];
 
     if (ripple) {
       ripple.remove();
     }
 
-    button.appendChild(circle);
+    element.appendChild(circle);
   }
 
-  const buttons = document.querySelectorAll('.btn, .nav-link, .post-card');
-  buttons.forEach(function(button) {
-    button.addEventListener('click', createRipple);
+  const interactiveElements = document.querySelectorAll('.btn, .nav-link, .post-card, .category-card');
+  interactiveElements.forEach(function(element) {
+    element.addEventListener('click', createRipple);
   });
 
   // Lazy Loading for Images
@@ -87,9 +106,11 @@ document.addEventListener('DOMContentLoaded', function() {
       entries.forEach(function(entry) {
         if (entry.isIntersecting) {
           const img = entry.target;
-          img.src = img.dataset.src;
-          img.classList.remove('lazy');
-          imageObserver.unobserve(img);
+          if (img.dataset.src) {
+            img.src = img.dataset.src;
+            img.classList.remove('lazy');
+            imageObserver.unobserve(img);
+          }
         }
       });
     });
@@ -140,110 +161,154 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // Search Functionality (if search input exists)
+  // Active Navigation Highlighting
+  function updateActiveNavigation() {
+    const currentPath = window.location.pathname;
+    const navLinks = document.querySelectorAll('.sidebar .nav-link');
+    
+    navLinks.forEach(function(link) {
+      const linkPath = new URL(link.href).pathname;
+      if (linkPath === currentPath || (currentPath !== '/' && linkPath !== '/' && currentPath.includes(linkPath))) {
+        link.classList.add('active');
+      } else {
+        link.classList.remove('active');
+      }
+    });
+  }
+
+  // Update active navigation on page load
+  updateActiveNavigation();
+
+  // Sidebar scroll behavior
+  const sidebarNav = document.querySelector('.sidebar-nav');
+  if (sidebarNav) {
+    let isScrolling = false;
+    
+    sidebarNav.addEventListener('scroll', function() {
+      if (!isScrolling) {
+        window.requestAnimationFrame(function() {
+          // Add scroll shadow effect
+          if (sidebarNav.scrollTop > 0) {
+            sidebar.classList.add('scrolled');
+          } else {
+            sidebar.classList.remove('scrolled');
+          }
+          isScrolling = false;
+        });
+        isScrolling = true;
+      }
+    });
+  }
+
+  // Search functionality (if search elements exist)
+  const searchToggle = document.getElementById('search-toggle');
   const searchInput = document.getElementById('search-input');
   const searchResults = document.getElementById('search-results');
   
-  if (searchInput && searchResults) {
-    let searchData = [];
-    
-    // Load search data
-    fetch('/search.json')
-      .then(response => response.json())
-      .then(data => {
-        searchData = data;
-      })
-      .catch(error => {
-        console.log('Search data not available');
-      });
-    
-    searchInput.addEventListener('input', function() {
-      const query = this.value.toLowerCase().trim();
-      
-      if (query.length < 2) {
-        searchResults.innerHTML = '';
-        searchResults.style.display = 'none';
-        return;
-      }
-      
-      const results = searchData.filter(item => 
-        item.title.toLowerCase().includes(query) ||
-        item.content.toLowerCase().includes(query) ||
-        item.tags.some(tag => tag.toLowerCase().includes(query))
-      );
-      
-      displaySearchResults(results);
+  if (searchToggle && searchInput) {
+    searchToggle.addEventListener('click', function() {
+      searchInput.focus();
     });
-    
-    function displaySearchResults(results) {
-      if (results.length === 0) {
-        searchResults.innerHTML = '<p>No results found.</p>';
-      } else {
-        const resultsHTML = results.map(result => `
-          <div class="search-result">
-            <h4><a href="${result.url}">${result.title}</a></h4>
-            <p>${result.excerpt}</p>
-          </div>
-        `).join('');
-        
-        searchResults.innerHTML = resultsHTML;
-      }
-      
-      searchResults.style.display = 'block';
+  }
+
+  // Theme persistence
+  function initializeTheme() {
+    const savedTheme = localStorage.getItem('indigo-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }
+
+  // Initialize theme on load
+  initializeTheme();
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', function(e) {
+    // ESC to close sidebar on mobile
+    if (e.key === 'Escape' && sidebar && sidebar.classList.contains('active')) {
+      sidebar.classList.remove('active');
+      sidebarOverlay.classList.remove('active');
+      document.body.classList.remove('sidebar-open');
     }
     
-    // Close search results when clicking outside
-    document.addEventListener('click', function(e) {
-      if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
-        searchResults.style.display = 'none';
-      }
-    });
-  }
-
-  // Theme Toggle (Dark/Light mode)
-  const themeToggle = document.getElementById('theme-toggle');
-  
-  if (themeToggle) {
-    const currentTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', currentTheme);
-    
-    themeToggle.addEventListener('click', function() {
-      const currentTheme = document.documentElement.getAttribute('data-theme');
-      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      
-      document.documentElement.setAttribute('data-theme', newTheme);
-      localStorage.setItem('theme', newTheme);
-    });
-  }
-
-  // Progressive Web App (PWA) Install Prompt
-  let deferredPrompt;
-  const installButton = document.getElementById('install-app');
-  
-  window.addEventListener('beforeinstallprompt', function(e) {
-    e.preventDefault();
-    deferredPrompt = e;
-    
-    if (installButton) {
-      installButton.style.display = 'block';
-      
-      installButton.addEventListener('click', function() {
-        installButton.style.display = 'none';
-        deferredPrompt.prompt();
-        
-        deferredPrompt.userChoice.then(function(choiceResult) {
-          if (choiceResult.outcome === 'accepted') {
-            console.log('User accepted the install prompt');
-          }
-          deferredPrompt = null;
-        });
-      });
+    // Ctrl/Cmd + K for search (if implemented)
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k' && searchInput) {
+      e.preventDefault();
+      searchInput.focus();
     }
   });
+
+  // Progressive enhancement for animations
+  function reduceMotion() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  if (reduceMotion()) {
+    document.documentElement.classList.add('reduce-motion');
+  }
+
+  // Performance optimization: Debounce scroll events
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
+  // Optimized scroll handler
+  const optimizedScrollHandler = debounce(function() {
+    // Handle scroll-based animations or effects here
+    const scrollTop = window.pageYOffset;
+    
+    // Update back to top button
+    if (backToTopButton) {
+      if (scrollTop > 300) {
+        backToTopButton.classList.add('visible');
+      } else {
+        backToTopButton.classList.remove('visible');
+      }
+    }
+  }, 16); // ~60fps
+
+  window.addEventListener('scroll', optimizedScrollHandler);
+
+  // Initialize tooltips (if needed)
+  function initializeTooltips() {
+    const tooltipElements = document.querySelectorAll('[data-tooltip]');
+    tooltipElements.forEach(function(element) {
+      element.addEventListener('mouseenter', function() {
+        // Create and show tooltip
+        const tooltip = document.createElement('div');
+        tooltip.className = 'tooltip';
+        tooltip.textContent = this.getAttribute('data-tooltip');
+        document.body.appendChild(tooltip);
+        
+        // Position tooltip
+        const rect = this.getBoundingClientRect();
+        tooltip.style.left = rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2) + 'px';
+        tooltip.style.top = rect.top - tooltip.offsetHeight - 8 + 'px';
+        
+        this._tooltip = tooltip;
+      });
+      
+      element.addEventListener('mouseleave', function() {
+        if (this._tooltip) {
+          document.body.removeChild(this._tooltip);
+          this._tooltip = null;
+        }
+      });
+    });
+  }
+
+  // Initialize tooltips
+  initializeTooltips();
 });
 
-// Add CSS for ripple effect
-const rippleCSS = `
+// Add CSS for new features
+const additionalCSS = `
   .ripple {
     position: absolute;
     border-radius: 50%;
@@ -278,41 +343,54 @@ const rippleCSS = `
     opacity: 1;
   }
   
-  .search-results {
+  .sidebar.scrolled::before {
+    content: '';
     position: absolute;
-    top: 100%;
+    top: 0;
     left: 0;
     right: 0;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    max-height: 400px;
-    overflow-y: auto;
-    z-index: 1000;
+    height: 1px;
+    background: var(--border-color);
+    box-shadow: 0 1px 3px var(--shadow-color);
   }
   
-  .search-result {
-    padding: 1rem;
-    border-bottom: 1px solid #eee;
+  .tooltip {
+    position: absolute;
+    background: var(--text-primary);
+    color: var(--text-white);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    z-index: 10000;
+    pointer-events: none;
+    opacity: 0;
+    animation: tooltip-show 0.2s ease forwards;
   }
   
-  .search-result:last-child {
-    border-bottom: none;
+  @keyframes tooltip-show {
+    to {
+      opacity: 1;
+    }
   }
   
-  .search-result h4 {
-    margin: 0 0 0.5rem 0;
+  .reduce-motion * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
   
-  .search-result p {
-    margin: 0;
-    color: #666;
-    font-size: 0.9rem;
+  body.sidebar-open {
+    overflow: hidden;
+  }
+  
+  @media (max-width: 768px) {
+    body.sidebar-open .main-wrapper {
+      filter: blur(2px);
+    }
   }
 `;
 
-// Inject CSS
+// Inject additional CSS
 const style = document.createElement('style');
-style.textContent = rippleCSS;
+style.textContent = additionalCSS;
 document.head.appendChild(style);

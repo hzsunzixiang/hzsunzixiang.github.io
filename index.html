@@ -1,0 +1,59 @@
+---
+layout: default
+---
+
+<div class="hero-section">
+  <div class="hero-content">
+    <h1 class="hero-title">Welcome to My Blog</h1>
+    <p class="hero-subtitle">Exploring technology, sharing knowledge, and documenting the journey</p>
+    <a href="#posts" class="hero-cta">Read My Posts</a>
+  </div>
+  <div class="hero-pattern"></div>
+</div>
+
+<section id="posts" class="posts-section">
+  <div class="container">
+    <h2 class="section-title">Latest Posts</h2>
+    <div class="posts-grid">
+      {% for post in site.posts limit:6 %}
+        <article class="post-card">
+          <div class="post-card-header">
+            {% if post.image %}
+              <img src="{{ post.image }}" alt="{{ post.title }}" class="post-image">
+            {% else %}
+              <div class="post-image-placeholder"></div>
+            {% endif %}
+          </div>
+          <div class="post-card-content">
+            <h3 class="post-title">
+              <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+            </h3>
+            <p class="post-excerpt">{{ post.excerpt | strip_html | truncatewords: 20 }}</p>
+            <div class="post-meta">
+              <span class="post-date">{{ post.date | date: "%B %d, %Y" }}</span>
+              {% if post.categories.size > 0 %}
+                <span class="post-category">{{ post.categories.first }}</span>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+    
+    {% if site.posts.size > 6 %}
+      <div class="view-all-posts">
+        <a href="/archive/" class="btn btn-outline">View All Posts</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="about-preview">
+  <div class="container">
+    <div class="about-content">
+      <h2>About Me</h2>
+      <p>I'm a passionate developer who loves to explore new technologies and share knowledge with the community. This blog is where I document my learning journey and share insights.</p>
+      <a href="/about/" class="btn btn-primary">Learn More</a>
+    </div>
+  </div>
+</section>

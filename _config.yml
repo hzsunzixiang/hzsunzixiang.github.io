@@ -1,0 +1,49 @@
+# Site settings
+title: Zixiang Sun's Blog
+email: 17842379@qq.com
+description: >-
+  Welcome to my personal blog where I share thoughts on technology, 
+  programming, and life experiences.
+baseurl: ""
+url: "https://hzsunzixiang.github.io"
+twitter_username: hzsunzixiang
+github_username: hzsunzixiang
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+
+# Collections
+collections:
+  posts:
+    output: true
+    permalink: /:categories/:year/:month/:day/:title/
+
+# Pagination
+paginate: 5
+paginate_path: "/page:num/"
+
+# SEO
+author: Zixiang Sun
+social:
+  name: Zixiang Sun
+  links:
+    - https://github.com/hzsunzixiang
+
+# Analytics (optional)
+google_analytics: # Add your GA tracking ID here if needed

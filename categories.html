@@ -1,0 +1,243 @@
+---
+layout: page
+title: Categories
+subtitle: Posts Organized by Topics
+permalink: /categories/
+---
+
+<div class="categories-container">
+  {% assign categories = site.categories | sort %}
+  
+  <div class="categories-overview">
+    <h2>All Categories</h2>
+    <div class="categories-grid">
+      {% for category in categories %}
+        <a href="#{{ category[0] | slugify }}" class="category-card">
+          <h3>{{ category[0] }}</h3>
+          <span class="post-count">{{ category[1] | size }} posts</span>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="categories-content">
+    {% for category in categories %}
+      <section class="category-section" id="{{ category[0] | slugify }}">
+        <h2 class="category-title">{{ category[0] }}</h2>
+        <p class="category-description">
+          {% case category[0] %}
+            {% when 'blog' %}
+              Personal thoughts, experiences, and general blogging content.
+            {% when 'tutorial' %}
+              Step-by-step guides and educational content to help you learn new skills.
+            {% when 'web-development' %}
+              Everything related to building websites and web applications.
+            {% when 'programming' %}
+              General programming concepts, languages, and best practices.
+            {% when 'technology' %}
+              Latest trends, tools, and innovations in the tech world.
+            {% when 'career' %}
+              Professional development, career advice, and industry insights.
+            {% else %}
+              Posts related to {{ category[0] }}.
+          {% endcase %}
+        </p>
+        
+        <div class="category-posts">
+          {% assign sorted_posts = category[1] | sort: 'date' | reverse %}
+          {% for post in sorted_posts %}
+            <article class="category-post">
+              <div class="post-header">
+                <h3 class="post-title">
+                  <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+                </h3>
+                <time class="post-date" datetime="{{ post.date | date_to_xmlschema }}">
+                  {{ post.date | date: "%B %d, %Y" }}
+                </time>
+              </div>
+              <p class="post-excerpt">{{ post.excerpt | strip_html | truncatewords: 30 }}</p>
+              {% if post.tags.size > 0 %}
+                <div class="post-tags">
+                  {% for tag in post.tags limit:5 %}
+                    <span class="tag">#{{ tag }}</span>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+    {% endfor %}
+  </div>
+</div>
+
+<style>
+.categories-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.categories-overview {
+  margin-bottom: 4rem;
+}
+
+.categories-overview h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--text-primary);
+}
+
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.category-card {
+  display: block;
+  padding: 2rem;
+  background: var(--background-paper);
+  border-radius: var(--border-radius-large);
+  box-shadow: 0 4px 16px var(--shadow-color);
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: var(--transition);
+  text-align: center;
+  border: 2px solid transparent;
+}
+
+.category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px var(--shadow-hover);
+  border-color: var(--primary-color);
+  color: var(--text-primary);
+}
+
+.category-card h3 {
+  margin-bottom: 0.5rem;
+  color: var(--primary-color);
+  text-transform: capitalize;
+}
+
+.post-count {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.categories-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+}
+
+.category-section {
+  scroll-margin-top: 100px;
+}
+
+.category-title {
+  font-size: 2rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  text-transform: capitalize;
+  border-bottom: 2px solid var(--primary-light);
+  padding-bottom: 0.5rem;
+}
+
+.category-description {
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.category-posts {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.category-post {
+  padding: 1.5rem;
+  background: var(--background-paper);
+  border-radius: var(--border-radius-large);
+  box-shadow: 0 2px 8px var(--shadow-color);
+  transition: var(--transition);
+}
+
+.category-post:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--shadow-hover);
+}
+
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.post-title {
+  flex: 1;
+  margin: 0;
+}
+
+.post-title a {
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.post-title a:hover {
+  color: var(--primary-color);
+}
+
+.post-date {
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  color: var(--text-hint);
+  font-weight: 500;
+}
+
+.post-excerpt {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag {
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .categories-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .category-card {
+    padding: 1.5rem;
+  }
+  
+  .post-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .category-title {
+    font-size: 1.5rem;
+  }
+}
+</style>

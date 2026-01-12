@@ -16,7 +16,7 @@
             background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%);
             color: #e0e0e0;
             line-height: 1.8;
-            padding: 40px;
+            padding: 100px 40px 40px 40px;
             min-height: 100vh;
         }
         
@@ -345,6 +345,25 @@
             background: #30363d;
         }
     </style>
+
+    <style>
+    /* 确保导航栏始终可见 */
+    #craq-nav {
+        z-index: 10000 !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        background: rgba(15, 15, 35, 0.98) !important;
+        backdrop-filter: blur(15px) !important;
+    }
+    
+    /* 确保页面内容不被导航栏遮挡 */
+    body {
+        padding-top: 80px !important;
+    }
+    </style>
+    
 </head>
 <body>
 <!-- CRAQ 文档导航栏 -->
@@ -357,7 +376,7 @@
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     padding: 12px 20px;
-    z-index: 1000;
+    z-index: 10000;
     display: flex;
     align-items: center;
     gap: 20px;

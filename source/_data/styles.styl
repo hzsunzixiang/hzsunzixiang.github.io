@@ -63,16 +63,21 @@
   color: #3F51B5 !important;
 }
 
-// RabbitMQ 自定义图标 - 替换 Font Awesome 图标为 PNG
-.menu-item-rabbitmq i.fa-server::before {
-  content: '' !important;
-  display: inline-block;
+// RabbitMQ 自定义图标 - 用 PNG 替换 Font Awesome
+.menu-item-rabbitmq .fa-server {
+  font-size: 0 !important;  // 隐藏原图标文字
   width: 1em;
   height: 1em;
-  background-image: url('/images/rabbitmq/rabbitmq_icon.png');
+  display: inline-block;
+  background: url('/images/rabbitmq/rabbitmq_icon.png') no-repeat center center;
   background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
+  vertical-align: middle;
+  font-size: 14px !important;
+}
+
+.menu-item-rabbitmq .fa-server::before {
+  content: '' !important;
+  display: none !important;
 }
 
 // ============================================================

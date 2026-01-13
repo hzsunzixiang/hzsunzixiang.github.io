@@ -1,0 +1,149 @@
+// Indigo 风格自定义样式
+// 主色调: #3F51B5 (Indigo)
+// 辅助色: #303F9F (Dark Indigo)
+// 强调色: #FF4081 (Pink Accent)
+
+// 链接颜色
+$link-color = #3F51B5
+$link-hover-color = #303F9F
+
+// 侧边栏
+.sidebar {
+  background: linear-gradient(180deg, #3F51B5 0%, #5C6BC0 100%);
+}
+
+.sidebar-inner {
+  color: #fff;
+}
+
+.site-author-name {
+  color: #fff !important;
+}
+
+.site-description {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.menu-item a {
+  color: rgba(255, 255, 255, 0.9) !important;
+  &:hover {
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.menu-item.active a {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+// 社交图标
+.social-links a {
+  color: rgba(255, 255, 255, 0.8) !important;
+  &:hover {
+    color: #fff !important;
+  }
+}
+
+// 文章标题
+.post-title, .post-title a {
+  color: #3F51B5 !important;
+}
+
+.post-title a:hover {
+  color: #303F9F !important;
+}
+
+// 文章链接
+.post-body a {
+  color: #3F51B5;
+  border-bottom: 1px solid #3F51B5;
+  &:hover {
+    color: #303F9F;
+    border-bottom-color: #303F9F;
+  }
+}
+
+// 目录样式
+.post-toc .nav .active > a {
+  color: #3F51B5 !important;
+  border-left-color: #3F51B5 !important;
+}
+
+.post-toc .nav a:hover {
+  color: #3F51B5 !important;
+}
+
+// 阅读进度条
+.reading-progress-bar {
+  background: #3F51B5 !important;
+}
+
+// 返回顶部按钮
+.back-to-top {
+  background: #3F51B5 !important;
+  &:hover {
+    background: #303F9F !important;
+  }
+}
+
+// 标签
+.tag, .category {
+  background: #E8EAF6;
+  color: #3F51B5;
+  &:hover {
+    background: #C5CAE9;
+    color: #303F9F;
+  }
+}
+
+// 代码块
+code {
+  background: #E8EAF6;
+  color: #3F51B5;
+}
+
+// 引用块
+blockquote {
+  border-left: 4px solid #3F51B5;
+  background: #E8EAF6;
+}
+
+// 分页
+.pagination .page-number.current {
+  background: #3F51B5 !important;
+  color: #fff !important;
+}
+
+.pagination .page-number:hover {
+  background: #E8EAF6 !important;
+  color: #3F51B5 !important;
+}
+
+// 搜索框
+.local-search-input {
+  border-color: #3F51B5 !important;
+  &:focus {
+    border-color: #303F9F !important;
+  }
+}
+
+// 头部
+.header-inner {
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+// 站点标题
+.site-title {
+  color: #3F51B5 !important;
+}
+
+// 按钮样式
+.btn {
+  background: #3F51B5;
+  color: #fff;
+  &:hover {
+    background: #303F9F;
+  }
+}

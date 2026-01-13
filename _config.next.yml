@@ -1,0 +1,211 @@
+# NexT 主题配置
+# 文档: https://theme-next.js.org/
+
+# ============================================================
+# 主题风格选择
+# ============================================================
+# Schemes (选择一个主题风格)
+# scheme: Muse      # 默认风格
+# scheme: Mist      # 紧凑风格
+scheme: Pisces      # 双栏风格，左侧目录
+# scheme: Gemini    # 类似 Pisces，带阴影
+
+# ============================================================
+# 站点信息
+# ============================================================
+favicon:
+  small: /images/favicon-16x16.png
+  medium: /images/favicon-32x32.png
+
+# 页脚配置
+footer:
+  since: 2024
+  icon:
+    name: fa fa-heart
+    animated: true
+    color: "#ff0000"
+  copyright: Zixiang Sun
+  powered: true
+
+# ============================================================
+# 菜单配置
+# ============================================================
+menu:
+  home: / || fa fa-home
+  archives: /archives/ || fa fa-archive
+  tags: /tags/ || fa fa-tags
+  categories: /categories/ || fa fa-th
+  CRAQ: /craq/ || fa fa-book
+  about: /about/ || fa fa-user
+
+menu_settings:
+  icons: true
+  badges: true
+
+# ============================================================
+# 侧边栏配置 (左侧目录)
+# ============================================================
+sidebar:
+  # 侧边栏位置: left | right
+  position: left
+  # 侧边栏显示: post | always | hide | remove
+  display: post
+  # 侧边栏内边距
+  padding: 18
+  # 侧边栏偏移
+  offset: 12
+
+# 头像配置
+avatar:
+  url: /images/avatar.png
+  rounded: true
+  rotated: false
+
+# 社交链接
+social:
+  GitHub: https://github.com/hzsunzixiang || fab fa-github
+  E-Mail: mailto:17842379@qq.com || fa fa-envelope
+
+social_icons:
+  enable: true
+  icons_only: false
+  transition: false
+
+# ============================================================
+# 文章目录 (TOC)
+# ============================================================
+toc:
+  enable: true
+  # 自动添加列表编号
+  number: true
+  # 目录是否换行
+  wrap: false
+  # 是否展开所有
+  expand_all: false
+  # 最大深度
+  max_depth: 6
+
+# ============================================================
+# 阅读进度
+# ============================================================
+reading_progress:
+  enable: true
+  position: top
+  color: "#3F51B5"
+  height: 3px
+
+# 返回顶部按钮
+back2top:
+  enable: true
+  sidebar: false
+  scrollpercent: true
+
+# ============================================================
+# 代码块配置
+# ============================================================
+codeblock:
+  # 代码高亮主题
+  highlight_theme: default
+  # 复制按钮
+  copy_button:
+    enable: true
+    show_result: true
+    style: default
+
+# ============================================================
+# 字体配置
+# ============================================================
+font:
+  enable: true
+  host: https://fonts.googleapis.com
+  global:
+    external: true
+    family: Noto Sans SC
+    size: 1
+  title:
+    external: true
+    family: Noto Serif SC
+    size:
+  headings:
+    external: true
+    family: Noto Serif SC
+    size:
+  posts:
+    external: true
+    family:
+    size:
+  codes:
+    external: true
+    family: Source Code Pro
+    size:
+
+# ============================================================
+# 动画效果
+# ============================================================
+motion:
+  enable: true
+  async: false
+  transition:
+    post_block: fadeIn
+    post_header: fadeInDown
+    post_body: fadeInDown
+    coll_header: fadeInLeft
+    sidebar: fadeInUp
+
+# ============================================================
+# 自定义样式 (Indigo 风格颜色)
+# ============================================================
+custom_file_path:
+  style: source/_data/styles.styl
+
+# ============================================================
+# 搜索功能
+# ============================================================
+local_search:
+  enable: true
+  trigger: auto
+  top_n_per_article: 1
+  unescape: false
+  preload: false
+
+# ============================================================
+# 标签页图标
+# ============================================================
+tab_animate: true
+
+# ============================================================
+# 相关文章
+# ============================================================
+related_posts:
+  enable: true
+  title: 相关文章
+  display_in_home: false
+
+# ============================================================
+# 文章元数据
+# ============================================================
+post_meta:
+  item_text: true
+  created_at: true
+  updated_at:
+    enable: true
+    another_day: true
+  categories: true
+
+# ============================================================
+# 文章编辑链接
+# ============================================================
+post_edit:
+  enable: false
+
+# ============================================================
+# 打赏功能
+# ============================================================
+reward_settings:
+  enable: false
+
+# ============================================================
+# 评论系统
+# ============================================================
+comments:
+  active: false

@@ -96,7 +96,7 @@ ignore:
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: landscape
+theme: next
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment
@@ -118,3 +118,10 @@ menu:
   关于: /about/
   标签: /tags/
   分类: /categories/
+
+# 本地搜索配置
+search:
+  path: search.xml
+  field: post
+  content: true
+  format: html

@@ -37,6 +37,7 @@ menu:
   archives: /archives/ || fa fa-archive
   categories: /categories/ || fa fa-th
   Erlang: /erlang/ || fa fa-code
+  RabbitMQ: /rabbitmq/ || fa fa-rabbit
   CRAQ: /craq/ || fa fa-book
   about: /about/ || fa fa-user
 

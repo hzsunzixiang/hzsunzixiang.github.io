@@ -36,8 +36,8 @@ menu:
   home: / || fa fa-home
   archives: /archives/ || fa fa-archive
   categories: /categories/ || fa fa-th
+  Erlang: /erlang/ || fa fa-code
   CRAQ: /craq/ || fa fa-book
-  Erlang: /tags/Erlang/ || fa fa-tags
   about: /about/ || fa fa-user
 
 menu_settings:

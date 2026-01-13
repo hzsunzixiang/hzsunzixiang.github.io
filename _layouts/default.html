@@ -10,14 +10,14 @@
   <meta name="description" content="{{ page.excerpt | default: site.description | strip_html | normalize_whitespace | truncate: 160 | escape }}">
   
   <!-- Indigo Theme CSS -->
-  <link rel="stylesheet" href="{{ "/assets/css/indigo.css" | relative_url }}">
+  <link rel="stylesheet" href="{{ '/assets/css/indigo.css' | prepend: site.baseurl }}">
   
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   
   <!-- Favicon -->
-  <link rel="icon" type="image/x-icon" href="{{ "/assets/images/favicon.ico" | relative_url }}">
+  <link rel="icon" type="image/x-icon" href="{{ site.baseurl }}/assets/images/favicon.ico">
   
   {% seo %}
   {% feed_meta %}
@@ -201,7 +201,7 @@
   </button>
 
   <!-- JavaScript -->
-  <script src="{{ "/assets/js/indigo.js" | relative_url }}"></script>
+  <script src="{{ '/assets/js/indigo.js' | prepend: site.baseurl }}"></script>
 </body>
 
 </html>

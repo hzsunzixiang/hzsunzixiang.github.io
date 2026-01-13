@@ -5,7 +5,7 @@ description: >-
   Welcome to my personal blog where I share thoughts on technology, 
   programming, and life experiences.
 baseurl: ""
-url: "https://hzsunzixiang.github.io"
+url: "http://localhost:4000"
 twitter_username: hzsunzixiang
 github_username: hzsunzixiang
 

@@ -1,8 +1,6 @@
 ---
 title: CRAQ 技术文档
 date: 2024-01-15
-type: "craq"
-layout: "page"
 ---
 
 # CRAQ 技术文档

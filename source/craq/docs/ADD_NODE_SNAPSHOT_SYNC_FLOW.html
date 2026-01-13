@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRAQ add_node 快照同步完整流程</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e4e4e4;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #00d9ff;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+            text-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        }
+        
+        h2 {
+            color: #ffd700;
+            margin: 25px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ffd700;
+        }
+        
+        h3 {
+            color: #00ff88;
+            margin: 20px 0 10px 0;
+        }
+        
+        /* 流程图容器 */
+        .flow-diagram {
+            background: #0d1117;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            border: 1px solid #30363d;
+            overflow-x: auto;
+        }
+        
+        .flow-title {
+            text-align: center;
+            color: #58a6ff;
+            font-size: 1.3em;
+            margin-bottom: 20px;
+        }
+        
+        /* ASCII 流程图 */
+        .ascii-flow {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            white-space: pre;
+            color: #c9d1d9;
+            background: #161b22;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+        }
+        
+        .ascii-flow .node-n1 { color: #58a6ff; }
+        .ascii-flow .node-n2 { color: #f0883e; }
+        .ascii-flow .server { color: #a371f7; }
+        .ascii-flow .msg { color: #7ee787; }
+        .ascii-flow .state { color: #ffd700; }
+        .ascii-flow .data { color: #ff7b72; }
+        .ascii-flow .comment { color: #8b949e; }
+        
+        /* 步骤卡片 */
+        .step-card {
+            background: linear-gradient(145deg, #1e2a3a, #162030);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid #00d9ff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .step-number {
+            background: linear-gradient(135deg, #00d9ff, #0099cc);
+            color: #000;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            font-size: 1.1em;
+        }
+        
+        .step-title {
+            font-size: 1.2em;
+            color: #00d9ff;
+        }
+        
+        .step-location {
+            color: #8b949e;
+            font-size: 0.9em;
+            margin-left: auto;
+        }
+        
+        /* 代码块 */
+        .code-block {
+            background: #0d1117;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            border: 1px solid #30363d;
+        }
+        
+        .code-block .keyword { color: #ff7b72; }
+        .code-block .function { color: #d2a8ff; }
+        .code-block .variable { color: #ffa657; }
+        .code-block .atom { color: #79c0ff; }
+        .code-block .string { color: #a5d6ff; }
+        .code-block .comment { color: #8b949e; }
+        .code-block .macro { color: #7ee787; }
+        
+        /* 消息流 */
+        .message-flow {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            padding: 15px;
+            background: #21262d;
+            border-radius: 8px;
+        }
+        
+        .msg-from, .msg-to {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            min-width: 120px;
+            text-align: center;
+        }
+        
+        .msg-from { background: #1f6feb; }
+        .msg-to { background: #f0883e; }
+        
+        .msg-arrow {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 20px;
+        }
+        
+        .msg-name {
+            color: #7ee787;
+            font-family: monospace;
+            font-size: 0.95em;
+            margin-bottom: 5px;
+        }
+        
+        .msg-line {
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, #1f6feb, #7ee787, #f0883e);
+            position: relative;
+        }
+        
+        .msg-line::after {
+            content: '▶';
+            position: absolute;
+            right: -5px;
+            top: -8px;
+            color: #f0883e;
+        }
+        
+        /* 表格 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: #161b22;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #30363d;
+        }
+        
+        th {
+            background: #21262d;
+            color: #58a6ff;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background: #1c2128;
+        }
+        
+        /* 状态转换 */
+        .state-transition {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+            padding: 20px;
+            background: #21262d;
+            border-radius: 10px;
+        }
+        
+        .state-box {
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .state-not-ready { background: #da3633; }
+        .state-transient { background: #9e6a03; }
+        .state-transient-du { background: #1f6feb; }
+        .state-ready { background: #238636; }
+        
+        .state-arrow {
+            color: #7ee787;
+            font-size: 1.5em;
+        }
+        
+        /* 进程框 */
+        .process-box {
+            border: 2px solid #30363d;
+            border-radius: 10px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        
+        .process-header {
+            background: #21262d;
+            padding: 10px 15px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .process-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .process-n1 .process-icon { background: #1f6feb; }
+        .process-n2 .process-icon { background: #f0883e; }
+        .process-data .process-icon { background: #a371f7; }
+        
+        .process-content {
+            padding: 15px;
+        }
+        
+        /* 高亮 */
+        .highlight {
+            background: rgba(255, 215, 0, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #ffd700;
+        }
+        
+        .highlight-blue {
+            background: rgba(31, 111, 235, 0.2);
+            color: #58a6ff;
+        }
+        
+        .highlight-green {
+            background: rgba(35, 134, 54, 0.2);
+            color: #7ee787;
+        }
+        
+        /* 注意事项 */
+        .note {
+            background: linear-gradient(145deg, #2d1f1f, #1f1515);
+            border-left: 4px solid #f85149;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .note-title {
+            color: #f85149;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        /* 总结框 */
+        .summary-box {
+            background: linear-gradient(145deg, #1a2f1a, #152015);
+            border: 1px solid #238636;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .summary-title {
+            color: #7ee787;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+<!-- CRAQ 文档导航栏 -->
+<div id="craq-nav" style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(15, 15, 35, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 12px 20px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+">
+    <a href="/craq/" style="
+        color: #00d4ff;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    " onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#00d4ff'">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+        </svg>
+        返回 CRAQ 文档首页
+    </a>
+    
+    <div style="flex: 1;"></div>
+    
+    <a href="/" style="
+        color: #888;
+        text-decoration: none;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">
+        博客首页
+    </a>
+</div>
+
+<!-- 为导航栏添加顶部间距 -->
+<div style="height: 60px;"></div>
+
+    <div class="container">
+        <h1>🔄 CRAQ add_node 快照同步完整流程</h1>
+        
+        <!-- 场景说明 -->
+        <div class="step-card">
+            <h3>📋 场景说明</h3>
+            <p>N1（新节点，无数据）加入集群，从 N2（后继节点，有数据）同步数据。</p>
+            <table>
+                <tr>
+                    <th>节点</th>
+                    <th>角色</th>
+                    <th>初始状态</th>
+                    <th>数据</th>
+                </tr>
+                <tr>
+                    <td><span class="highlight-blue">N1</span></td>
+                    <td>新节点（请求方）</td>
+                    <td>NOT_READY</td>
+                    <td>Timestamp=0, 无数据</td>
+                </tr>
+                <tr>
+                    <td><span class="highlight">N2</span></td>
+                    <td>后继节点（数据源）</td>
+                    <td>READY</td>
+                    <td>Timestamp=6, 有数据</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- 完整流程图 -->
+        <h2>📊 完整时序流程图</h2>
+        <div class="flow-diagram">
+            <div class="ascii-flow">
+<span class="comment">┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐</span>
+<span class="comment">│                              add_node 快照同步完整流程                                                            │</span>
+<span class="comment">├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤</span>
+<span class="comment">│                                                                                                                 │</span>
+<span class="comment">│</span>   <span class="node-n1">N1 (eh_system_server)</span>              <span class="server">N1 (eh_data_server)</span>              <span class="node-n2">N2 (eh_system_server)</span>              <span class="server">N2 (eh_data_server)</span>   <span class="comment">│</span>
+<span class="comment">│</span>   <span class="state">[NOT_READY]</span>                                                        <span class="state">[READY]</span>                                                 <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│</span>  <span class="msg">═══════╪════════════════════════════════════════════════════════════════════════════════════════════════════════════════</span>  <span class="comment">│</span>
+<span class="comment">│</span>  <span class="msg">步骤1</span>   │ <span class="data">add_node(N1, [N1,N2], ...)</span>       │                              │                                    │         <span class="comment">│</span>
+<span class="comment">│</span>  <span class="msg">═══════╪════════════════════════════════════════════════════════════════════════════════════════════════════════════════</span>  <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│         │</span> <span class="function">valid_add_node_msg(N1, State)</span>     │                              │                                    │         <span class="comment">│</span>
+<span class="comment">│         │</span> → <span class="state">EH_VALID_FOR_NEW</span>                │                              │                                    │         <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│         │──┐</span> <span class="function">process_snapshot_request()</span>     │                              │                                    │         <span class="comment">│</span>
+<span class="comment">│         │  │                                 │                              │                                    │         │</span>
+<span class="comment">│         │  │</span> <span class="variable">SnapshotRef</span> = unique_id()       │                              │                                    │         <span class="comment">│</span>
+<span class="comment">│         │  │                                 │                              │                                    │         │</span>
+<span class="comment">│         │</span>◄─┘                                │                              │                                    │         <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│         │────────────────────────────────────│────</span><span class="msg">EH_SNAPSHOT</span><span class="comment">──────────────►│                                    │         │</span>
+<span class="comment">│         │</span>  <span class="data">{N1, NodeList, Ref, {0, []}}</span>    │                              │                                    │         <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│</span>         <span class="state">[TRANSIENT]</span>                        │                              │                                    │         <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│</span>  <span class="msg">═══════╪════════════════════════════════════════════════════════════════════════════════════════════════════════════════</span>  <span class="comment">│</span>
+<span class="comment">│</span>  <span class="msg">步骤2</span>   │                                    │                              │ <span class="data">N2 处理 EH_SNAPSHOT</span>                │         <span class="comment">│</span>
+<span class="comment">│</span>  <span class="msg">═══════╪════════════════════════════════════════════════════════════════════════════════════════════════════════════════</span>  <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│         │                                    │                              │──────────</span><span class="msg">EH_SNAPSHOT</span><span class="comment">──────────────►│         │</span>
+<span class="comment">│         │                                    │                              │</span>  <span class="data">gen_server:call</span>                  │         <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │</span>  <span class="data">{EH_SNAPSHOT, {0, []}}</span>           │         <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│         │                                    │                              │                              ┌─────┴─────┐   │</span>
+<span class="comment">│         │                                    │                              │                              │</span><span class="function">snapshot_data</span><span class="comment">│   │</span>
+<span class="comment">│         │                                    │                              │                              │</span><span class="data">(0, [], Data)</span><span class="comment">│   │</span>
+<span class="comment">│         │                                    │                              │                              │           │   │</span>
+<span class="comment">│         │                                    │                              │                              │</span><span class="comment">遍历所有数据</span> <span class="comment">│   │</span>
+<span class="comment">│         │                                    │                              │                              │</span><span class="comment">过滤Ts>0的</span>  <span class="comment">│   │</span>
+<span class="comment">│         │                                    │                              │                              └─────┬─────┘   │</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│         │                                    │                              │◄─────────────</span><span class="data">Q0</span><span class="comment">────────────────────│         │</span>
+<span class="comment">│         │                                    │                              │</span>  <span class="data">(增量数据队列)</span>                    │         <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│         │                                    │                              │</span> <span class="function">filter_effective_head_node_id()</span>   │         <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │</span> → <span class="variable">PendingPreMsgMap</span>                 │         <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│</span>  <span class="msg">═══════╪════════════════════════════════════════════════════════════════════════════════════════════════════════════════</span>  <span class="comment">│</span>
+<span class="comment">│</span>  <span class="msg">步骤3</span>   │                                    │                              │ <span class="data">N2 发送响应给 N1</span>                  │         <span class="comment">│</span>
+<span class="comment">│</span>  <span class="msg">═══════╪════════════════════════════════════════════════════════════════════════════════════════════════════════════════</span>  <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│         │◄───────────────────────────────────│──────</span><span class="msg">EH_UPDATE_SNAPSHOT</span><span class="comment">──────│                                    │         │</span>
+<span class="comment">│         │</span>                    <span class="data">{Ref, Q0, PendingPreMsgMap}</span>                   │                                    │         <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│</span>  <span class="msg">═══════╪════════════════════════════════════════════════════════════════════════════════════════════════════════════════</span>  <span class="comment">│</span>
+<span class="comment">│</span>  <span class="msg">步骤4</span>   │ <span class="data">N1 处理 EH_UPDATE_SNAPSHOT</span>        │                              │                                    │         <span class="comment">│</span>
+<span class="comment">│</span>  <span class="msg">═══════╪════════════════════════════════════════════════════════════════════════════════════════════════════════════════</span>  <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│         │</span> <span class="function">验证 Ref == snapshot_ref</span>           │                              │                                    │         <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│         │──────────</span><span class="msg">EH_UPDATE_SNAPSHOT</span><span class="comment">────────►│                              │                                    │         │</span>
+<span class="comment">│         │</span>  <span class="data">gen_server:call</span>                  │                              │                                    │         <span class="comment">│</span>
+<span class="comment">│         │</span>  <span class="data">{EH_UPDATE_SNAPSHOT, Q0}</span>         │                              │                                    │         <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│         │                              ┌─────┴─────┐                        │                                    │         │</span>
+<span class="comment">│         │                              │</span><span class="function">merge_data</span> <span class="comment">│                        │                                    │         │</span>
+<span class="comment">│         │                              │</span><span class="data">(Q0,TData,</span> <span class="comment">│                        │                                    │         │</span>
+<span class="comment">│         │                              │</span><span class="data"> State,M0)</span><span class="comment">│                        │                                    │         │</span>
+<span class="comment">│         │                              │           │                        │                                    │         │</span>
+<span class="comment">│         │                              │</span><span class="comment">合并到本地</span>  <span class="comment">│                        │                                    │         │</span>
+<span class="comment">│         │                              │</span><span class="comment">写入磁盘</span>    <span class="comment">│                        │                                    │         │</span>
+<span class="comment">│         │                              └─────┬─────┘                        │                                    │         │</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│         │◄───────────────────────────────────│                              │                                    │         │</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│         │</span> <span class="function">update_state_snapshot()</span>           │                              │                                    │         <span class="comment">│</span>
+<span class="comment">│         │</span> <span class="state">TRANSIENT → TRANSIENT_DU</span>          │                              │                                    │         <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│</span>         <span class="state">[TRANSIENT_DU]</span>                     │                              │                                    │         <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">│</span>  <span class="msg">═══════╪════════════════════════════════════════════════════════════════════════════════════════════════════════════════</span>  <span class="comment">│</span>
+<span class="comment">│</span>  <span class="msg">完成</span>    │ <span class="state">数据同步完成，等待状态转换为 READY</span> │                              │                                    │         <span class="comment">│</span>
+<span class="comment">│</span>  <span class="msg">═══════╪════════════════════════════════════════════════════════════════════════════════════════════════════════════════</span>  <span class="comment">│</span>
+<span class="comment">│         │                                    │                              │                                    │         │</span>
+<span class="comment">└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘</span>
+            </div>
+        </div>
+
+        <!-- 步骤详解 -->
+        <h2>📝 步骤详解</h2>
+        
+        <!-- 步骤1 -->
+        <div class="step-card">
+            <div class="step-header">
+                <div class="step-number">1</div>
+                <div class="step-title">N1 发起快照请求</div>
+                <div class="step-location">eh_system_server.erl:91-109</div>
+            </div>
+            
+            <div class="message-flow">
+                <div class="msg-from">N1</div>
+                <div class="msg-arrow">
+                    <div class="msg-name">EH_SNAPSHOT</div>
+                    <div class="msg-line"></div>
+                </div>
+                <div class="msg-to">N2</div>
+            </div>
+            
+            <div class="code-block">
+<span class="comment">%% N1 收到 add_node 消息后的处理</span>
+<span class="keyword">handle_cast</span>({<span class="macro">?EH_ADD_NODE</span>, {Node, NodeList, NodeOrderList}}, State) ->
+  <span class="keyword">case</span> <span class="function">eh_node_timestamp:valid_add_node_msg</span>(Node, State) <span class="keyword">of</span>
+    <span class="macro">?EH_VALID_FOR_NEW</span> ->
+      <span class="comment">%% ① 生成唯一引用</span>
+      <span class="variable">SnapshotRef</span> = <span class="variable">UniqueIdGenerator</span>:<span class="function">unique_id</span>(),
+      <span class="comment">%% ② 获取本地时间戳 (N1 是空的，所以 Timestamp=0, Snapshot=[])</span>
+      {<span class="variable">Timestamp</span>, <span class="variable">Snapshot</span>} = <span class="variable">ReplDataManager</span>:<span class="function">timestamp</span>(),
+      <span class="comment">%% ③ 向后继节点 N2 发送 EH_SNAPSHOT 请求</span>
+      <span class="function">gen_server:cast</span>({<span class="macro">?EH_SYSTEM_SERVER</span>, <span class="variable">Succ</span>}, 
+                      {<span class="macro">?EH_SNAPSHOT</span>, {<span class="variable">NodeId</span>, <span class="variable">NodeList</span>, <span class="variable">NodeOrderList</span>, <span class="variable">SnapshotRef</span>, {<span class="variable">Timestamp</span>, <span class="variable">Snapshot</span>}}}),
+      <span class="comment">%% ④ 状态转换: NOT_READY → TRANSIENT</span>
+      <span class="variable">NewState</span> = <span class="function">eh_node_state:update_state_transient</span>(<span class="variable">State</span>)
+  <span class="keyword">end</span>.
+            </div>
+            
+            <table>
+                <tr>
+                    <th>消息字段</th>
+                    <th>值</th>
+                    <th>说明</th>
+                </tr>
+                <tr>
+                    <td>NodeId</td>
+                    <td>N1</td>
+                    <td>请求方节点ID</td>
+                </tr>
+                <tr>
+                    <td>SnapshotRef</td>
+                    <td>unique_ref</td>
+                    <td>唯一引用，用于匹配响应</td>
+                </tr>
+                <tr>
+                    <td>Timestamp</td>
+                    <td>0</td>
+                    <td>N1 当前最大时间戳</td>
+                </tr>
+                <tr>
+                    <td>Snapshot</td>
+                    <td>[]</td>
+                    <td>N1 数据索引列表（空）</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- 步骤2 -->
+        <div class="step-card">
+            <div class="step-header">
+                <div class="step-number">2</div>
+                <div class="step-title">N2 处理 EH_SNAPSHOT 请求</div>
+                <div class="step-location">eh_system_server.erl:112-123</div>
+            </div>
+            
+            <div class="code-block">
+<span class="comment">%% N2 (eh_system_server) 收到 EH_SNAPSHOT</span>
+<span class="keyword">handle_cast</span>({<span class="macro">?EH_SNAPSHOT</span>, {Node, NodeList, NodeOrderList, Ref, {<span class="variable">Timestamp</span>, <span class="variable">Snapshot</span>}}}, State) ->
+  <span class="comment">%% ① 向本地 eh_data_server 请求增量数据</span>
+  <span class="variable">Q0</span> = <span class="variable">ReplDataManager</span>:<span class="function">snapshot</span>(<span class="variable">Timestamp</span>, <span class="variable">Snapshot</span>),
+  
+  <span class="comment">%% ② 过滤正在处理的写请求</span>
+  <span class="variable">PendingPreMsgMap</span> = <span class="function">eh_update_msg:filter_effective_head_node_id</span>(<span class="variable">PreMsgData</span>, State),
+  
+  <span class="comment">%% ③ 发送响应给 N1</span>
+  <span class="function">gen_server:cast</span>({<span class="macro">?EH_SYSTEM_SERVER</span>, Node}, 
+                  {<span class="macro">?EH_UPDATE_SNAPSHOT</span>, {Ref, <span class="variable">Q0</span>, <span class="variable">PendingPreMsgMap</span>}}).
+            </div>
+            
+            <h4 style="color: #a371f7; margin-top: 20px;">2.1 eh_data_server 处理 EH_SNAPSHOT</h4>
+            <div class="code-block">
+<span class="comment">%% N2 (eh_data_server) 处理快照请求</span>
+<span class="keyword">handle_call</span>({<span class="macro">?EH_SNAPSHOT</span>, {<span class="variable">Timestamp</span>, <span class="variable">DataIndex</span>}}, _From, #<span class="atom">eh_data_state</span>{data=<span class="variable">Data</span>}=State) ->
+  <span class="comment">%% 调用 snapshot_data 过滤增量数据</span>
+  <span class="variable">Reply</span> = <span class="function">eh_data_util:snapshot_data</span>(<span class="variable">Timestamp</span>, <span class="variable">DataIndex</span>, <span class="variable">Data</span>),
+  {reply, <span class="variable">Reply</span>, State}.
+            </div>
+            
+            <h4 style="color: #a371f7; margin-top: 20px;">2.2 snapshot_data 过滤逻辑</h4>
+            <div class="code-block">
+<span class="comment">%% 遍历所有数据，过滤出增量</span>
+<span class="function">snapshot_data</span>(<span class="variable">Timestamp</span>, <span class="variable">DataIndexList</span>, <span class="variable">Mi0</span>) ->
+  <span class="variable">Acc0</span> = <span class="function">maps:fold</span>(<span class="keyword">fun</span>(K, Qi0, Acc) -> 
+    <span class="function">process_data</span>(<span class="keyword">fun</span> <span class="function">snapshot_fun</span>/3, <span class="keyword">fun</span> <span class="function">queue_fun</span>/2, 
+                 {<span class="variable">Timestamp</span>, <span class="variable">DataIndexList</span>, K}, Qi0, Acc) 
+  <span class="keyword">end</span>, [], <span class="variable">Mi0</span>),
+  <span class="comment">%% 按时间戳排序后转为队列</span>
+  <span class="function">queue:from_list</span>(<span class="function">lists:sort</span>(<span class="keyword">fun</span> <span class="function">sort_fun</span>/2, <span class="variable">Acc0</span>)).
+
+<span class="comment">%% 过滤规则：</span>
+<span class="comment">%% 1. 数据 Timestamp > 请求方 Timestamp → 同步</span>
+<span class="comment">%% 2. Timestamp 相同，DataIndex > 请求方 DataIndex → 同步</span>
+<span class="comment">%% 3. 其他情况 → 跳过</span>
+            </div>
+            
+            <div class="note">
+                <div class="note-title">💡 关键点</div>
+                <p>因为 N1 的 Timestamp=0，所以 N2 所有 Timestamp > 0 的数据都会被过滤出来同步给 N1。</p>
+            </div>
+        </div>
+        
+        <!-- 步骤3 -->
+        <div class="step-card">
+            <div class="step-header">
+                <div class="step-number">3</div>
+                <div class="step-title">N2 发送 EH_UPDATE_SNAPSHOT 响应</div>
+                <div class="step-location">eh_system_server.erl:120</div>
+            </div>
+            
+            <div class="message-flow">
+                <div class="msg-from" style="background: #f0883e;">N2</div>
+                <div class="msg-arrow">
+                    <div class="msg-name">EH_UPDATE_SNAPSHOT</div>
+                    <div class="msg-line" style="background: linear-gradient(90deg, #f0883e, #7ee787, #1f6feb);"></div>
+                </div>
+                <div class="msg-to" style="background: #1f6feb;">N1</div>
+            </div>
+            
+            <div class="code-block">
+<span class="comment">%% N2 发送响应</span>
+<span class="function">gen_server:cast</span>({<span class="macro">?EH_SYSTEM_SERVER</span>, Node}, 
+                {<span class="macro">?EH_UPDATE_SNAPSHOT</span>, {<span class="variable">Ref</span>, <span class="variable">Q0</span>, <span class="variable">PendingPreMsgMap</span>}}).
+            </div>
+            
+            <table>
+                <tr>
+                    <th>响应字段</th>
+                    <th>说明</th>
+                </tr>
+                <tr>
+                    <td>Ref</td>
+                    <td>原请求的唯一引用（用于匹配）</td>
+                </tr>
+                <tr>
+                    <td>Q0</td>
+                    <td>增量数据队列（按时间戳排序）</td>
+                </tr>
+                <tr>
+                    <td>PendingPreMsgMap</td>
+                    <td>N2 正在处理的写请求（防止丢失）</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- 步骤4 -->
+        <div class="step-card">
+            <div class="step-header">
+                <div class="step-number">4</div>
+                <div class="step-title">N1 处理 EH_UPDATE_SNAPSHOT 响应</div>
+                <div class="step-location">eh_system_server.erl:125-138</div>
+            </div>
+            
+            <div class="code-block">
+<span class="comment">%% N1 (eh_system_server) 收到 EH_UPDATE_SNAPSHOT</span>
+<span class="keyword">handle_cast</span>({<span class="macro">?EH_UPDATE_SNAPSHOT</span>, {<span class="variable">Ref</span>, <span class="variable">Q0</span>, <span class="variable">PendingPreMsgData</span>}}, 
+            #<span class="atom">eh_system_state</span>{snapshot_ref=<span class="variable">Ref</span>}=State) ->  <span class="comment">%% ① 验证 Ref 匹配</span>
+  <span class="comment">%% ② 调用 eh_data_server 合并数据</span>
+  <span class="variable">ReplDataManager</span>:<span class="function">update_snapshot</span>(<span class="variable">Q0</span>),
+  
+  <span class="comment">%% ③ 验证并保存待处理写请求</span>
+  <span class="variable">PendingPreMsgData1</span> = <span class="keyword">case</span> <span class="function">eh_node_timestamp:valid_pending_pre_msg_data</span>(<span class="variable">PendingPreMsgData</span>, State) <span class="keyword">of</span>
+    <span class="atom">true</span>  -> <span class="variable">PendingPreMsgData</span>;
+    <span class="atom">false</span> -> <span class="function">eh_system_util:new_map</span>()
+  <span class="keyword">end</span>,
+  
+  <span class="comment">%% ④ 状态转换: TRANSIENT → TRANSIENT_DU</span>
+  <span class="variable">NewState</span> = <span class="function">eh_node_state:update_state_snapshot</span>(State).
+            </div>
+            
+            <h4 style="color: #a371f7; margin-top: 20px;">4.1 eh_data_server 合并数据</h4>
+            <div class="code-block">
+<span class="comment">%% N1 (eh_data_server) 处理 EH_UPDATE_SNAPSHOT</span>
+<span class="keyword">handle_call</span>({<span class="macro">?EH_UPDATE_SNAPSHOT</span>, <span class="variable">Qi0</span>}, _From, 
+            #<span class="atom">eh_data_state</span>{data=<span class="variable">Data</span>, transient_data=<span class="variable">TData</span>, 
+                           timestamp=<span class="variable">StateTimestamp</span>, data_index_list=<span class="variable">StateDataIndexList</span>}=State) ->
+  <span class="comment">%% 合并快照数据和临时数据到本地</span>
+  {<span class="variable">Timestamp</span>, <span class="variable">DIL0</span>, <span class="variable">Q0</span>, <span class="variable">D0</span>} = <span class="function">eh_data_util:merge_data</span>(<span class="variable">Qi0</span>, <span class="variable">TData</span>, 
+                                                        {<span class="variable">StateTimestamp</span>, <span class="variable">StateDataIndexList</span>}, <span class="variable">Data</span>),
+  <span class="comment">%% 写入磁盘</span>
+  <span class="function">write_data</span>(<span class="variable">Timestamp</span>, <span class="variable">DIL0</span>, <span class="variable">D0</span>, <span class="variable">Q0</span>, State).
+            </div>
+            
+            <h4 style="color: #a371f7; margin-top: 20px;">4.2 merge_data 合并逻辑</h4>
+            <div class="code-block">
+<span class="comment">%% 合并数据</span>
+<span class="function">merge_data</span>(<span class="variable">Q0</span>, <span class="variable">TQ0</span>, {<span class="variable">StateTimestamp</span>, <span class="variable">StateDataIndexList</span>}, <span class="variable">M0</span>) ->
+  <span class="comment">%% ① 先合并快照数据 Q0</span>
+  {<span class="variable">TS1</span>, <span class="variable">DIL1</span>, <span class="variable">Q1</span>, <span class="variable">M1</span>} = <span class="function">merge_data_acc</span>(<span class="variable">Q0</span>, <span class="function">queue:new</span>(), <span class="variable">M0</span>, 
+                                          <span class="variable">StateTimestamp</span>, <span class="variable">StateDataIndexList</span>, <span class="atom">true</span>),
+  <span class="comment">%% ② 再合并临时数据 TQ0（同步期间收到的写请求）</span>
+  <span class="function">merge_data_acc</span>(<span class="variable">TQ0</span>, <span class="variable">Q1</span>, <span class="variable">M1</span>, <span class="variable">TS1</span>, <span class="variable">DIL1</span>, <span class="atom">true</span>).
+
+<span class="function">merge_data_acc</span>(<span class="variable">Qi0</span>, <span class="variable">Qo0</span>, <span class="variable">Mi0</span>, <span class="variable">TS0</span>, <span class="variable">DIL0</span>, <span class="variable">CheckFlag</span>) ->
+  <span class="keyword">case</span> <span class="function">queue:out</span>(<span class="variable">Qi0</span>) <span class="keyword">of</span>
+    {empty, _} -> {<span class="variable">TS0</span>, <span class="variable">DIL0</span>, <span class="variable">Qo0</span>, <span class="variable">Mi0</span>};
+    {{value, <span class="variable">StorageData</span>}, <span class="variable">Qi1</span>} ->
+      <span class="keyword">case</span> (<span class="keyword">not</span> <span class="variable">CheckFlag</span>) <span class="keyword">orelse</span> (<span class="variable">StorageData</span>#<span class="atom">eh_storage_data</span>.timestamp > <span class="variable">TS0</span>) <span class="keyword">of</span>
+        <span class="atom">true</span>  ->
+          <span class="comment">%% 数据时间戳更大，添加到本地存储</span>
+          {_, {_, <span class="variable">DIL1</span>}, <span class="variable">Qo1</span>, <span class="variable">Mi1</span>} = <span class="function">add_data</span>(<span class="variable">StorageData</span>, <span class="variable">Qo0</span>, {<span class="variable">TS0</span>, <span class="variable">DIL0</span>}, <span class="variable">Mi0</span>),
+          <span class="function">merge_data_acc</span>(<span class="variable">Qi1</span>, <span class="variable">Qo1</span>, <span class="variable">Mi1</span>, <span class="variable">StorageData</span>#<span class="atom">eh_storage_data</span>.timestamp, <span class="variable">DIL1</span>, <span class="atom">false</span>);
+        <span class="atom">false</span> ->
+          <span class="comment">%% 数据时间戳不够新，跳过</span>
+          <span class="function">merge_data_acc</span>(<span class="variable">Qi1</span>, <span class="variable">Qo0</span>, <span class="variable">Mi0</span>, <span class="variable">TS0</span>, <span class="variable">DIL0</span>, <span class="variable">CheckFlag</span>)
+      <span class="keyword">end</span>
+  <span class="keyword">end</span>.
+            </div>
+        </div>
+
+        <!-- 状态转换 -->
+        <h2>🔄 N1 状态转换</h2>
+        <div class="state-transition">
+            <div class="state-box state-not-ready">NOT_READY</div>
+            <div class="state-arrow">→</div>
+            <div class="state-box state-transient">TRANSIENT</div>
+            <div class="state-arrow">→</div>
+            <div class="state-box state-transient-du">TRANSIENT_DU</div>
+            <div class="state-arrow">→</div>
+            <div class="state-box state-ready">READY</div>
+        </div>
+        
+        <table>
+            <tr>
+                <th>状态</th>
+                <th>触发时机</th>
+                <th>含义</th>
+            </tr>
+            <tr>
+                <td><span class="highlight" style="background: rgba(218, 54, 51, 0.3);">NOT_READY</span></td>
+                <td>节点启动</td>
+                <td>节点未就绪，不能处理请求</td>
+            </tr>
+            <tr>
+                <td><span class="highlight" style="background: rgba(158, 106, 3, 0.3);">TRANSIENT</span></td>
+                <td>发送 EH_SNAPSHOT 后</td>
+                <td>等待快照数据</td>
+            </tr>
+            <tr>
+                <td><span class="highlight" style="background: rgba(31, 111, 235, 0.3);">TRANSIENT_DU</span></td>
+                <td>收到 EH_UPDATE_SNAPSHOT 后</td>
+                <td>数据已更新，等待最终就绪</td>
+            </tr>
+            <tr>
+                <td><span class="highlight" style="background: rgba(35, 134, 54, 0.3);">READY</span></td>
+                <td>状态转换完成</td>
+                <td>节点就绪，可以处理请求</td>
+            </tr>
+        </table>
+
+        <!-- 进程交互 -->
+        <h2>🔗 进程交互关系</h2>
+        <div class="flow-diagram">
+            <div class="ascii-flow">
+<span class="comment">┌────────────────────────────────────────────────────────────────────────────────────────────┐</span>
+<span class="comment">│                                 进程交互关系图                                               │</span>
+<span class="comment">├────────────────────────────────────────────────────────────────────────────────────────────┤</span>
+<span class="comment">│                                                                                            │</span>
+<span class="comment">│</span>                      <span class="node-n1">N1 节点</span>                                    <span class="node-n2">N2 节点</span>                      <span class="comment">│</span>
+<span class="comment">│</span>        ┌─────────────────────────────────┐          ┌─────────────────────────────────┐   <span class="comment">│</span>
+<span class="comment">│</span>        │     <span class="server">eh_system_server</span>            │          │     <span class="server">eh_system_server</span>            │   <span class="comment">│</span>
+<span class="comment">│</span>        │  ┌───────────────────────────┐  │          │  ┌───────────────────────────┐  │   <span class="comment">│</span>
+<span class="comment">│</span>        │  │ • 处理 add_node           │  │          │  │ • 处理 EH_SNAPSHOT        │  │   <span class="comment">│</span>
+<span class="comment">│</span>        │  │ • 发送 EH_SNAPSHOT        │──┼──────────┼─►│ • 调用 data_server        │  │   <span class="comment">│</span>
+<span class="comment">│</span>        │  │ • 处理 EH_UPDATE_SNAPSHOT │◄─┼──────────┼──│ • 发送 EH_UPDATE_SNAPSHOT │  │   <span class="comment">│</span>
+<span class="comment">│</span>        │  │ • 状态管理                │  │          │  │ • 更新拓扑                │  │   <span class="comment">│</span>
+<span class="comment">│</span>        │  └───────────────────────────┘  │          │  └───────────────────────────┘  │   <span class="comment">│</span>
+<span class="comment">│</span>        │              │                   │          │              │                   │   <span class="comment">│</span>
+<span class="comment">│</span>        │              │ <span class="msg">gen_server:call</span>   │          │              │ <span class="msg">gen_server:call</span>   │   <span class="comment">│</span>
+<span class="comment">│</span>        │              ▼                   │          │              ▼                   │   <span class="comment">│</span>
+<span class="comment">│</span>        │  ┌───────────────────────────┐  │          │  ┌───────────────────────────┐  │   <span class="comment">│</span>
+<span class="comment">│</span>        │  │     <span class="server">eh_data_server</span>        │  │          │  │     <span class="server">eh_data_server</span>        │  │   <span class="comment">│</span>
+<span class="comment">│</span>        │  │                           │  │          │  │                           │  │   <span class="comment">│</span>
+<span class="comment">│</span>        │  │ • timestamp()             │  │          │  │ • <span class="function">snapshot()</span>              │  │   <span class="comment">│</span>
+<span class="comment">│</span>        │  │ • <span class="function">update_snapshot()</span>       │  │          │  │   → snapshot_data()      │  │   <span class="comment">│</span>
+<span class="comment">│</span>        │  │   → merge_data()          │  │          │  │   → snapshot_fun()       │  │   <span class="comment">│</span>
+<span class="comment">│</span>        │  │   → write_data()          │  │          │  │                           │  │   <span class="comment">│</span>
+<span class="comment">│</span>        │  └───────────────────────────┘  │          │  └───────────────────────────┘  │   <span class="comment">│</span>
+<span class="comment">│</span>        │              │                   │          │              │                   │   <span class="comment">│</span>
+<span class="comment">│</span>        │              ▼                   │          │              ▼                   │   <span class="comment">│</span>
+<span class="comment">│</span>        │  ┌───────────────────────────┐  │          │  ┌───────────────────────────┐  │   <span class="comment">│</span>
+<span class="comment">│</span>        │  │       <span class="data">磁盘文件</span>             │  │          │  │       <span class="data">磁盘文件</span>             │  │   <span class="comment">│</span>
+<span class="comment">│</span>        │  │  ec_n1_repl.data.xxx      │  │          │  │  ec_n2_repl.data.xxx      │  │   <span class="comment">│</span>
+<span class="comment">│</span>        │  └───────────────────────────┘  │          │  └───────────────────────────┘  │   <span class="comment">│</span>
+<span class="comment">│</span>        └─────────────────────────────────┘          └─────────────────────────────────┘   <span class="comment">│</span>
+<span class="comment">│                                                                                            │</span>
+<span class="comment">└────────────────────────────────────────────────────────────────────────────────────────────┘</span>
+            </div>
+        </div>
+
+        <!-- 关键代码位置 -->
+        <h2>📍 关键代码位置</h2>
+        <table>
+            <tr>
+                <th>功能</th>
+                <th>函数</th>
+                <th>文件位置</th>
+            </tr>
+            <tr>
+                <td>处理 add_node</td>
+                <td><code>handle_cast({EH_ADD_NODE, ...})</code></td>
+                <td>eh_system_server.erl:91-109</td>
+            </tr>
+            <tr>
+                <td>发起快照请求</td>
+                <td><code>process_snapshot_request/4</code></td>
+                <td>eh_system_server.erl:402-409</td>
+            </tr>
+            <tr>
+                <td>处理快照请求</td>
+                <td><code>handle_cast({EH_SNAPSHOT, ...})</code></td>
+                <td>eh_system_server.erl:112-123</td>
+            </tr>
+            <tr>
+                <td>生成增量数据</td>
+                <td><code>snapshot_data/3</code></td>
+                <td>eh_data_util.erl:75-77</td>
+            </tr>
+            <tr>
+                <td>过滤增量数据</td>
+                <td><code>snapshot_fun/3</code></td>
+                <td>eh_data_util.erl:57-73</td>
+            </tr>
+            <tr>
+                <td>处理快照响应</td>
+                <td><code>handle_cast({EH_UPDATE_SNAPSHOT, ...})</code></td>
+                <td>eh_system_server.erl:125-138</td>
+            </tr>
+            <tr>
+                <td>合并数据</td>
+                <td><code>merge_data/4</code></td>
+                <td>eh_data_util.erl:163-179</td>
+            </tr>
+            <tr>
+                <td>状态转换</td>
+                <td><code>update_state_snapshot/1</code></td>
+                <td>eh_node_state.erl:43-48</td>
+            </tr>
+        </table>
+
+        <!-- 总结 -->
+        <div class="summary-box">
+            <div class="summary-title">✅ 流程总结</div>
+            <table>
+                <tr>
+                    <th>阶段</th>
+                    <th>发起方</th>
+                    <th>接收方</th>
+                    <th>消息/操作</th>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>N1 (system_server)</td>
+                    <td>N2 (system_server)</td>
+                    <td>EH_SNAPSHOT {Ref, {0, []}}</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>N2 (system_server)</td>
+                    <td>N2 (data_server)</td>
+                    <td>gen_server:call snapshot(0, [])</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>N2 (system_server)</td>
+                    <td>N1 (system_server)</td>
+                    <td>EH_UPDATE_SNAPSHOT {Ref, Q0, PendingMap}</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>N1 (system_server)</td>
+                    <td>N1 (data_server)</td>
+                    <td>gen_server:call update_snapshot(Q0)</td>
+                </tr>
+            </table>
+            
+            <div style="margin-top: 15px;">
+                <strong>核心要点：</strong>
+                <ul style="margin-top: 10px; padding-left: 20px;">
+                    <li><code>EH_SNAPSHOT</code>: N1 → N2，请求增量数据</li>
+                    <li><code>EH_UPDATE_SNAPSHOT</code>: N2 → N1，返回增量数据</li>
+                    <li>eh_system_server 负责节点间通信和状态管理</li>
+                    <li>eh_data_server 负责数据存储和查询</li>
+                    <li>数据按时间戳排序，确保合并顺序正确</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+<!-- 回到顶部按钮 -->
+<div id="back-to-top" style="
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #00d4ff, #7c3aed);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+    transition: all 0.3s ease;
+    z-index: 999;
+    opacity: 0;
+    transform: translateY(20px);
+" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" 
+   onmouseover="this.style.transform='translateY(-5px) scale(1.1)'" 
+   onmouseout="this.style.transform='translateY(0) scale(1)'">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
+    </svg>
+</div>
+
+<script>
+// 回到顶部按钮显示/隐藏逻辑
+window.addEventListener('scroll', function() {
+    const backToTop = document.getElementById('back-to-top');
+    if (window.scrollY > 300) {
+        backToTop.style.opacity = '1';
+        backToTop.style.transform = 'translateY(0)';
+    } else {
+        backToTop.style.opacity = '0';
+        backToTop.style.transform = 'translateY(20px)';
+    }
+});
+</script>
+
+</body>
+</html>

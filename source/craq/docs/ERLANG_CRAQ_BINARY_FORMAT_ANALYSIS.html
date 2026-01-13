@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erlang CRAQ 二进制数据格式详细分析</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .content-section {
+            background: white;
+            margin: 20px 0;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .content-section h2 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .content-section h3 {
+            color: #34495e;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        
+        .binary-format {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .format-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .format-table th {
+            background: #3498db;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .format-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .format-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .format-table tr:hover {
+            background: #e3f2fd;
+        }
+        
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .warning {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .byte-breakdown {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .byte-section {
+            background: #e3f2fd;
+            border: 2px solid #2196f3;
+            border-radius: 5px;
+            padding: 10px;
+            text-align: center;
+            min-width: 80px;
+        }
+        
+        .byte-section.sha {
+            background: #ffebee;
+            border-color: #f44336;
+        }
+        
+        .byte-section.size {
+            background: #e8f5e8;
+            border-color: #4caf50;
+        }
+        
+        .byte-section.data {
+            background: #fff3e0;
+            border-color: #ff9800;
+        }
+        
+        .mermaid {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .example-box {
+            background: #f1f3f4;
+            border-left: 4px solid #4285f4;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .toc {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .toc ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .toc li {
+            margin: 8px 0;
+        }
+        
+        .toc a {
+            color: #007bff;
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+        
+        .toc a:hover {
+            background-color: #e3f2fd;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content-section {
+                padding: 20px;
+            }
+            
+            .format-table {
+                font-size: 14px;
+            }
+            
+            .byte-breakdown {
+                flex-direction: column;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+<!-- CRAQ 文档导航栏 -->
+<div id="craq-nav" style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(15, 15, 35, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 12px 20px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+">
+    <a href="/craq/" style="
+        color: #00d4ff;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    " onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#00d4ff'">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+        </svg>
+        返回 CRAQ 文档首页
+    </a>
+    
+    <div style="flex: 1;"></div>
+    
+    <a href="/" style="
+        color: #888;
+        text-decoration: none;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">
+        博客首页
+    </a>
+</div>
+
+<!-- 为导航栏添加顶部间距 -->
+<div style="height: 60px;"></div>
+
+    <div class="header">
+        <h1>📊 Erlang CRAQ 二进制数据格式分析</h1>
+        <p>深度解析 CRAQ 系统中数据持久化的二进制编码格式</p>
+    </div>
+
+    <div class="toc">
+        <h3>📋 目录</h3>
+        <ul>
+            <li><a href="#overview">1. 格式概览</a></li>
+            <li><a href="#structure">2. 数据结构</a></li>
+            <li><a href="#encoding">3. 编码过程</a></li>
+            <li><a href="#format-details">4. 格式详解</a></li>
+            <li><a href="#examples">5. 实际示例</a></li>
+            <li><a href="#decoding">6. 解码过程</a></li>
+            <li><a href="#performance">7. 性能考虑</a></li>
+        </ul>
+    </div>
+
+    <div class="content-section" id="overview">
+        <h2>🎯 1. 格式概览</h2>
+        
+        <p>Erlang CRAQ 系统使用一种<strong>三段式二进制格式</strong>来持久化数据，确保数据完整性和高效存储。</p>
+        
+        <div class="binary-format">
+            <strong>完整二进制格式：</strong><br>
+            [SHA哈希值(20字节)] + [数据大小(4字节)] + [序列化数据(N字节)]
+        </div>
+        
+        <div class="byte-breakdown">
+            <div class="byte-section sha">
+                <strong>SHA-1 哈希</strong><br>
+                20 字节<br>
+                数据完整性校验
+            </div>
+            <div class="byte-section size">
+                <strong>数据大小</strong><br>
+                4 字节<br>
+                32位无符号整数
+            </div>
+            <div class="byte-section data">
+                <strong>序列化数据</strong><br>
+                N 字节<br>
+                Erlang term_to_binary
+            </div>
+        </div>
+        
+        <div class="highlight">
+            <strong>🔑 关键特点：</strong>
+            <ul>
+                <li><strong>完整性保证</strong>：SHA-1 哈希确保数据未被篡改</li>
+                <li><strong>自描述格式</strong>：包含数据大小信息，便于解析</li>
+                <li><strong>Erlang 原生</strong>：使用 term_to_binary/binary_to_term</li>
+                <li><strong>高效存储</strong>：紧凑的二进制格式</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="content-section" id="structure">
+        <h2>📋 2. 数据结构</h2>
+        
+        <h3>2.1 eh_storage_data 记录结构</h3>
+        
+        <div class="code-block">
+-record(eh_storage_data, {
+    object_type     :: atom(),           % 对象类型 (如 person, candidate)
+    object_id       :: term(),           % 对象ID (如 10, 80)
+    timestamp       :: non_neg_integer(), % 时间戳 (如 3, 8)
+    data_index      :: non_neg_integer(), % 数据索引 (如 1, 2)
+    status          :: integer(),         % 状态 (通常为 1=活跃)
+    column          :: atom(),           % 列名 (如 name, age, party)
+    value           :: term()            % 值 (如 "john_smith", 40, "republican")
+}).
+        </div>
+        
+        <h3>2.2 实际数据示例</h3>
+        
+        <table class="format-table">
+            <thead>
+                <tr>
+                    <th>字段</th>
+                    <th>示例值 1</th>
+                    <th>示例值 2</th>
+                    <th>说明</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>object_type</strong></td>
+                    <td>person</td>
+                    <td>candidate</td>
+                    <td>数据对象的类型</td>
+                </tr>
+                <tr>
+                    <td><strong>object_id</strong></td>
+                    <td>10</td>
+                    <td>80</td>
+                    <td>对象的唯一标识符</td>
+                </tr>
+                <tr>
+                    <td><strong>timestamp</strong></td>
+                    <td>3</td>
+                    <td>8</td>
+                    <td>数据的时间戳</td>
+                </tr>
+                <tr>
+                    <td><strong>data_index</strong></td>
+                    <td>1</td>
+                    <td>2</td>
+                    <td>数据的索引号</td>
+                </tr>
+                <tr>
+                    <td><strong>status</strong></td>
+                    <td>1</td>
+                    <td>1</td>
+                    <td>状态 (1=活跃, 0=非活跃)</td>
+                </tr>
+                <tr>
+                    <td><strong>column</strong></td>
+                    <td>name</td>
+                    <td>party</td>
+                    <td>数据列名</td>
+                </tr>
+                <tr>
+                    <td><strong>value</strong></td>
+                    <td>"john_smith"</td>
+                    <td>"republican"</td>
+                    <td>实际的数据值</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="content-section" id="encoding">
+        <h2>🔧 3. 编码过程</h2>
+        
+        <div class="mermaid">
+            <div class="mermaid">
+graph TD
+    A[eh_storage_data 记录] --> B[term_to_binary]
+    B --> C[计算二进制大小]
+    C --> D[计算 SHA-1 哈希]
+    D --> E[组装最终二进制]
+    
+    E --> F[20字节 SHA-1]
+    E --> G[4字节 大小]
+    E --> H[N字节 数据]
+    
+    style A fill:#e1f5fe
+    style E fill:#c8e6c9
+    style F fill:#ffcdd2
+    style G fill:#dcedc8
+    style H fill:#ffe0b2
+            </div>
+        </div>
+        
+        <h3>3.1 编码步骤详解</h3>
+        
+        <div class="code-block">
+% 第1步：将 Erlang 记录转换为二进制
+Bin = term_to_binary(Entry),
+
+% 第2步：计算二进制数据的大小
+BinSize = byte_size(Bin),
+
+% 第3步：计算哈希值 (包含大小信息)
+B1 = <<BinSize:32, Bin:BinSize/binary>>,
+Sha = crypto:hash(sha, B1),
+
+% 第4步：组装最终的二进制格式
+FinalBinary = <<Sha:20/binary, BinSize:32, Bin:BinSize/binary>>
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ 重要细节：</strong>
+            <ul>
+                <li>SHA-1 哈希计算时<strong>包含了数据大小</strong>，防止长度扩展攻击</li>
+                <li>数据大小使用 <strong>32位大端序</strong> 存储</li>
+                <li>最大支持 <strong>4GB</strong> 的单条记录</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="content-section" id="format-details">
+        <h2>📐 4. 格式详解</h2>
+        
+        <h3>4.1 字节级别分解</h3>
+        
+        <table class="format-table">
+            <thead>
+                <tr>
+                    <th>位置</th>
+                    <th>大小</th>
+                    <th>类型</th>
+                    <th>描述</th>
+                    <th>示例值</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>0-19</td>
+                    <td>20 字节</td>
+                    <td>SHA-1 哈希</td>
+                    <td>数据完整性校验码</td>
+                    <td>144,64,82,140,7,212,33,199...</td>
+                </tr>
+                <tr>
+                    <td>20-23</td>
+                    <td>4 字节</td>
+                    <td>32位整数</td>
+                    <td>后续数据的字节长度</td>
+                    <td>0,0,0,58 (表示58字节)</td>
+                </tr>
+                <tr>
+                    <td>24-N</td>
+                    <td>N 字节</td>
+                    <td>Erlang 二进制</td>
+                    <td>term_to_binary 序列化的数据</td>
+                    <td>131,104,8,100,0,15,101...</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <h3>4.2 Erlang 二进制格式 (ETF)</h3>
+        
+        <p>序列化数据部分使用 Erlang 的 <strong>External Term Format (ETF)</strong>：</p>
+        
+        <div class="code-block">
+131,104,8,100,0,15,101,104,95,115,116,111,114,97,103,101,95,100,97,116,97,
+100,0,6,112,101,114,115,111,110,97,10,97,3,97,1,97,1,100,0,4,110,97,109,101,
+107,0,10,106,111,104,110,95,115,109,105,116,104
+        </div>
+        
+        <table class="format-table">
+            <thead>
+                <tr>
+                    <th>字节</th>
+                    <th>含义</th>
+                    <th>说明</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>131</td>
+                    <td>ETF 版本标识</td>
+                    <td>Erlang 外部格式版本号</td>
+                </tr>
+                <tr>
+                    <td>104,8</td>
+                    <td>元组标识 + 元素数量</td>
+                    <td>8元素的元组 (记录)</td>
+                </tr>
+                <tr>
+                    <td>100,0,15,...</td>
+                    <td>原子标识 + 长度 + 内容</td>
+                    <td>原子 'eh_storage_data'</td>
+                </tr>
+                <tr>
+                    <td>97,10</td>
+                    <td>小整数标识 + 值</td>
+                    <td>整数 10</td>
+                </tr>
+                <tr>
+                    <td>107,0,10,...</td>
+                    <td>字符串标识 + 长度 + 内容</td>
+                    <td>字符串 "john_smith"</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="content-section" id="examples">
+        <h2>💡 5. 实际示例分析</h2>
+        
+        <h3>5.1 示例 1：person 记录</h3>
+        
+        <div class="example-box">
+            <strong>原始数据：</strong><br>
+            {eh_storage_data, person, 10, 3, 1, 1, name, "john_smith"}
+        </div>
+        
+        <div class="code-block">
+完整二进制输出：
+<<144,64,82,140,7,212,33,199,89,185,3,80,182,76,132,75,137,219,138,215,0,0,0,
+  58,131,104,8,100,0,15,101,104,95,115,116,111,114,97,103,101,95,100,97,116,97,
+  100,0,6,112,101,114,115,111,110,97,10,97,3,97,1,97,1,100,0,4,110,97,109,101,
+  107,0,10,106,111,104,110,95,115,109,105,116,104>>
+        </div>
+        
+        <div class="byte-breakdown">
+            <div class="byte-section sha">
+                <strong>SHA-1 哈希</strong><br>
+                144,64,82,140,7,212,33,199,89,185,3,80,182,76,132,75,137,219,138,215<br>
+                <small>20 字节</small>
+            </div>
+            <div class="byte-section size">
+                <strong>数据大小</strong><br>
+                0,0,0,58<br>
+                <small>58 字节</small>
+            </div>
+            <div class="byte-section data">
+                <strong>ETF 数据</strong><br>
+                131,104,8,100,0,15...<br>
+                <small>58 字节</small>
+            </div>
+        </div>
+        
+        <h3>5.2 示例 2：candidate 记录</h3>
+        
+        <div class="example-box">
+            <strong>原始数据：</strong><br>
+            {eh_storage_data, candidate, 80, 8, 1, 1, name, "chris_christie"}
+        </div>
+        
+        <div class="code-block">
+完整二进制输出：
+<<129,6,124,227,60,11,6,8,95,40,163,44,38,110,200,65,198,186,212,113,0,0,0,65,
+  131,104,8,100,0,15,101,104,95,115,116,111,114,97,103,101,95,100,97,116,97,
+  100,0,9,99,97,110,100,105,100,97,116,101,97,80,97,8,97,1,97,1,100,0,4,110,97,
+  109,101,107,0,13,99,104,114,105,115,95,99,104,114,105,115,116,105,101>>
+        </div>
+        
+        <table class="format-table">
+            <thead>
+                <tr>
+                    <th>字段</th>
+                    <th>示例1 (person)</th>
+                    <th>示例2 (candidate)</th>
+                    <th>差异说明</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>SHA-1</td>
+                    <td>144,64,82,140...</td>
+                    <td>129,6,124,227...</td>
+                    <td>不同数据产生不同哈希</td>
+                </tr>
+                <tr>
+                    <td>数据大小</td>
+                    <td>58 字节</td>
+                    <td>65 字节</td>
+                    <td>更长的字符串导致更大的数据</td>
+                </tr>
+                <tr>
+                    <td>对象类型</td>
+                    <td>person</td>
+                    <td>candidate</td>
+                    <td>不同的原子值</td>
+                </tr>
+                <tr>
+                    <td>字符串值</td>
+                    <td>"john_smith" (10字符)</td>
+                    <td>"chris_christie" (13字符)</td>
+                    <td>字符串长度影响总大小</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="content-section" id="decoding">
+        <h2>🔍 6. 解码过程</h2>
+        
+        <div class="mermaid">
+            <div class="mermaid">
+graph TD
+    A[读取二进制数据] --> B[提取 SHA-1 哈希<br/>前20字节]
+    B --> C[提取数据大小<br/>第21-24字节]
+    C --> D[提取序列化数据<br/>剩余N字节]
+    D --> E[验证哈希值]
+    E --> F{哈希匹配?}
+    F -->|是| G[binary_to_term 反序列化]
+    F -->|否| H[返回错误 eh_bad_data]
+    G --> I[返回 eh_storage_data 记录]
+    
+    style A fill:#e1f5fe
+    style E fill:#fff3e0
+    style F fill:#ffecb3
+    style G fill:#c8e6c9
+    style H fill:#ffcdd2
+    style I fill:#c8e6c9
+            </div>
+        </div>
+        
+        <h3>6.1 解码步骤</h3>
+        
+        <div class="code-block">
+% 第1步：解析头部信息
+<<Sha:20/binary, BinSize:32>> = HeaderData,
+
+% 第2步：读取指定大小的数据
+{ok, _, RData} = read_data(File, Location, BinSize),
+
+% 第3步：验证哈希值
+ComputedSha = crypto:hash(sha, <<BinSize:32, RData:BinSize/binary>>),
+case ComputedSha of
+    Sha -> 
+        % 第4步：反序列化数据
+        {ok, binary_to_term(RData)};
+    _Other -> 
+        eh_bad_data
+end
+        </div>
+        
+        <div class="success">
+            <strong>✅ 安全特性：</strong>
+            <ul>
+                <li><strong>完整性验证</strong>：任何数据损坏都会被检测到</li>
+                <li><strong>长度验证</strong>：防止缓冲区溢出攻击</li>
+                <li><strong>格式验证</strong>：ETF 格式自带类型安全</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="content-section" id="performance">
+        <h2>⚡ 7. 性能考虑</h2>
+        
+        <h3>7.1 存储效率</h3>
+        
+        <table class="format-table">
+            <thead>
+                <tr>
+                    <th>组件</th>
+                    <th>大小</th>
+                    <th>开销</th>
+                    <th>说明</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>SHA-1 哈希</td>
+                    <td>20 字节</td>
+                    <td>固定</td>
+                    <td>每条记录固定开销</td>
+                </tr>
+                <tr>
+                    <td>数据大小</td>
+                    <td>4 字节</td>
+                    <td>固定</td>
+                    <td>支持最大 4GB 记录</td>
+                </tr>
+                <tr>
+                    <td>ETF 开销</td>
+                    <td>~10-20%</td>
+                    <td>可变</td>
+                    <td>相比原始数据的开销</td>
+                </tr>
+                <tr>
+                    <td>总开销</td>
+                    <td>24 + ETF</td>
+                    <td>~30-40 字节</td>
+                    <td>典型小记录的开销</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <h3>7.2 性能优化</h3>
+        
+        <div class="highlight">
+            <strong>🚀 优化策略：</strong>
+            <ul>
+                <li><strong>批量写入</strong>：使用队列批量处理多个记录</li>
+                <li><strong>预分配</strong>：预先分配二进制缓冲区</li>
+                <li><strong>哈希缓存</strong>：对相同数据缓存哈希值</li>
+                <li><strong>压缩</strong>：可选择性地压缩大型记录</li>
+            </ul>
+        </div>
+        
+        <h3>7.3 读写性能</h3>
+        
+        <div class="code-block">
+% 写入性能 (每条记录)
+- term_to_binary:     ~1-5 μs
+- SHA-1 计算:         ~2-10 μs  
+- 文件写入:           ~10-100 μs
+- 总计:               ~15-115 μs
+
+% 读取性能 (每条记录)  
+- 文件读取:           ~5-50 μs
+- SHA-1 验证:         ~2-10 μs
+- binary_to_term:     ~1-5 μs
+- 总计:               ~8-65 μs
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ 性能瓶颈：</strong>
+            <ul>
+                <li><strong>磁盘 I/O</strong>：通常是最大的性能瓶颈</li>
+                <li><strong>SHA-1 计算</strong>：CPU 密集型操作</li>
+                <li><strong>序列化开销</strong>：复杂数据结构的转换成本</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="content-section">
+        <h2>📋 总结</h2>
+        
+        <p>Erlang CRAQ 的二进制格式设计体现了以下核心理念：</p>
+        
+        <div class="highlight">
+            <strong>🎯 设计目标：</strong>
+            <ul>
+                <li><strong>数据完整性</strong>：SHA-1 哈希确保数据未被篡改</li>
+                <li><strong>自描述性</strong>：包含长度信息，便于解析和验证</li>
+                <li><strong>Erlang 兼容</strong>：使用原生的序列化机制</li>
+                <li><strong>性能平衡</strong>：在安全性和性能之间找到平衡点</li>
+            </ul>
+        </div>
+        
+        <p>这种格式特别适合 CRAQ 系统的需求：高可靠性的分布式存储，需要确保数据在网络传输和磁盘存储过程中的完整性。</p>
+        
+        <div class="success">
+            <strong>✅ 关键优势：</strong>
+            <ul>
+                <li>强数据完整性保证</li>
+                <li>高效的序列化/反序列化</li>
+                <li>良好的错误检测能力</li>
+                <li>与 Erlang 生态系统完美集成</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({startOnLoad:true});
+        
+        // 添加复制代码功能
+        document.querySelectorAll('.code-block').forEach(block => {
+            block.addEventListener('click', () => {
+                navigator.clipboard.writeText(block.textContent);
+                block.style.backgroundColor = '#2d5016';
+                setTimeout(() => {
+                    block.style.backgroundColor = '#2d3748';
+                }, 200);
+            });
+        });
+    </script>
+
+<!-- 回到顶部按钮 -->
+<div id="back-to-top" style="
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #00d4ff, #7c3aed);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+    transition: all 0.3s ease;
+    z-index: 999;
+    opacity: 0;
+    transform: translateY(20px);
+" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" 
+   onmouseover="this.style.transform='translateY(-5px) scale(1.1)'" 
+   onmouseout="this.style.transform='translateY(0) scale(1)'">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
+    </svg>
+</div>
+
+<script>
+// 回到顶部按钮显示/隐藏逻辑
+window.addEventListener('scroll', function() {
+    const backToTop = document.getElementById('back-to-top');
+    if (window.scrollY > 300) {
+        backToTop.style.opacity = '1';
+        backToTop.style.transform = 'translateY(0)';
+    } else {
+        backToTop.style.opacity = '0';
+        backToTop.style.transform = 'translateY(20px)';
+    }
+});
+</script>
+
+</body>
+</html>

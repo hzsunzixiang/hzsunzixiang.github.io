@@ -1,53 +1,120 @@
-# Site settings
+# Hexo Configuration
+## Docs: https://hexo.io/docs/configuration.html
+## Source: https://github.com/hexojs/hexo/
+
+# Site
 title: Zixiang Sun's Blog
-email: 17842379@qq.com
-description: >-
-  Welcome to my personal blog where I share thoughts on technology, 
-  programming, and life experiences.
-baseurl: ""
-url: "http://localhost:4000"
-twitter_username: hzsunzixiang
-github_username: hzsunzixiang
+subtitle: 'Sharing thoughts on technology, programming, and life'
+description: 'Welcome to my personal blog where I share thoughts on technology, programming, and life experiences.'
+keywords:
+  - technology
+  - programming
+  - blog
+  - development
+  - CRAQ
+  - distributed systems
+author: Zixiang Sun
+language: zh-CN
+timezone: 'Asia/Shanghai'
 
-# Build settings
-markdown: kramdown
-highlighter: rouge
-theme: minima
-plugins:
-  - jekyll-feed
-  - jekyll-sitemap
-  - jekyll-seo-tag
+# URL
+## Set your site url here. For example, if you use GitHub Page, set url as 'https://username.github.io/project'
+url: https://hzsunzixiang.github.io
+permalink: :year/:month/:day/:title/
+permalink_defaults:
+pretty_urls:
+  trailing_index: false
+  trailing_html: false
 
-# Include static files
-include:
-  - craq
+# Directory
+source_dir: source
+public_dir: public
+tag_dir: tags
+archive_dir: archives
+category_dir: categories
+code_dir: downloads/code
+i18n_dir: :lang
+skip_render:
+  - 'craq/**'
 
-# Exclude from processing
-exclude:
-  - Gemfile
-  - Gemfile.lock
-  - node_modules
-  - vendor/bundle/
-  - vendor/cache/
-  - vendor/gems/
-  - vendor/ruby/
+# Writing
+new_post_name: :year-:month-:day-:title.md
+default_layout: post
+titlecase: false
+external_link:
+  enable: true
+  field: site
+  exclude: ''
+filename_case: 0
+render_drafts: false
+post_asset_folder: true
+relative_link: false
+future: true
+syntax_highlighter: highlight.js
+highlight:
+  line_number: true
+  auto_detect: true
+  tab_replace: '  '
+  wrap: true
+  hljs: false
+prismjs:
+  preprocess: true
+  line_number: true
+  tab_replace: ''
 
-# Collections
-collections:
-  posts:
-    output: true
-    permalink: /:categories/:year/:month/:day/:title/
+# Home page setting
+index_generator:
+  path: ''
+  per_page: 10
+  order_by: -date
+
+# Category & Tag
+default_category: uncategorized
+category_map:
+  技术: technology
+  架构设计: architecture
+  博客: blog
+tag_map:
+
+# Metadata elements
+meta_generator: true
+
+# Date / Time format
+date_format: YYYY-MM-DD
+time_format: HH:mm:ss
+updated_option: 'mtime'
 
 # Pagination
-paginate: 5
-paginate_path: "/page:num/"
+per_page: 10
+pagination_dir: page
 
-# SEO
-author: Zixiang Sun
+# Include / Exclude file(s)
+include:
+exclude:
+ignore:
+
+# Extensions
+## Plugins: https://hexo.io/plugins/
+## Themes: https://hexo.io/themes/
+theme: landscape
+
+# Deployment
+## Docs: https://hexo.io/docs/one-command-deployment
+deploy:
+  type: git
+  repo: https://github.com/hzsunzixiang/hzsunzixiang.github.io.git
+  branch: gh-pages
+
+# Social Links
 social:
-  name: Zixiang Sun
-  links:
-    - https://github.com/hzsunzixiang
+  GitHub: https://github.com/hzsunzixiang
+  Email: mailto:17842379@qq.com
 
-# Analytics (optional)
-google_analytics: # Add your GA tracking ID here if needed
+# Menu
+menu:
+  首页: /
+  归档: /archives/
+  CRAQ: /craq/
+  关于: /about/
+  标签: /tags/
+  分类: /categories/

@@ -1,71 +1,30 @@
-# Jekyll
-_site/
-.sass-cache/
-.jekyll-cache/
-.jekyll-metadata
-
-# Ruby
-*.gem
-*.rbc
-/.config
-/coverage/
-/InstalledFiles
-/pkg/
-/spec/reports/
-/spec/examples.txt
-/test/tmp/
-/test/version_tmp/
-/tmp/
-
-# Bundler
-/vendor/bundle/
-/lib/bundler/man/
-
-# for a library or gem, you might want to ignore these files since the code is
-# intended to run in multiple environments; otherwise, check them in:
-Gemfile.lock
-.ruby-version
-.ruby-gemset
-
-# unless supporting rvm < 1.11.0 or doing something fancy, ignore this:
-.rvmrc
-
-# Node.js (if using Node.js for build tools)
+# Hexo
+.DS_Store
+Thumbs.db
+db.json
+*.log
 node_modules/
+public/
+.deploy*/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temp files
+*.tmp
+*.temp
+
+# Debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Logs
-logs
-*.log
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Cache
+# Build
 .cache/
 
-# Backup files
-*.bak
+# Backup
 *.backup
+*-backup/

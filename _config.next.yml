@@ -14,8 +14,10 @@ scheme: Pisces      # 双栏风格，左侧目录
 # 站点信息
 # ============================================================
 favicon:
-  small: /images/favicon-16x16.png
-  medium: /images/favicon-32x32.png
+  small: /images/favicon.svg
+  medium: /images/favicon.svg
+  apple_touch_icon: /images/favicon.svg
+  safari_pinned_tab: /images/favicon.svg
 
 # 页脚配置
 footer:

@@ -63,6 +63,23 @@
   color: #3F51B5 !important;
 }
 
+// Erlang 自定义图标 - 用 PNG 替换 Font Awesome
+.menu-item-erlang .fa-code {
+  font-size: 0 !important;
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  background: url('/images/erlang_basic/erlang_icon.png') no-repeat center center;
+  background-size: contain;
+  vertical-align: middle;
+  font-size: 14px !important;
+}
+
+.menu-item-erlang .fa-code::before {
+  content: '' !important;
+  display: none !important;
+}
+
 // RabbitMQ 自定义图标 - 用 PNG 替换 Font Awesome
 .menu-item-rabbitmq .fa-server {
   font-size: 0 !important;  // 隐藏原图标文字

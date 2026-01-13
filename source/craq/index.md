@@ -3,6 +3,8 @@ title: CRAQ 技术文档
 date: 2024-01-15
 ---
 
+<a id="top"></a>
+
 # CRAQ 技术文档
 
 Chain Replication with Apportioned Queries (CRAQ) 协议的完整技术文档和实现分析。
@@ -23,7 +25,7 @@ Chain Replication with Apportioned Queries (CRAQ) 协议的完整技术文档和
 | [共识协议对比分析](docs/Consensus_Protocols_Comparison.html) | CRAQ 与其他分布式共识协议的详细对比分析 |
 | [CRAQ Erlang 实现文档](docs/CRAQ-erlang-implementation.html) | CRAQ 协议 Erlang 实现的技术文档和使用指南 |
 
-[↑ 返回顶部](#craq-技术文档)
+[↑ 返回顶部](#top)
 
 ---
 
@@ -41,7 +43,7 @@ Chain Replication with Apportioned Queries (CRAQ) 协议的完整技术文档和
 | [文件打开流程分析](docs/FILE_OPEN_FLOW_ANALYSIS.html) | 文件打开操作的完整流程分析 |
 | [文件打开演示分析](docs/FILE_OPEN_DEMO_ANALYSIS.html) | 文件打开操作的演示和示例 |
 
-[↑ 返回顶部](#craq-技术文档)
+[↑ 返回顶部](#top)
 
 ---
 
@@ -58,7 +60,7 @@ Chain Replication with Apportioned Queries (CRAQ) 协议的完整技术文档和
 | [EH 应用配置源码分析](docs/EH_APP_CONFIG_SOURCE_ANALYSIS.html) | CRAQ 集群配置管理和应用程序配置分析 |
 | [CRAQ 启动追踪分析](docs/ERLANG_CRAQ_STARTUP_TRACE_ANALYSIS.html) | CRAQ 系统启动过程的追踪和分析 |
 
-[↑ 返回顶部](#craq-技术文档)
+[↑ 返回顶部](#top)
 
 ---
 
@@ -76,7 +78,7 @@ Chain Replication with Apportioned Queries (CRAQ) 协议的完整技术文档和
 | [初始集群数据同步分析](docs/CRAQ_INITIAL_CLUSTER_DATA_SYNC_ANALYSIS.html) | 新建集群时的初始数据同步过程和实现细节 |
 | [添加节点快照同步流程](docs/ADD_NODE_SNAPSHOT_SYNC_FLOW.html) | 新节点加入集群时的快照同步流程 |
 
-[↑ 返回顶部](#craq-技术文档)
+[↑ 返回顶部](#top)
 
 ---
 
@@ -97,7 +99,7 @@ Chain Replication with Apportioned Queries (CRAQ) 协议的完整技术文档和
 | [CRAQ 查询追踪分析](docs/ERLANG_CRAQ_QUERY_TRACE_ANALYSIS.html) | 查询操作的追踪日志分析 |
 | [CRAQ 详细追踪分析](docs/ERLANG_CRAQ_DETAILED_TRACE_ANALYSIS.html) | CRAQ 操作的详细追踪分析 |
 
-[↑ 返回顶部](#craq-技术文档)
+[↑ 返回顶部](#top)
 
 ---
 
@@ -109,7 +111,7 @@ Chain Replication with Apportioned Queries (CRAQ) 协议的完整技术文档和
 |------|------|
 | [Erlang CRAQ PDF 文档翻译](docs/ERLANG_CRAQ_PDF_TRANSLATION.html) | CRAQ 原始技术论文的完整中文翻译和解释 |
 
-[↑ 返回顶部](#craq-技术文档)
+[↑ 返回顶部](#top)
 
 ---
 
@@ -121,7 +123,7 @@ Chain Replication with Apportioned Queries (CRAQ) 协议的完整技术文档和
 |------|------|
 | [CRAQ 使用指南](docs/ERLANG_CRAQ_USAGE_GUIDE.html) | CRAQ 系统的安装、配置和使用的完整指南 |
 
-[↑ 返回顶部](#craq-技术文档)
+[↑ 返回顶部](#top)
 
 ---
 
@@ -133,6 +135,6 @@ Chain Replication with Apportioned Queries (CRAQ) 协议的完整技术文档和
 
 ---
 
-[← 返回首页](/) | [↑ 返回顶部](#craq-技术文档)
+[← 返回首页](/) | [↑ 返回顶部](#top)
 
 *本文档集合持续更新中，欢迎提出建议和反馈。*

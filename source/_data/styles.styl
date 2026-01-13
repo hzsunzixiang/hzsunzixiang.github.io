@@ -63,6 +63,18 @@
   color: #3F51B5 !important;
 }
 
+// RabbitMQ 自定义图标 - 替换 Font Awesome 图标为 PNG
+.menu-item-rabbitmq i.fa-server::before {
+  content: '' !important;
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  background-image: url('/images/rabbitmq/rabbitmq_icon.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
 // ============================================================
 // 社交链接
 // ============================================================

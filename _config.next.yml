@@ -35,9 +35,9 @@ footer:
 menu:
   home: / || fa fa-home
   archives: /archives/ || fa fa-archive
-  tags: /tags/ || fa fa-tags
   categories: /categories/ || fa fa-th
   CRAQ: /craq/ || fa fa-book
+  Erlang: /tags/Erlang/ || fa fa-tags
   about: /about/ || fa fa-user
 
 menu_settings:

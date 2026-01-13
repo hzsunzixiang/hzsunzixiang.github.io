@@ -57,7 +57,7 @@ sidebar:
 
 # 头像配置
 avatar:
-  url: /images/avatar.png
+  url: /images/avatar.svg
   rounded: true
   rotated: false
 

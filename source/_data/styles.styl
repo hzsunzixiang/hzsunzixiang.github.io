@@ -1,56 +1,90 @@
 // Indigo 风格自定义样式
 // 主色调: #3F51B5 (Indigo)
 // 辅助色: #303F9F (Dark Indigo)
-// 强调色: #FF4081 (Pink Accent)
 
-// 链接颜色
-$link-color = #3F51B5
-$link-hover-color = #303F9F
+// ============================================================
+// 侧边栏样式修复 - Pisces 主题
+// ============================================================
 
-// 侧边栏
-.sidebar {
-  background: linear-gradient(180deg, #3F51B5 0%, #5C6BC0 100%);
-}
-
+// 侧边栏整体背景
 .sidebar-inner {
-  color: #fff;
+  background: linear-gradient(180deg, #3F51B5 0%, #5C6BC0 100%) !important;
+  color: #fff !important;
 }
 
+// 站点概览区域
+.site-overview {
+  background: transparent !important;
+}
+
+// 站点作者名称
 .site-author-name {
   color: #fff !important;
 }
 
+// 站点描述
 .site-description {
-  color: rgba(255, 255, 255, 0.8) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
 }
 
-.menu-item a {
-  color: rgba(255, 255, 255, 0.9) !important;
-  &:hover {
-    color: #fff !important;
-    background: rgba(255, 255, 255, 0.1);
-  }
-}
-
-.menu-item.active a {
+// 站点状态（文章数、分类数、标签数）
+.site-state-item-count {
   color: #fff !important;
-  background: rgba(255, 255, 255, 0.2);
 }
 
-// 社交图标
-.social-links a {
+.site-state-item-name {
   color: rgba(255, 255, 255, 0.8) !important;
-  &:hover {
-    color: #fff !important;
-  }
 }
 
-// 文章标题
-.post-title, .post-title a {
+.site-state-item {
+  border-left-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+// ============================================================
+// 菜单样式
+// ============================================================
+
+.menu-item a, .menu-item a span {
+  color: #333 !important;
+}
+
+.menu-item a:hover, .menu-item a:hover span {
+  color: #3F51B5 !important;
+  background: rgba(63, 81, 181, 0.1) !important;
+}
+
+.menu-item.active a, .menu-item.active a span {
+  color: #3F51B5 !important;
+  font-weight: bold;
+}
+
+// 菜单图标
+.menu-item i {
   color: #3F51B5 !important;
 }
 
-.post-title a:hover {
+// ============================================================
+// 社交链接
+// ============================================================
+
+.links-of-author a {
+  color: rgba(255, 255, 255, 0.9) !important;
+  &:hover {
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+  }
+}
+
+// ============================================================
+// 文章样式
+// ============================================================
+
+// 文章标题
+.post-title, .post-title a, .post-title-link {
+  color: #3F51B5 !important;
+}
+
+.post-title a:hover, .post-title-link:hover {
   color: #303F9F !important;
 }
 
@@ -64,7 +98,14 @@ $link-hover-color = #303F9F
   }
 }
 
-// 目录样式
+// ============================================================
+// 目录 (TOC) 样式
+// ============================================================
+
+.post-toc {
+  background: transparent !important;
+}
+
 .post-toc .nav .active > a {
   color: #3F51B5 !important;
   border-left-color: #3F51B5 !important;
@@ -74,42 +115,75 @@ $link-hover-color = #303F9F
   color: #3F51B5 !important;
 }
 
-// 阅读进度条
+.post-toc ol a {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.post-toc ol a:hover {
+  color: #fff !important;
+}
+
+.post-toc .nav .active > a {
+  color: #fff !important;
+  font-weight: bold;
+}
+
+// 目录标题
+.sidebar-panel-title {
+  color: #fff !important;
+}
+
+// ============================================================
+// 阅读进度和返回顶部
+// ============================================================
+
 .reading-progress-bar {
   background: #3F51B5 !important;
 }
 
-// 返回顶部按钮
 .back-to-top {
   background: #3F51B5 !important;
+  color: #fff !important;
   &:hover {
     background: #303F9F !important;
   }
 }
 
-// 标签
-.tag, .category {
-  background: #E8EAF6;
-  color: #3F51B5;
+// ============================================================
+// 标签和分类
+// ============================================================
+
+.tag, .category, a[rel="tag"] {
+  background: #E8EAF6 !important;
+  color: #3F51B5 !important;
   &:hover {
-    background: #C5CAE9;
-    color: #303F9F;
+    background: #C5CAE9 !important;
+    color: #303F9F !important;
   }
 }
 
+// ============================================================
 // 代码块
+// ============================================================
+
 code {
   background: #E8EAF6;
   color: #3F51B5;
 }
 
+// ============================================================
 // 引用块
+// ============================================================
+
 blockquote {
   border-left: 4px solid #3F51B5;
   background: #E8EAF6;
 }
 
+// ============================================================
 // 分页
+// ============================================================
+
 .pagination .page-number.current {
   background: #3F51B5 !important;
   color: #fff !important;
@@ -120,7 +194,10 @@ blockquote {
   color: #3F51B5 !important;
 }
 
-// 搜索框
+// ============================================================
+// 搜索
+// ============================================================
+
 .local-search-input {
   border-color: #3F51B5 !important;
   &:focus {
@@ -128,22 +205,48 @@ blockquote {
   }
 }
 
+// ============================================================
 // 头部
+// ============================================================
+
 .header-inner {
   background: #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-// 站点标题
+// 站点标题（头部）
+.brand {
+  color: #3F51B5 !important;
+}
+
 .site-title {
   color: #3F51B5 !important;
 }
 
-// 按钮样式
+.logo-line-before, .logo-line-after {
+  background: #3F51B5 !important;
+}
+
+// ============================================================
+// 按钮
+// ============================================================
+
 .btn {
   background: #3F51B5;
   color: #fff;
   &:hover {
     background: #303F9F;
   }
+}
+
+// ============================================================
+// 页脚
+// ============================================================
+
+.footer {
+  color: #666;
+}
+
+.footer a {
+  color: #3F51B5 !important;
 }

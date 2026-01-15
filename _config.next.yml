@@ -208,23 +208,16 @@ reward_settings:
   enable: false
 
 # ============================================================
-# 评论系统 - Giscus (基于 GitHub Discussions)
+# 评论系统 - Utterances (基于 GitHub Issues)
 # ============================================================
 comments:
-  active: giscus
+  active: utterances
   lazyload: true
 
-# Giscus 配置
-giscus:
+# Utterances 配置
+# 需要安装 Utterances App: https://github.com/apps/utterances
+utterances:
   enable: true
   repo: hzsunzixiang/hzsunzixiang.github.io
-  repo_id: R_kgDOQ4HyHg
-  category: Announcements
-  category_id: DIC_kwDOQ4HyHs4C0-EL
-  mapping: pathname
-  reactions_enabled: 1
-  emit_metadata: 0
-  theme: preferred_color_scheme
-  lang: zh-CN
-  input_position: bottom
-  loading: lazy
+  issue_term: pathname
+  theme: github-light

@@ -102,7 +102,7 @@ theme: next
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
   type: git
-  repo: https://github.com/hzsunzixiang/hzsunzixiang.github.io.git
+  repo: git@github.com:hzsunzixiang/hzsunzixiang.github.io.git
   branch: gh-pages
 
 # Social Links

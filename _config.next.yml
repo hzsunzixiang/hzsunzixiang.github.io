@@ -208,7 +208,23 @@ reward_settings:
   enable: false
 
 # ============================================================
-# 评论系统
+# 评论系统 - Giscus (基于 GitHub Discussions)
 # ============================================================
 comments:
-  active: false
+  active: giscus
+  lazyload: true
+
+# Giscus 配置
+giscus:
+  enable: true
+  repo: hzsunzixiang/hzsunzixiang.github.io
+  repo_id: R_kgDOQ4HyHg
+  category: Announcements
+  category_id: DIC_kwDOQ4HyHs4C0-EL
+  mapping: pathname
+  reactions_enabled: 1
+  emit_metadata: 0
+  theme: preferred_color_scheme
+  lang: zh-CN
+  input_position: bottom
+  loading: lazy

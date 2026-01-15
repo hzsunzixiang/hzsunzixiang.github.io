@@ -221,3 +221,15 @@ utterances:
   repo: hzsunzixiang/hzsunzixiang.github.io
   issue_term: pathname
   theme: github-light
+
+# ============================================================
+# 访问量统计 - 不蒜子
+# ============================================================
+busuanzi_count:
+  enable: true
+  total_visitors: true        # 总访客数
+  total_visitors_icon: fa fa-user
+  total_views: true           # 总浏览量
+  total_views_icon: fa fa-eye
+  post_views: true            # 每篇文章浏览量
+  post_views_icon: far fa-eye

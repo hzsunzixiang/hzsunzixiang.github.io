@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.svg">
+  <link rel="mask-icon" href="/images/favicon.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Noto+Serif+SC:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Source+Code+Pro:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"hzsunzixiang.github.io","root":"/","images":"/images","scheme":"Pisces","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"default","show_result":true},"fold":{"enable":false,"height":500},"language":false,"highlight_theme":"default"},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="本文介绍 Erlang&#x2F;OTP 中的通用型服务器行为模式 gen_server，这是 OTP 框架中最常用的 behavior 之一。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="第四章：通用型服务器 gen_server">
+<meta property="og:url" content="https://hzsunzixiang.github.io/2024/01/18/erlang-erlang-otp-gen-server/">
+<meta property="og:site_name" content="Zixiang Sun&#39;s Blog">
+<meta property="og:description" content="本文介绍 Erlang&#x2F;OTP 中的通用型服务器行为模式 gen_server，这是 OTP 框架中最常用的 behavior 之一。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_otp/gen_server_flow.svg">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_otp/gen_server_lifecycle.svg">
+<meta property="article:published_time" content="2024-01-17T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-14T16:00:00.000Z">
+<meta property="article:author" content="Zixiang Sun">
+<meta property="article:tag" content="Erlang">
+<meta property="article:tag" content="OTP">
+<meta property="article:tag" content="gen_server">
+<meta property="article:tag" content="并发编程">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hzsunzixiang.github.io/images/erlang_otp/gen_server_flow.svg">
+
+
+<link rel="canonical" href="https://hzsunzixiang.github.io/2024/01/18/erlang-erlang-otp-gen-server/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://hzsunzixiang.github.io/2024/01/18/erlang-erlang-otp-gen-server/","path":"2024/01/18/erlang-erlang-otp-gen-server/","title":"第四章：通用型服务器 gen_server"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>第四章：通用型服务器 gen_server | Zixiang Sun's Blog</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="Zixiang Sun's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Zixiang Sun's Blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Sharing thoughts on technology, programming, and life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">7</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">5</span></a></li><li class="menu-item menu-item-erlang"><a href="/erlang/" rel="section"><i class="fa fa-code fa-fw"></i>Erlang</a></li><li class="menu-item menu-item-rabbitmq"><a href="/rabbitmq/" rel="section"><i class="fa fa-server fa-fw"></i>RabbitMQ</a></li><li class="menu-item menu-item-craq"><a href="/craq/" rel="section"><i class="fa fa-book fa-fw"></i>CRAQ</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#gen-server-%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">gen_server 概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#behavior-%E6%8C%87%E4%BB%A4"><span class="nav-number">2.</span> <span class="nav-text">behavior 指令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E4%B8%80%E4%B8%AA-server"><span class="nav-number">3.</span> <span class="nav-text">启动一个 server</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B6%88%E6%81%AF%E4%BC%A0%E9%80%92"><span class="nav-number">4.</span> <span class="nav-text">消息传递</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E5%BC%8F%E6%B6%88%E6%81%AF%E4%BC%A0%E9%80%92"><span class="nav-number">4.1.</span> <span class="nav-text">同步式消息传递</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5%E5%BC%8F%E6%B6%88%E6%81%AF%E4%BC%A0%E9%80%92"><span class="nav-number">4.2.</span> <span class="nav-text">异步式消息传递</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E6%B6%88%E6%81%AF"><span class="nav-number">4.3.</span> <span class="nav-text">其他消息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%AA%E5%A4%84%E7%90%86%E7%9A%84%E6%B6%88%E6%81%AF"><span class="nav-number">4.4.</span> <span class="nav-text">未处理的消息</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E5%AE%A2%E6%88%B7%E7%AB%AF"><span class="nav-number">5.</span> <span class="nav-text">同步客户端</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%88%E6%AD%A2"><span class="nav-number">6.</span> <span class="nav-text">终止</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E7%94%A8%E8%B6%85%E6%97%B6"><span class="nav-number">7.</span> <span class="nav-text">调用超时</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%AD%BB%E9%94%81"><span class="nav-number">8.</span> <span class="nav-text">死锁</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%9A%E7%94%A8%E5%9E%8B-server-%E7%9A%84%E8%B6%85%E6%97%B6%E9%97%AE%E9%A2%98"><span class="nav-number">9.</span> <span class="nav-text">通用型 server 的超时问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF-behavior-%E4%BC%91%E7%9C%A0"><span class="nav-number">10.</span> <span class="nav-text">使 behavior 休眠</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%A8%E5%B1%80%E5%8C%96"><span class="nav-number">11.</span> <span class="nav-text">全局化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%93%BE%E6%8E%A5-behavior"><span class="nav-number">12.</span> <span class="nav-text">链接 behavior</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gen-server-%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F"><span class="nav-number">13.</span> <span class="nav-text">gen_server 生命周期</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">14.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%A5%E4%B8%8B%E6%9D%A5%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">15.</span> <span class="nav-text">接下来是什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E8%B5%84%E6%BA%90"><span class="nav-number">16.</span> <span class="nav-text">相关资源</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Zixiang Sun"
+      src="/images/avatar.svg">
+  <p class="site-author-name" itemprop="name">Zixiang Sun</p>
+  <div class="site-description" itemprop="description">Welcome to my personal blog where I share thoughts on technology, programming, and life experiences.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/hzsunzixiang" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;hzsunzixiang" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:17842379@qq.com" title="E-Mail → mailto:17842379@qq.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hzsunzixiang.github.io/2024/01/18/erlang-erlang-otp-gen-server/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.svg">
+      <meta itemprop="name" content="Zixiang Sun">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Zixiang Sun's Blog">
+      <meta itemprop="description" content="Welcome to my personal blog where I share thoughts on technology, programming, and life experiences.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="第四章：通用型服务器 gen_server | Zixiang Sun's Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          第四章：通用型服务器 gen_server
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-01-18 00:00:00" itemprop="dateCreated datePublished" datetime="2024-01-18T00:00:00+08:00">2024-01-18</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-15 00:00:00" itemprop="dateModified" datetime="2026-01-15T00:00:00+08:00">2026-01-15</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/technology/" itemprop="url" rel="index"><span itemprop="name">技术</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/technology/Erlang-OTP/" itemprop="url" rel="index"><span itemprop="name">Erlang/OTP</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>本文介绍 Erlang&#x2F;OTP 中的通用型服务器行为模式 gen_server，这是 OTP 框架中最常用的 behavior 之一。</p>
+<span id="more"></span>
+
+<h2 id="gen-server-概述"><a href="#gen-server-概述" class="headerlink" title="gen_server 概述"></a>gen_server 概述</h2><p>gen_server 是 OTP 提供的通用服务器行为模式，它封装了客户端-服务器模型中的常见模式，让开发者可以专注于业务逻辑而不是底层的进程通信细节。</p>
+<p>使用 gen_server 的优势：</p>
+<ul>
+<li>标准化的服务器实现模式</li>
+<li>内置的错误处理机制</li>
+<li>支持同步和异步消息传递</li>
+<li>与 OTP 监督树无缝集成</li>
+</ul>
+<h2 id="behavior-指令"><a href="#behavior-指令" class="headerlink" title="behavior 指令"></a>behavior 指令</h2><p>要实现一个 gen_server，需要在模块中声明 behavior：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">-module</span><span class="params">(my_server)</span>.</span><br><span class="line"><span class="keyword">-behaviour</span><span class="params">(gen_server)</span>.</span><br><span class="line"></span><br><span class="line"><span class="comment">%% API</span></span><br><span class="line"><span class="keyword">-export</span><span class="params">([start_link/<span class="number">0</span>, stop/<span class="number">0</span>])</span>.</span><br><span class="line"></span><br><span class="line"><span class="comment">%% gen_server 回调函数</span></span><br><span class="line"><span class="keyword">-export</span><span class="params">([init/<span class="number">1</span>, handle_call/<span class="number">3</span>, handle_cast/<span class="number">2</span>, handle_info/<span class="number">2</span>,</span></span><br><span class="line"><span class="params">         terminate/<span class="number">2</span>, code_change/<span class="number">3</span>])</span>.</span><br></pre></td></tr></table></figure>
+
+<h2 id="启动一个-server"><a href="#启动一个-server" class="headerlink" title="启动一个 server"></a>启动一个 server</h2><p>gen_server 提供了多种启动函数：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 启动一个匿名服务器</span></span><br><span class="line">gen_server:start_link(Module, Args, Options)</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 启动一个命名服务器（本地注册）</span></span><br><span class="line">gen_server:start_link(&#123;local, Name&#125;, Module, Args, Options)</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 启动一个命名服务器（全局注册）</span></span><br><span class="line">gen_server:start_link(&#123;global, Name&#125;, Module, Args, Options)</span><br></pre></td></tr></table></figure>
+
+<p>启动时会调用 <code>init/1</code> 回调函数：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">init</span><span class="params">(Args)</span> -&gt;</span></span><br><span class="line">    <span class="comment">%% 初始化服务器状态</span></span><br><span class="line">    State = #state&#123;&#125;,</span><br><span class="line">    &#123;ok, State&#125;.</span><br></pre></td></tr></table></figure>
+
+<p><code>init/1</code> 可以返回：</p>
+<ul>
+<li><code>{ok, State}</code> - 正常启动</li>
+<li><code>{ok, State, Timeout}</code> - 启动并设置超时</li>
+<li><code>{ok, State, hibernate}</code> - 启动并进入休眠</li>
+<li><code>{stop, Reason}</code> - 启动失败</li>
+<li><code>ignore</code> - 忽略启动</li>
+</ul>
+<h2 id="消息传递"><a href="#消息传递" class="headerlink" title="消息传递"></a>消息传递</h2><p>gen_server 支持多种消息传递方式：</p>
+<p><img src="/images/erlang_otp/gen_server_flow.svg" alt="gen_server 消息传递流程"></p>
+<h3 id="同步式消息传递"><a href="#同步式消息传递" class="headerlink" title="同步式消息传递"></a>同步式消息传递</h3><p>使用 <code>gen_server:call/2,3</code> 发送同步请求，客户端会阻塞等待响应：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 客户端调用</span></span><br><span class="line">Result = gen_server:call(ServerRef, Request),</span><br><span class="line">Result = gen_server:call(ServerRef, Request, Timeout).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 服务器端处理</span></span><br><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(Request, From, State)</span> -&gt;</span></span><br><span class="line">    Reply = do_something(Request),</span><br><span class="line">    &#123;reply, Reply, State&#125;.</span><br></pre></td></tr></table></figure>
+
+<p><code>handle_call/3</code> 的参数：</p>
+<ul>
+<li><code>Request</code> - 客户端发送的请求</li>
+<li><code>From</code> - 调用者信息 <code>{Pid, Tag}</code></li>
+<li><code>State</code> - 当前服务器状态</li>
+</ul>
+<h3 id="异步式消息传递"><a href="#异步式消息传递" class="headerlink" title="异步式消息传递"></a>异步式消息传递</h3><p>使用 <code>gen_server:cast/2</code> 发送异步请求，客户端不等待响应：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 客户端调用</span></span><br><span class="line">ok = gen_server:cast(ServerRef, Msg).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 服务器端处理</span></span><br><span class="line"><span class="function"><span class="title">handle_cast</span><span class="params">(Msg, State)</span> -&gt;</span></span><br><span class="line">    NewState = process_msg(Msg, State),</span><br><span class="line">    &#123;noreply, NewState&#125;.</span><br></pre></td></tr></table></figure>
+
+<h3 id="其他消息"><a href="#其他消息" class="headerlink" title="其他消息"></a>其他消息</h3><p>服务器可能收到不是通过 <code>call</code> 或 <code>cast</code> 发送的消息，这些消息由 <code>handle_info/2</code> 处理：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">handle_info</span><span class="params">(Info, State)</span> -&gt;</span></span><br><span class="line">    <span class="keyword">case</span> Info <span class="keyword">of</span></span><br><span class="line">        timeout -&gt;</span><br><span class="line">            <span class="comment">%% 处理超时</span></span><br><span class="line">            &#123;noreply, State&#125;;</span><br><span class="line">        &#123;nodedown, Node&#125; -&gt;</span><br><span class="line">            <span class="comment">%% 处理节点断开</span></span><br><span class="line">            &#123;noreply, State&#125;;</span><br><span class="line">        _Other -&gt;</span><br><span class="line">            <span class="comment">%% 忽略未知消息</span></span><br><span class="line">            &#123;noreply, State&#125;</span><br><span class="line">    <span class="keyword">end</span>.</span><br></pre></td></tr></table></figure>
+
+<h3 id="未处理的消息"><a href="#未处理的消息" class="headerlink" title="未处理的消息"></a>未处理的消息</h3><p>良好的实践是在 <code>handle_info/2</code> 中记录未预期的消息：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">handle_info</span><span class="params">(Msg, State)</span> -&gt;</span></span><br><span class="line">    error_logger:warning_msg(<span class="string">&quot;Unexpected message: ~p~n&quot;</span>, [Msg]),</span><br><span class="line">    &#123;noreply, State&#125;.</span><br></pre></td></tr></table></figure>
+
+<h2 id="同步客户端"><a href="#同步客户端" class="headerlink" title="同步客户端"></a>同步客户端</h2><p>实现一个完整的同步客户端 API：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">-module</span><span class="params">(kv_store)</span>.</span><br><span class="line"><span class="keyword">-behaviour</span><span class="params">(gen_server)</span>.</span><br><span class="line"></span><br><span class="line"><span class="comment">%% API</span></span><br><span class="line"><span class="keyword">-export</span><span class="params">([start_link/<span class="number">0</span>, get/<span class="number">1</span>, put/<span class="number">2</span>, delete/<span class="number">1</span>])</span>.</span><br><span class="line"></span><br><span class="line"><span class="comment">%% gen_server callbacks</span></span><br><span class="line"><span class="keyword">-export</span><span class="params">([init/<span class="number">1</span>, handle_call/<span class="number">3</span>, handle_cast/<span class="number">2</span>, handle_info/<span class="number">2</span>,</span></span><br><span class="line"><span class="params">         terminate/<span class="number">2</span>, code_change/<span class="number">3</span>])</span>.</span><br><span class="line"></span><br><span class="line"><span class="keyword">-record</span><span class="params">(state, &#123;store = #&#123;&#125;&#125;)</span>.</span><br><span class="line"></span><br><span class="line"><span class="comment">%%% API 函数</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">start_link</span><span class="params">()</span> -&gt;</span></span><br><span class="line">    gen_server:start_link(&#123;local, ?MODULE&#125;, ?MODULE, [], []).</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">get</span><span class="params">(Key)</span> -&gt;</span></span><br><span class="line">    gen_server:call(?MODULE, &#123;get, Key&#125;).</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">put</span><span class="params">(Key, Value)</span> -&gt;</span></span><br><span class="line">    gen_server:call(?MODULE, &#123;put, Key, Value&#125;).</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">delete</span><span class="params">(Key)</span> -&gt;</span></span><br><span class="line">    gen_server:call(?MODULE, &#123;delete, Key&#125;).</span><br><span class="line"></span><br><span class="line"><span class="comment">%%% 回调函数</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">init</span><span class="params">([])</span> -&gt;</span></span><br><span class="line">    &#123;ok, #state&#123;&#125;&#125;.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(&#123;get, Key&#125;, _From, State = #state&#123;store = Store&#125;)</span> -&gt;</span></span><br><span class="line">    Reply = maps:get(Key, Store, undefined),</span><br><span class="line">    &#123;reply, Reply, State&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(&#123;put, Key, Value&#125;, _From, State = #state&#123;store = Store&#125;)</span> -&gt;</span></span><br><span class="line">    NewStore = maps:put(Key, Value, Store),</span><br><span class="line">    &#123;reply, ok, State#state&#123;store = NewStore&#125;&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(&#123;delete, Key&#125;, _From, State = #state&#123;store = Store&#125;)</span> -&gt;</span></span><br><span class="line">    NewStore = maps:remove(Key, Store),</span><br><span class="line">    &#123;reply, ok, State#state&#123;store = NewStore&#125;&#125;.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_cast</span><span class="params">(_Msg, State)</span> -&gt;</span></span><br><span class="line">    &#123;noreply, State&#125;.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_info</span><span class="params">(_Info, State)</span> -&gt;</span></span><br><span class="line">    &#123;noreply, State&#125;.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">terminate</span><span class="params">(_Reason, _State)</span> -&gt;</span></span><br><span class="line">    ok.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">code_change</span><span class="params">(_OldVsn, State, _Extra)</span> -&gt;</span></span><br><span class="line">    &#123;ok, State&#125;.</span><br></pre></td></tr></table></figure>
+
+<h2 id="终止"><a href="#终止" class="headerlink" title="终止"></a>终止</h2><p>服务器终止时会调用 <code>terminate/2</code>：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">terminate</span><span class="params">(Reason, State)</span> -&gt;</span></span><br><span class="line">    <span class="comment">%% 清理资源</span></span><br><span class="line">    cleanup(State),</span><br><span class="line">    ok.</span><br></pre></td></tr></table></figure>
+
+<p>终止原因可能是：</p>
+<ul>
+<li><code>normal</code> - 正常终止</li>
+<li><code>shutdown</code> - 监督者要求关闭</li>
+<li><code>{shutdown, Term}</code> - 带额外信息的关闭</li>
+<li>其他值 - 异常终止</li>
+</ul>
+<h2 id="调用超时"><a href="#调用超时" class="headerlink" title="调用超时"></a>调用超时</h2><p><code>gen_server:call/3</code> 支持设置超时时间：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 默认超时 5000ms</span></span><br><span class="line">gen_server:call(Server, Request).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 自定义超时</span></span><br><span class="line">gen_server:call(Server, Request, <span class="number">10000</span>).  <span class="comment">%% 10秒</span></span><br><span class="line"></span><br><span class="line"><span class="comment">%% 无限等待</span></span><br><span class="line">gen_server:call(Server, Request, infinity).</span><br></pre></td></tr></table></figure>
+
+<p>超时后客户端会收到 <code>exit</code> 信号：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span></span><br><span class="line">    gen_server:call(Server, Request, <span class="number">5000</span>)</span><br><span class="line"><span class="keyword">catch</span></span><br><span class="line">    exit:&#123;timeout, _&#125; -&gt;</span><br><span class="line">        &#123;error, timeout&#125;</span><br><span class="line"><span class="keyword">end</span>.</span><br></pre></td></tr></table></figure>
+
+<h2 id="死锁"><a href="#死锁" class="headerlink" title="死锁"></a>死锁</h2><p>避免 gen_server 死锁的几个原则：</p>
+<ol>
+<li><strong>不要在回调函数中调用自己</strong>：</li>
+</ol>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 错误示例 - 会导致死锁</span></span><br><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(get_twice, _From, State)</span> -&gt;</span></span><br><span class="line">    Result1 = gen_server:call(self(), get),  <span class="comment">%% 死锁！</span></span><br><span class="line">    &#123;reply, Result1, State&#125;.</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li><strong>避免循环调用</strong>：</li>
+</ol>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% Server A 调用 Server B，Server B 又调用 Server A</span></span><br><span class="line"><span class="comment">%% 这会导致死锁</span></span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li><strong>使用 cast 代替 call 打破循环</strong></li>
+</ol>
+<h2 id="通用型-server-的超时问题"><a href="#通用型-server-的超时问题" class="headerlink" title="通用型 server 的超时问题"></a>通用型 server 的超时问题</h2><p>可以在回调函数中返回超时值：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">init</span><span class="params">([])</span> -&gt;</span></span><br><span class="line">    &#123;ok, #state&#123;&#125;, <span class="number">5000</span>&#125;.  <span class="comment">%% 5秒后触发 timeout</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(Request, _From, State)</span> -&gt;</span></span><br><span class="line">    &#123;reply, ok, State, <span class="number">5000</span>&#125;.  <span class="comment">%% 重置超时</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_info</span><span class="params">(timeout, State)</span> -&gt;</span></span><br><span class="line">    <span class="comment">%% 处理超时，例如执行定期任务</span></span><br><span class="line">    do_periodic_work(),</span><br><span class="line">    &#123;noreply, State, <span class="number">5000</span>&#125;.  <span class="comment">%% 继续等待下一个超时</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="使-behavior-休眠"><a href="#使-behavior-休眠" class="headerlink" title="使 behavior 休眠"></a>使 behavior 休眠</h2><p>当服务器空闲时，可以让它进入休眠状态以释放内存：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(Request, _From, State)</span> -&gt;</span></span><br><span class="line">    &#123;reply, ok, State, hibernate&#125;.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_cast</span><span class="params">(Msg, State)</span> -&gt;</span></span><br><span class="line">    &#123;noreply, State, hibernate&#125;.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_info</span><span class="params">(Info, State)</span> -&gt;</span></span><br><span class="line">    &#123;noreply, State, hibernate&#125;.</span><br></pre></td></tr></table></figure>
+
+<p>休眠时，进程会进行垃圾回收并最小化内存占用。收到新消息时自动唤醒。</p>
+<h2 id="全局化"><a href="#全局化" class="headerlink" title="全局化"></a>全局化</h2><p>使用全局名称注册 gen_server：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 全局注册启动</span></span><br><span class="line">gen_server:start_link(&#123;global, my_global_server&#125;, ?MODULE, [], []).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 全局调用</span></span><br><span class="line">gen_server:call(&#123;global, my_global_server&#125;, Request).</span><br><span class="line">gen_server:cast(&#123;global, my_global_server&#125;, Msg).</span><br></pre></td></tr></table></figure>
+
+<p>也可以使用 <code>via</code> 元组与自定义注册表：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 使用 gproc 作为注册表</span></span><br><span class="line">gen_server:start_link(&#123;via, gproc, &#123;n, l, my_server&#125;&#125;, ?MODULE, [], []).</span><br></pre></td></tr></table></figure>
+
+<h2 id="链接-behavior"><a href="#链接-behavior" class="headerlink" title="链接 behavior"></a>链接 behavior</h2><p>gen_server 通常与监督者链接使用：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 在监督者中定义子规范</span></span><br><span class="line"><span class="function"><span class="title">init</span><span class="params">([])</span> -&gt;</span></span><br><span class="line">    Children = [</span><br><span class="line">        #&#123;id =&gt; my_server,</span><br><span class="line">          start =&gt; &#123;my_server, start_link, []&#125;,</span><br><span class="line">          restart =&gt; permanent,</span><br><span class="line">          shutdown =&gt; <span class="number">5000</span>,</span><br><span class="line">          type =&gt; worker,</span><br><span class="line">          modules =&gt; [my_server]&#125;</span><br><span class="line">    ],</span><br><span class="line">    &#123;ok, &#123;#&#123;strategy =&gt; one_for_one&#125;, Children&#125;&#125;.</span><br></pre></td></tr></table></figure>
+
+<h2 id="gen-server-生命周期"><a href="#gen-server-生命周期" class="headerlink" title="gen_server 生命周期"></a>gen_server 生命周期</h2><p><img src="/images/erlang_otp/gen_server_lifecycle.svg" alt="gen_server 生命周期"></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>gen_server 是 Erlang&#x2F;OTP 中最重要的 behavior 之一：</p>
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>同步调用</td>
+<td><code>call/2,3</code> + <code>handle_call/3</code></td>
+</tr>
+<tr>
+<td>异步调用</td>
+<td><code>cast/2</code> + <code>handle_cast/2</code></td>
+</tr>
+<tr>
+<td>其他消息</td>
+<td><code>handle_info/2</code></td>
+</tr>
+<tr>
+<td>生命周期</td>
+<td><code>init/1</code> → 运行 → <code>terminate/2</code></td>
+</tr>
+<tr>
+<td>超时处理</td>
+<td>回调返回值中指定</td>
+</tr>
+<tr>
+<td>休眠</td>
+<td><code>hibernate</code> 选项</td>
+</tr>
+</tbody></table>
+<p>掌握 gen_server 是学习 OTP 的基础，它为构建健壮的并发应用提供了标准化的模式。</p>
+<h2 id="接下来是什么"><a href="#接下来是什么" class="headerlink" title="接下来是什么"></a>接下来是什么</h2><p>下一章我们将学习 <strong>gen_statem</strong>（有限状态机）行为模式，它适用于需要状态转换的场景。</p>
+<hr>
+<h2 id="相关资源"><a href="#相关资源" class="headerlink" title="相关资源"></a>相关资源</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://www.erlang.org/doc/man/gen_server.html">Erlang gen_server 官方文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.erlang.org/doc/design_principles/gen_server_concepts.html">OTP Design Principles</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Erlang/" rel="tag"># Erlang</a>
+              <a href="/tags/OTP/" rel="tag"># OTP</a>
+              <a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" rel="tag"># 并发编程</a>
+              <a href="/tags/gen-server/" rel="tag"># gen_server</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2024/01/17/test-giscus-comments/" rel="prev" title="测试 Giscus 评论功能">
+                  <i class="fa fa-angle-left"></i> 测试 Giscus 评论功能
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/01/16/erlang-erlang-links-and-monitors/" rel="next" title="Erlang 进程链接与监视器">
+                  Erlang 进程链接与监视器 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2024 – 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Zixiang Sun</span>
+  </div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"hzsunzixiang/hzsunzixiang.github.io","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

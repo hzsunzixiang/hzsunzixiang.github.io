@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.svg">
+  <link rel="mask-icon" href="/images/favicon.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Noto+Serif+SC:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Source+Code+Pro:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"hzsunzixiang.github.io","root":"/","images":"/images","scheme":"Pisces","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"default","show_result":true},"fold":{"enable":false,"height":500},"language":false,"highlight_theme":"default"},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="CRAQ 技术文档Chain Replication with Apportioned Queries (CRAQ) 协议的完整技术文档和实现分析。 ← 返回首页  📚 核心概念 包含总体架构介绍     文档 描述    CRAQ 源代码文件完整解读 深入分析 CRAQ 协议的 Erlang 实现源码结构和核心模块   Chain Replication 架构分析 链式复制协议的基础概念和架">
+<meta property="og:type" content="website">
+<meta property="og:title" content="CRAQ 技术文档">
+<meta property="og:url" content="https://hzsunzixiang.github.io/craq/">
+<meta property="og:site_name" content="Zixiang Sun&#39;s Blog">
+<meta property="og:description" content="CRAQ 技术文档Chain Replication with Apportioned Queries (CRAQ) 协议的完整技术文档和实现分析。 ← 返回首页  📚 核心概念 包含总体架构介绍     文档 描述    CRAQ 源代码文件完整解读 深入分析 CRAQ 协议的 Erlang 实现源码结构和核心模块   Chain Replication 架构分析 链式复制协议的基础概念和架">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-01-14T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-16T04:38:09.175Z">
+<meta property="article:author" content="Zixiang Sun">
+<meta property="article:tag" content="CRAQ">
+<meta property="article:tag" content="blog">
+<meta property="article:tag" content="development">
+<meta property="article:tag" content="distributed systems">
+<meta property="article:tag" content="programming">
+<meta property="article:tag" content="technology">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://hzsunzixiang.github.io/craq/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":false,"lang":"zh-CN","comments":true,"permalink":"https://hzsunzixiang.github.io/craq/","path":"craq/index.html","title":"CRAQ 技术文档"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>CRAQ 技术文档 | Zixiang Sun's Blog
+</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="Zixiang Sun's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Zixiang Sun's Blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Sharing thoughts on technology, programming, and life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">7</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">5</span></a></li><li class="menu-item menu-item-erlang"><a href="/erlang/" rel="section"><i class="fa fa-code fa-fw"></i>Erlang</a></li><li class="menu-item menu-item-rabbitmq"><a href="/rabbitmq/" rel="section"><i class="fa fa-server fa-fw"></i>RabbitMQ</a></li><li class="menu-item menu-item-craq"><a href="/craq/" rel="section"><i class="fa fa-book fa-fw"></i>CRAQ</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#CRAQ-%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3"><span class="nav-number">1.</span> <span class="nav-text">CRAQ 技术文档</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%F0%9F%93%9A-%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">1.1.</span> <span class="nav-text">📚 核心概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%F0%9F%93%A6-%E5%8D%8F%E8%AE%AE%E6%A0%BC%E5%BC%8F"><span class="nav-number">1.2.</span> <span class="nav-text">📦 协议格式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%F0%9F%94%A7-%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86"><span class="nav-number">1.3.</span> <span class="nav-text">🔧 集群管理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%F0%9F%93%B8-%E5%BF%AB%E7%85%A7%E5%8F%8A%E6%95%B0%E6%8D%AE%E5%90%8C%E6%AD%A5"><span class="nav-number">1.4.</span> <span class="nav-text">📸 快照及数据同步</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E2%9C%8F%EF%B8%8F-%E6%95%B0%E6%8D%AE%E6%9B%B4%E6%96%B0"><span class="nav-number">1.5.</span> <span class="nav-text">✏️ 数据更新</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%F0%9F%93%96-%E6%96%87%E6%A1%A3%E7%BF%BB%E8%AF%91"><span class="nav-number">1.6.</span> <span class="nav-text">📖 文档翻译</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%F0%9F%92%BB-%E4%BB%A3%E7%A0%81%E5%A4%8D%E7%8E%B0"><span class="nav-number">1.7.</span> <span class="nav-text">💻 代码复现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%F0%9F%94%97-%E7%9B%B8%E5%85%B3%E8%B5%84%E6%BA%90"><span class="nav-number">1.8.</span> <span class="nav-text">🔗 相关资源</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Zixiang Sun"
+      src="/images/avatar.svg">
+  <p class="site-author-name" itemprop="name">Zixiang Sun</p>
+  <div class="site-description" itemprop="description">Welcome to my personal blog where I share thoughts on technology, programming, and life experiences.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/hzsunzixiang" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;hzsunzixiang" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:17842379@qq.com" title="E-Mail → mailto:17842379@qq.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner page posts-expand">
+
+
+    
+    
+    
+    <div class="post-block" lang="zh-CN"><header class="post-header">
+
+<h1 class="post-title" itemprop="name headline">CRAQ 技术文档
+</h1>
+
+<div class="post-meta-container">
+</div>
+
+</header>
+
+      
+      
+      
+      <div class="post-body">
+          <p><a id="top"></a></p>
+<h1 id="CRAQ-技术文档"><a href="#CRAQ-技术文档" class="headerlink" title="CRAQ 技术文档"></a>CRAQ 技术文档</h1><p>Chain Replication with Apportioned Queries (CRAQ) 协议的完整技术文档和实现分析。</p>
+<p><a href="/">← 返回首页</a></p>
+<hr>
+<h2 id="📚-核心概念"><a href="#📚-核心概念" class="headerlink" title="📚 核心概念"></a>📚 核心概念</h2><blockquote>
+<p>包含总体架构介绍</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>文档</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="docs/CRAQ_SOURCE_FILES_ANALYSIS.html">CRAQ 源代码文件完整解读</a></td>
+<td>深入分析 CRAQ 协议的 Erlang 实现源码结构和核心模块</td>
+</tr>
+<tr>
+<td><a href="docs/Chain_Replication_Analysis.html">Chain Replication 架构分析</a></td>
+<td>链式复制协议的基础概念和架构设计原理</td>
+</tr>
+<tr>
+<td><a href="docs/Chain_Replication_Introduction_Analysis.html">Chain Replication 入门介绍</a></td>
+<td>链式复制协议的入门级介绍和基本概念</td>
+</tr>
+<tr>
+<td><a href="docs/Consensus_Protocols_Comparison.html">共识协议对比分析</a></td>
+<td>CRAQ 与其他分布式共识协议的详细对比分析</td>
+</tr>
+<tr>
+<td><a href="docs/CRAQ-erlang-implementation.html">CRAQ Erlang 实现文档</a></td>
+<td>CRAQ 协议 Erlang 实现的技术文档和使用指南</td>
+</tr>
+</tbody></table>
+<p><a href="#top">↑ 返回顶部</a></p>
+<hr>
+<h2 id="📦-协议格式"><a href="#📦-协议格式" class="headerlink" title="📦 协议格式"></a>📦 协议格式</h2><blockquote>
+<p>二进制协议</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>文档</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="docs/ERLANG_CRAQ_BINARY_FORMAT_ANALYSIS.html">CRAQ 二进制格式分析</a></td>
+<td>CRAQ 协议的二进制数据格式和编码规范详解</td>
+</tr>
+<tr>
+<td><a href="docs/ERLANG_BINARY_SERIALIZATION_MAPPING.html">Erlang 二进制序列化映射</a></td>
+<td>Erlang 环境下的二进制数据序列化和反序列化机制</td>
+</tr>
+<tr>
+<td><a href="docs/TRACE_LOG_BINARY_FORMAT_DETAILED_ANALYSIS.html">追踪日志二进制格式分析</a></td>
+<td>系统追踪日志的二进制格式和解析方法</td>
+</tr>
+<tr>
+<td><a href="docs/FILE_DESCRIPTOR_STRUCTURE_ANALYSIS.html">文件描述符结构分析</a></td>
+<td>CRAQ 系统中文件描述符的内部结构和管理机制</td>
+</tr>
+<tr>
+<td><a href="docs/ERLANG_FILE_DESCRIPTOR_ANALYSIS.html">Erlang 文件描述符分析</a></td>
+<td>Erlang 文件描述符的实现细节</td>
+</tr>
+<tr>
+<td><a href="docs/FILE_OPEN_FLOW_ANALYSIS.html">文件打开流程分析</a></td>
+<td>文件打开操作的完整流程分析</td>
+</tr>
+<tr>
+<td><a href="docs/FILE_OPEN_DEMO_ANALYSIS.html">文件打开演示分析</a></td>
+<td>文件打开操作的演示和示例</td>
+</tr>
+</tbody></table>
+<p><a href="#top">↑ 返回顶部</a></p>
+<hr>
+<h2 id="🔧-集群管理"><a href="#🔧-集群管理" class="headerlink" title="🔧 集群管理"></a>🔧 集群管理</h2><blockquote>
+<p>集群的建立等</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>文档</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="docs/CRAQ_CLUSTER_SETUP_DETAILED_ANALYSIS.html">CRAQ 集群构建详细分析</a></td>
+<td>基于日志追踪的 CRAQ 集群构建过程完整分析</td>
+</tr>
+<tr>
+<td><a href="docs/ERLANG_CRAQ_CLUSTER_SETUP_ANALYSIS.html">Erlang CRAQ 集群构建分析</a></td>
+<td>Erlang 环境下 CRAQ 集群的构建和配置</td>
+</tr>
+<tr>
+<td><a href="docs/ADD_NODE_CALL_CHAIN_ANALYSIS.html">添加节点调用链分析</a></td>
+<td>向 CRAQ 集群添加新节点的完整调用链和处理流程</td>
+</tr>
+<tr>
+<td><a href="docs/CRAQ_FAILURE_DETECTOR_ANALYSIS.html">CRAQ 故障检测器分析</a></td>
+<td>CRAQ 集群中故障检测机制的实现和优化策略</td>
+</tr>
+<tr>
+<td><a href="docs/EH_APP_CONFIG_SOURCE_ANALYSIS.html">EH 应用配置源码分析</a></td>
+<td>CRAQ 集群配置管理和应用程序配置分析</td>
+</tr>
+<tr>
+<td><a href="docs/ERLANG_CRAQ_STARTUP_TRACE_ANALYSIS.html">CRAQ 启动追踪分析</a></td>
+<td>CRAQ 系统启动过程的追踪和分析</td>
+</tr>
+</tbody></table>
+<p><a href="#top">↑ 返回顶部</a></p>
+<hr>
+<h2 id="📸-快照及数据同步"><a href="#📸-快照及数据同步" class="headerlink" title="📸 快照及数据同步"></a>📸 快照及数据同步</h2><blockquote>
+<p>快照机制和数据同步流程</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>文档</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="docs/SNAPSHOT_CONCEPT_COMPREHENSIVE_GUIDE.html">快照概念综合指南</a></td>
+<td>CRAQ 快照机制的完整概念介绍和实现指南</td>
+</tr>
+<tr>
+<td><a href="docs/SNAPSHOT_DATA_SYNC_FLOW_ANALYSIS.html">快照数据同步流程分析</a></td>
+<td>快照数据在集群节点间的同步流程和优化方法</td>
+</tr>
+<tr>
+<td><a href="docs/SNAPSHOT_MECHANISM_DETAILED_ANALYSIS.html">快照机制详细分析</a></td>
+<td>快照机制的详细实现和优化策略</td>
+</tr>
+<tr>
+<td><a href="docs/CRAQ_SNAPSHOT_MECHANISM_ANALYSIS.html">CRAQ 快照机制分析</a></td>
+<td>CRAQ 协议中快照机制的核心实现</td>
+</tr>
+<tr>
+<td><a href="docs/CRAQ_SNAPSHOT_DATA_SYNC_DETAILED_ANALYSIS.html">CRAQ 快照数据同步详细分析</a></td>
+<td>CRAQ 快照数据同步的详细流程</td>
+</tr>
+<tr>
+<td><a href="docs/CRAQ_INITIAL_CLUSTER_DATA_SYNC_ANALYSIS.html">初始集群数据同步分析</a></td>
+<td>新建集群时的初始数据同步过程和实现细节</td>
+</tr>
+<tr>
+<td><a href="docs/ADD_NODE_SNAPSHOT_SYNC_FLOW.html">添加节点快照同步流程</a></td>
+<td>新节点加入集群时的快照同步流程</td>
+</tr>
+</tbody></table>
+<p><a href="#top">↑ 返回顶部</a></p>
+<hr>
+<h2 id="✏️-数据更新"><a href="#✏️-数据更新" class="headerlink" title="✏️ 数据更新"></a>✏️ 数据更新</h2><blockquote>
+<p>数据写入、更新和冲突解决</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>文档</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="docs/ERLANG_CRAQ_COMPLETE_UPDATE_FLOW_ANALYSIS.html">CRAQ 完整更新流程分析</a></td>
+<td>CRAQ 协议中数据更新的完整流程和实现细节</td>
+</tr>
+<tr>
+<td><a href="docs/ERLANG_CRAQ_UPDATE_FLOW_ANALYSIS.html">CRAQ 更新流程分析</a></td>
+<td>数据更新流程的分析</td>
+</tr>
+<tr>
+<td><a href="docs/ERLANG_CRAQ_UPDATE_CALL_CHAIN.html">CRAQ 更新调用链</a></td>
+<td>数据更新操作的调用链分析</td>
+</tr>
+<tr>
+<td><a href="docs/ERLANG_CRAQ_UPDATE_TRACE_ANALYSIS.html">CRAQ 更新追踪分析</a></td>
+<td>数据更新操作的追踪日志分析</td>
+</tr>
+<tr>
+<td><a href="docs/CRAQ_WRITE_CONFLICT_RESOLVER_ANALYSIS.html">写冲突解决器分析</a></td>
+<td>CRAQ 系统中写冲突的检测和解决机制</td>
+</tr>
+<tr>
+<td><a href="docs/ERLANG_CRAQ_INCREMENTAL_UPDATE_CODE_ANALYSIS.html">增量更新代码分析</a></td>
+<td>增量数据更新的实现方法和性能优化策略</td>
+</tr>
+<tr>
+<td><a href="docs/ERLANG_CRAQ_DELETE_WRITE_ANALYSIS.html">CRAQ 删除写入分析</a></td>
+<td>删除操作的写入流程分析</td>
+</tr>
+<tr>
+<td><a href="docs/ERLANG_CRAQ_DELETE_TRACE_ANALYSIS.html">CRAQ 删除追踪分析</a></td>
+<td>删除操作的追踪日志分析</td>
+</tr>
+<tr>
+<td><a href="docs/ERLANG_CRAQ_QUERY_TRACE_ANALYSIS.html">CRAQ 查询追踪分析</a></td>
+<td>查询操作的追踪日志分析</td>
+</tr>
+<tr>
+<td><a href="docs/ERLANG_CRAQ_DETAILED_TRACE_ANALYSIS.html">CRAQ 详细追踪分析</a></td>
+<td>CRAQ 操作的详细追踪分析</td>
+</tr>
+</tbody></table>
+<p><a href="#top">↑ 返回顶部</a></p>
+<hr>
+<h2 id="📖-文档翻译"><a href="#📖-文档翻译" class="headerlink" title="📖 文档翻译"></a>📖 文档翻译</h2><blockquote>
+<p>技术文档翻译</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>文档</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="docs/ERLANG_CRAQ_PDF_TRANSLATION.html">Erlang CRAQ PDF 文档翻译</a></td>
+<td>CRAQ 原始技术论文的完整中文翻译和解释</td>
+</tr>
+</tbody></table>
+<p><a href="#top">↑ 返回顶部</a></p>
+<hr>
+<h2 id="💻-代码复现"><a href="#💻-代码复现" class="headerlink" title="💻 代码复现"></a>💻 代码复现</h2><blockquote>
+<p>使用指南和代码实践</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>文档</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="docs/ERLANG_CRAQ_USAGE_GUIDE.html">CRAQ 使用指南</a></td>
+<td>CRAQ 系统的安装、配置和使用的完整指南</td>
+</tr>
+</tbody></table>
+<p><a href="#top">↑ 返回顶部</a></p>
+<hr>
+<h2 id="🔗-相关资源"><a href="#🔗-相关资源" class="headerlink" title="🔗 相关资源"></a>🔗 相关资源</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://www.usenix.org/legacy/event/usenix09/tech/full_papers/terrace/terrace.pdf">CRAQ 论文原文</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.cs.cornell.edu/home/rvr/papers/OSDI04.pdf">Chain Replication 论文</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.erlang.org/doc/">Erlang&#x2F;OTP 官方文档</a></li>
+</ul>
+<hr>
+<p><a href="/">← 返回首页</a> | <a href="#top">↑ 返回顶部</a></p>
+<p><em>本文档集合持续更新中，欢迎提出建议和反馈。</em></p>
+
+      </div>
+      
+      
+      
+    </div>
+
+    
+    
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2024 – 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Zixiang Sun</span>
+  </div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"hzsunzixiang/hzsunzixiang.github.io","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

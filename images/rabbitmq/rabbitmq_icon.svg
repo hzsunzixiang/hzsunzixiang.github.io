@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 218 231">
+  <!-- RabbitMQ Logo - Orange Rabbit -->
+  <g fill="#FF6600">
+    <!-- Head -->
+    <ellipse cx="109" cy="140" rx="75" ry="70"/>
+    <!-- Left Ear -->
+    <ellipse cx="65" cy="50" rx="22" ry="55"/>
+    <!-- Right Ear -->
+    <ellipse cx="153" cy="50" rx="22" ry="55"/>
+    <!-- Left Eye -->
+    <circle cx="80" cy="125" r="12" fill="#FFFFFF"/>
+    <circle cx="83" cy="125" r="6" fill="#333333"/>
+    <!-- Right Eye -->
+    <circle cx="138" cy="125" r="12" fill="#FFFFFF"/>
+    <circle cx="141" cy="125" r="6" fill="#333333"/>
+    <!-- Nose -->
+    <ellipse cx="109" cy="155" rx="8" ry="6" fill="#FF4400"/>
+    <!-- Mouth -->
+    <path d="M100 165 Q109 175 118 165" stroke="#FF4400" stroke-width="3" fill="none"/>
+  </g>
+</svg>

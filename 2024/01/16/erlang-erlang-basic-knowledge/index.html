@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.svg">
+  <link rel="mask-icon" href="/images/favicon.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Noto+Serif+SC:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Source+Code+Pro:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"hzsunzixiang.github.io","root":"/","images":"/images","scheme":"Pisces","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"default","show_result":true},"fold":{"enable":false,"height":500},"language":false,"highlight_theme":"default"},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="Erlang 知识点汇总本文汇总了 Erlang 开发中的常用知识点，包括基础语法、分布式节点通信、调试技巧等。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Erlang 知识点汇总">
+<meta property="og:url" content="https://hzsunzixiang.github.io/2024/01/16/erlang-erlang-basic-knowledge/">
+<meta property="og:site_name" content="Zixiang Sun&#39;s Blog">
+<meta property="og:description" content="Erlang 知识点汇总本文汇总了 Erlang 开发中的常用知识点，包括基础语法、分布式节点通信、调试技巧等。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image2.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image46.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image3.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image4.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image1.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image5.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image6.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image7.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image8.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image9.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image10.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image11.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image12.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image13.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image14.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image15.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image16.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image17.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image18.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image19.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image20.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image21.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image22.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image23.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image24.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image25.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image26.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image27.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image28.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image30.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image31.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image32.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image33.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image34.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image35.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image36.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image37.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image38.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image39.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image40.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image41.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image42.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image43.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image44.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image45.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image47.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image48.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image49.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image50.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image51.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image52.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image53.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image54.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image55.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image56.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image57.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image58.png">
+<meta property="og:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image59.png">
+<meta property="article:published_time" content="2024-01-15T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-16T04:38:09.166Z">
+<meta property="article:author" content="Zixiang Sun">
+<meta property="article:tag" content="Erlang">
+<meta property="article:tag" content="RabbitMQ">
+<meta property="article:tag" content="分布式系统">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hzsunzixiang.github.io/images/erlang_basic/image2.png">
+
+
+<link rel="canonical" href="https://hzsunzixiang.github.io/2024/01/16/erlang-erlang-basic-knowledge/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://hzsunzixiang.github.io/2024/01/16/erlang-erlang-basic-knowledge/","path":"2024/01/16/erlang-erlang-basic-knowledge/","title":"Erlang 知识点汇总"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Erlang 知识点汇总 | Zixiang Sun's Blog</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="Zixiang Sun's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Zixiang Sun's Blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Sharing thoughts on technology, programming, and life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">7</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">5</span></a></li><li class="menu-item menu-item-erlang"><a href="/erlang/" rel="section"><i class="fa fa-code fa-fw"></i>Erlang</a></li><li class="menu-item menu-item-rabbitmq"><a href="/rabbitmq/" rel="section"><i class="fa fa-server fa-fw"></i>RabbitMQ</a></li><li class="menu-item menu-item-craq"><a href="/craq/" rel="section"><i class="fa fa-book fa-fw"></i>CRAQ</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Erlang-%E7%9F%A5%E8%AF%86%E7%82%B9%E6%B1%87%E6%80%BB"><span class="nav-number">1.</span> <span class="nav-text">Erlang 知识点汇总</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E7%A1%80%E8%AF%AD%E6%B3%95"><span class="nav-number">1.1.</span> <span class="nav-text">基础语法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E7%94%A8%E5%87%BD%E6%95%B0"><span class="nav-number">1.1.1.</span> <span class="nav-text">常用函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89%E5%92%8C%E5%8A%A0%E8%BD%BD-Record"><span class="nav-number">1.1.2.</span> <span class="nav-text">定义和加载 Record</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA-Mnesia-%E8%A1%A8"><span class="nav-number">1.1.3.</span> <span class="nav-text">创建 Mnesia 表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B-Mnesia-%E8%A1%A8%E4%BF%A1%E6%81%AF"><span class="nav-number">1.1.4.</span> <span class="nav-text">查看 Mnesia 表信息</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BE%AA%E7%8E%AF%E4%B8%8E%E5%88%97%E8%A1%A8%E6%93%8D%E4%BD%9C"><span class="nav-number">1.2.</span> <span class="nav-text">循环与列表操作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E6%88%90%E6%95%B0%E7%BB%84"><span class="nav-number">1.2.1.</span> <span class="nav-text">生成数组</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%81%8D%E5%8E%86%E6%95%B0%E7%BB%84"><span class="nav-number">1.2.2.</span> <span class="nav-text">遍历数组</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E7%94%A8100%E6%AC%A1%E6%9F%90%E5%87%BD%E6%95%B0"><span class="nav-number">1.2.3.</span> <span class="nav-text">调用100次某函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#lists-takewhile"><span class="nav-number">1.2.4.</span> <span class="nav-text">lists:takewhile</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Module-Attributes"><span class="nav-number">1.3.</span> <span class="nav-text">Module Attributes</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Module-Attributes-with-Tuple"><span class="nav-number">1.3.1.</span> <span class="nav-text">Module Attributes with Tuple</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E8%8A%82%E7%82%B9"><span class="nav-number">1.4.</span> <span class="nav-text">分布式节点</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Hidden-Node"><span class="nav-number">1.4.1.</span> <span class="nav-text">Hidden Node</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9C%E7%A8%8B%E8%BF%9E%E6%8E%A5-MQ-%E8%8A%82%E7%82%B9"><span class="nav-number">1.4.2.</span> <span class="nav-text">远程连接 MQ 节点</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-net-kernel-connect-node"><span class="nav-number">1.4.2.1.</span> <span class="nav-text">使用 net_kernel:connect_node</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-net-adm-ping"><span class="nav-number">1.4.2.2.</span> <span class="nav-text">使用 net_adm:ping</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-rpc-call"><span class="nav-number">1.4.2.3.</span> <span class="nav-text">使用 rpc:call</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E6%B6%88%E6%81%AF%E5%8F%91%E9%80%81"><span class="nav-number">1.4.2.4.</span> <span class="nav-text">使用消息发送 !</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-monitor"><span class="nav-number">1.4.2.5.</span> <span class="nav-text">使用 monitor</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Observer-%E8%BF%9C%E7%A8%8B%E8%A7%82%E5%AF%9F"><span class="nav-number">1.5.</span> <span class="nav-text">Observer 远程观察</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AD%A5%E9%AA%A4"><span class="nav-number">1.5.1.</span> <span class="nav-text">步骤</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E8%AF%95-RabbitMQ-%E8%8A%82%E7%82%B9"><span class="nav-number">1.6.</span> <span class="nav-text">调试 RabbitMQ 节点</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8A%82%E7%82%B9%E6%97%A0%E6%B3%95%E8%BF%9E%E6%8E%A5%E7%9A%84%E8%B0%83%E8%AF%95"><span class="nav-number">1.6.1.</span> <span class="nav-text">节点无法连接的调试</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9D%E6%AD%A5%E5%90%AF%E5%8A%A8"><span class="nav-number">1.6.2.</span> <span class="nav-text">初步启动</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%81%9C%E6%AD%A2"><span class="nav-number">1.6.3.</span> <span class="nav-text">停止</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%8D%E6%AC%A1%E5%BC%80%E5%90%AF"><span class="nav-number">1.6.4.</span> <span class="nav-text">再次开启</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Node-%E4%BD%8D%E7%BD%AE%E6%97%A0%E5%85%B3%E6%80%A7"><span class="nav-number">1.6.5.</span> <span class="nav-text">Node 位置无关性</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E5%8A%A0%E8%BD%BD%E4%B8%8E%E6%A8%A1%E5%9D%97%E7%AE%A1%E7%90%86"><span class="nav-number">1.7.</span> <span class="nav-text">代码加载与模块管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%97%E5%87%BA%E5%B7%B2%E5%8A%A0%E8%BD%BD%E7%9A%84%E5%BA%93%EF%BC%88%E7%AC%A6%E5%8F%B7%E8%A1%A8%EF%BC%89"><span class="nav-number">1.7.1.</span> <span class="nav-text">列出已加载的库（符号表）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A0%E8%BD%BD%E6%A8%A1%E5%9D%97"><span class="nav-number">1.7.2.</span> <span class="nav-text">加载模块</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B%E5%8C%85%E4%BE%9D%E8%B5%96"><span class="nav-number">1.7.3.</span> <span class="nav-text">查看包依赖</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8A%8A%E8%8A%82%E7%82%B9%E5%8F%98%E6%88%90%E5%88%86%E5%B8%83%E5%BC%8F%E8%8A%82%E7%82%B9"><span class="nav-number">1.8.</span> <span class="nav-text">把节点变成分布式节点</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E4%B9%8B%E5%89%8D"><span class="nav-number">1.8.1.</span> <span class="nav-text">启动之前</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E4%B9%8B%E5%90%8E"><span class="nav-number">1.8.2.</span> <span class="nav-text">启动之后</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86"><span class="nav-number">1.9.</span> <span class="nav-text">异常处理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#catch-%E4%B9%8B%E5%90%8E%E4%B8%8D%E4%BC%9A%E7%BB%93%E6%9D%9F%E5%BD%93%E5%89%8D%E8%BF%9B%E7%A8%8B"><span class="nav-number">1.9.1.</span> <span class="nav-text">catch 之后不会结束当前进程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#begin-end"><span class="nav-number">1.10.</span> <span class="nav-text">begin..end</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E9%80%9A%E4%BF%A1"><span class="nav-number">1.11.</span> <span class="nav-text">进程通信</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#dollar-sign"><span class="nav-number">1.11.1.</span> <span class="nav-text">$ dollar sign</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%91%E9%80%81%E4%BF%A1%E6%81%AF%E5%88%B0%E8%BF%9C%E7%A8%8B%E8%8A%82%E7%82%B9"><span class="nav-number">1.11.2.</span> <span class="nav-text">发送信息到远程节点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E6%B3%A8%E5%86%8C%E5%92%8C%E8%8E%B7%E5%8F%96"><span class="nav-number">1.11.3.</span> <span class="nav-text">进程的注册和获取</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E8%BF%9C%E7%A8%8B%E8%BF%9B%E7%A8%8B-PID"><span class="nav-number">1.11.4.</span> <span class="nav-text">获取远程进程 PID</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%B4%E6%8E%A5%E7%94%A8%E8%BF%9C%E7%A8%8B-PID-%E5%8F%91%E9%80%81%E6%B6%88%E6%81%AF"><span class="nav-number">1.11.5.</span> <span class="nav-text">直接用远程 PID 发送消息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Observer-%E8%A7%82%E5%AF%9F%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97"><span class="nav-number">1.11.6.</span> <span class="nav-text">Observer 观察消息队列</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E5%BC%8F%E5%8C%B9%E9%85%8D"><span class="nav-number">1.12.</span> <span class="nav-text">模式匹配</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E5%8F%82%E6%95%B0%E4%B8%AD%E7%9A%84%E6%A8%A1%E5%BC%8F%E5%8C%B9%E9%85%8D"><span class="nav-number">1.12.1.</span> <span class="nav-text">函数参数中的模式匹配</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9F%AD%E8%B7%AF%E6%B1%82%E5%80%BC"><span class="nav-number">1.13.</span> <span class="nav-text">短路求值</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E7%94%A8%E5%B7%A5%E5%85%B7%E5%87%BD%E6%95%B0"><span class="nav-number">1.14.</span> <span class="nav-text">常用工具函数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#net-adm-localhost-0"><span class="nav-number">1.14.1.</span> <span class="nav-text">net_adm:localhost&#x2F;0</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%97%E8%A1%A8%E6%89%93%E5%8D%B0%E5%AE%8C%E5%85%A8"><span class="nav-number">1.14.2.</span> <span class="nav-text">列表打印完全</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B-Event-%E4%B8%AD%E6%89%80%E6%9C%89%E7%9A%84-Handler"><span class="nav-number">1.14.3.</span> <span class="nav-text">查看 Event 中所有的 Handler</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E8%B5%84%E6%BA%90"><span class="nav-number">1.15.</span> <span class="nav-text">相关资源</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Zixiang Sun"
+      src="/images/avatar.svg">
+  <p class="site-author-name" itemprop="name">Zixiang Sun</p>
+  <div class="site-description" itemprop="description">Welcome to my personal blog where I share thoughts on technology, programming, and life experiences.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/hzsunzixiang" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;hzsunzixiang" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:17842379@qq.com" title="E-Mail → mailto:17842379@qq.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hzsunzixiang.github.io/2024/01/16/erlang-erlang-basic-knowledge/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.svg">
+      <meta itemprop="name" content="Zixiang Sun">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Zixiang Sun's Blog">
+      <meta itemprop="description" content="Welcome to my personal blog where I share thoughts on technology, programming, and life experiences.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Erlang 知识点汇总 | Zixiang Sun's Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Erlang 知识点汇总
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-01-16 00:00:00" itemprop="dateCreated datePublished" datetime="2024-01-16T00:00:00+08:00">2024-01-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-16 12:38:09" itemprop="dateModified" datetime="2026-01-16T12:38:09+08:00">2026-01-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/technology/" itemprop="url" rel="index"><span itemprop="name">技术</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/technology/Erlang/" itemprop="url" rel="index"><span itemprop="name">Erlang</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="Erlang-知识点汇总"><a href="#Erlang-知识点汇总" class="headerlink" title="Erlang 知识点汇总"></a>Erlang 知识点汇总</h1><p>本文汇总了 Erlang 开发中的常用知识点，包括基础语法、分布式节点通信、调试技巧等。</p>
+<span id="more"></span>
+
+<h2 id="基础语法"><a href="#基础语法" class="headerlink" title="基础语法"></a>基础语法</h2><h3 id="常用函数"><a href="#常用函数" class="headerlink" title="常用函数"></a>常用函数</h3><ul>
+<li><code>list_to_integer</code> - 列表转整数</li>
+<li><code>byte_size</code> - 获取字节大小</li>
+<li><code>{packet, http_bin}</code> - HTTP 二进制包选项</li>
+</ul>
+<h3 id="定义和加载-Record"><a href="#定义和加载-Record" class="headerlink" title="定义和加载 Record"></a>定义和加载 Record</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">% 定义 record</span></span><br><span class="line"><span class="function"><span class="title">rd</span><span class="params">(factorial, &#123;nodeName, comment, createdOn&#125;)</span>.</span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function">% 加载 <span class="title">record</span></span></span><br><span class="line"><span class="function"><span class="title">rr</span><span class="params">(amqp_connection)</span>.</span></span><br></pre></td></tr></table></figure>
+
+<p>参考: <a target="_blank" rel="noopener" href="https://www.erlang.org/doc/man/shell">Erlang – shell</a></p>
+<h3 id="创建-Mnesia-表"><a href="#创建-Mnesia-表" class="headerlink" title="创建 Mnesia 表"></a>创建 Mnesia 表</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">rd</span><span class="params">(factorial, &#123;nodeName, comment, createdOn&#125;)</span>.</span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function">% 内存表</span></span><br><span class="line"><span class="function">R<span class="title">esult</span> = <span class="title">mnesia</span>:<span class="title">create_table</span><span class="params">(factorial, [</span></span></span><br><span class="line"><span class="params"><span class="function">    &#123;attributes, record_info(fields, factorial)&#125;, </span></span></span><br><span class="line"><span class="params"><span class="function">    &#123;type, bag&#125;, </span></span></span><br><span class="line"><span class="params"><span class="function">    &#123;ram_copies, [node()]&#125;</span></span></span><br><span class="line"><span class="params"><span class="function">])</span>.</span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function">% 磁盘表</span></span><br><span class="line"><span class="function">R<span class="title">esult2</span> = <span class="title">mnesia</span>:<span class="title">create_table</span><span class="params">(factorial1, [</span></span></span><br><span class="line"><span class="params"><span class="function">    &#123;attributes, record_info(fields, factorial)&#125;, </span></span></span><br><span class="line"><span class="params"><span class="function">    &#123;type, bag&#125;, </span></span></span><br><span class="line"><span class="params"><span class="function">    &#123;disc_copies, [node()]&#125;</span></span></span><br><span class="line"><span class="params"><span class="function">])</span>.</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="查看-Mnesia-表信息"><a href="#查看-Mnesia-表信息" class="headerlink" title="查看 Mnesia 表信息"></a>查看 Mnesia 表信息</h3><p><img src="/images/erlang_basic/image2.png" alt="Mnesia表信息"></p>
+<hr>
+<h2 id="循环与列表操作"><a href="#循环与列表操作" class="headerlink" title="循环与列表操作"></a>循环与列表操作</h2><h3 id="生成数组"><a href="#生成数组" class="headerlink" title="生成数组"></a>生成数组</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[X || X &lt;- lists:seq(<span class="number">1</span>,<span class="number">100</span>), X <span class="keyword">rem</span> <span class="number">2</span> == <span class="number">0</span>].</span><br></pre></td></tr></table></figure>
+
+<h3 id="遍历数组"><a href="#遍历数组" class="headerlink" title="遍历数组"></a>遍历数组</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lists:foldl(<span class="keyword">fun</span>(X, Sum) -&gt; X + Sum <span class="keyword">end</span>, <span class="number">0</span>, [X || X &lt;- lists:seq(<span class="number">1</span>,<span class="number">100</span>)]).</span><br></pre></td></tr></table></figure>
+
+<h3 id="调用100次某函数"><a href="#调用100次某函数" class="headerlink" title="调用100次某函数"></a>调用100次某函数</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lists:foldl(<span class="keyword">fun</span>(X, Sum) -&gt; database_logic:storeDB(node(), X) <span class="keyword">end</span>, <span class="number">0</span>, [X || X &lt;- lists:seq(<span class="number">1</span>,<span class="number">100</span>)]).</span><br></pre></td></tr></table></figure>
+
+<h3 id="lists-takewhile"><a href="#lists-takewhile" class="headerlink" title="lists:takewhile"></a>lists:takewhile</h3><p><img src="/images/erlang_basic/image46.png" alt="lists:takewhile"></p>
+<hr>
+<h2 id="Module-Attributes"><a href="#Module-Attributes" class="headerlink" title="Module Attributes"></a>Module Attributes</h2><p>参考: <a target="_blank" rel="noopener" href="https://www.erlang.org/doc/reference_manual/modules">Erlang – Modules</a></p>
+<p><img src="/images/erlang_basic/image3.png" alt="Module Attributes"></p>
+<p><img src="/images/erlang_basic/image4.png" alt="Module Attributes 示例"></p>
+<h3 id="Module-Attributes-with-Tuple"><a href="#Module-Attributes-with-Tuple" class="headerlink" title="Module Attributes with Tuple"></a>Module Attributes with Tuple</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">-module</span><span class="params">(rabbit)</span>.</span><br><span class="line"><span class="keyword">-author</span><span class="params">(<span class="string">&quot;TutorialPoint&quot;</span>)</span>.</span><br><span class="line">-version<span class="params">(<span class="string">&quot;1.0&quot;</span>)</span>.</span><br><span class="line">-module_description<span class="params">(<span class="string">&quot;This is an example module.&quot;</span>)</span>.</span><br><span class="line"></span><br><span class="line">-rabbit_boot_step<span class="params">(&#123;pre_boot, [&#123;description, <span class="string">&quot;rabbit boot start&quot;</span>&#125;]&#125;)</span>.</span><br><span class="line"></span><br><span class="line">-rabbit_boot_step<span class="params">(&#123;codec_correctness_check,</span></span><br><span class="line"><span class="params">    [&#123;description, <span class="string">&quot;codec correctness check&quot;</span>&#125;,</span></span><br><span class="line"><span class="params">     &#123;mfa, &#123;rabbit_binary_generator, check_empty_frame_size, []&#125;&#125;,</span></span><br><span class="line"><span class="params">     &#123;requires, pre_boot&#125;,</span></span><br><span class="line"><span class="params">     &#123;enables, external_infrastructure&#125;]&#125;)</span>.</span><br><span class="line"></span><br><span class="line"><span class="keyword">-export</span><span class="params">([start/<span class="number">0</span>])</span>.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">start</span><span class="params">()</span> -&gt;</span></span><br><span class="line">    io:fwrite(<span class="string">&quot;Hello World\n&quot;</span>),</span><br><span class="line">    ModuleInfo = rabbit:module_info(),</span><br><span class="line">    Attributes = rabbit:module_info(attributes),</span><br><span class="line">    io:format(<span class="string">&quot;~p~n&quot;</span>, [Attributes]),</span><br><span class="line">    finish.</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="分布式节点"><a href="#分布式节点" class="headerlink" title="分布式节点"></a>分布式节点</h2><h3 id="Hidden-Node"><a href="#Hidden-Node" class="headerlink" title="Hidden Node"></a>Hidden Node</h3><p><img src="/images/erlang_basic/image1.png" alt="Hidden Node"></p>
+<p>参考: <a target="_blank" rel="noopener" href="https://www.erlang.org/doc/reference_manual/distributed.html">Erlang – Distributed Erlang</a></p>
+<h3 id="远程连接-MQ-节点"><a href="#远程连接-MQ-节点" class="headerlink" title="远程连接 MQ 节点"></a>远程连接 MQ 节点</h3><h4 id="使用-net-kernel-connect-node"><a href="#使用-net-kernel-connect-node" class="headerlink" title="使用 net_kernel:connect_node"></a>使用 net_kernel:connect_node</h4><p>参考: <a target="_blank" rel="noopener" href="https://blog.differentpla.net/blog/2013/11/07/net-kernel-connect-node-1-returns-ignored/">net_kernel:connect_node&#x2F;1</a></p>
+<p>需要给节点起个名字：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">erl -sname apple</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">(apple@kvm_10_21_1_163)<span class="number">1</span>&gt; net_kernel:connect_node(&#x27;rabbit@kvm_10_20_1_60&#x27;).</span><br><span class="line"><span class="literal">true</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="使用-net-adm-ping"><a href="#使用-net-adm-ping" class="headerlink" title="使用 net_adm:ping"></a>使用 net_adm:ping</h4><p>注意是 <code>-sname</code> 在生效，不用 <code>-name</code>，能够在远程节点生效。</p>
+<p><img src="/images/erlang_basic/image5.png" alt="net_adm:ping"></p>
+<h4 id="使用-rpc-call"><a href="#使用-rpc-call" class="headerlink" title="使用 rpc:call"></a>使用 rpc:call</h4><p><img src="/images/erlang_basic/image6.png" alt="rpc:call"></p>
+<h4 id="使用消息发送"><a href="#使用消息发送" class="headerlink" title="使用消息发送 !"></a>使用消息发送 !</h4><p><img src="/images/erlang_basic/image7.png" alt="消息发送"></p>
+<p><img src="/images/erlang_basic/image8.png" alt="消息发送示例"></p>
+<h4 id="使用-monitor"><a href="#使用-monitor" class="headerlink" title="使用 monitor"></a>使用 monitor</h4><p><img src="/images/erlang_basic/image9.png" alt="monitor 示例1"></p>
+<p><img src="/images/erlang_basic/image10.png" alt="monitor 示例2"></p>
+<p><img src="/images/erlang_basic/image11.png" alt="monitor 示例3"></p>
+<p><img src="/images/erlang_basic/image12.png" alt="monitor 示例4"></p>
+<p><strong>case1</strong>: 节点不存在<br><strong>case2</strong>: 节点存在，服务不存在，建立连接<br><strong>case3</strong>: 远程节点和进程都存在</p>
+<p><img src="/images/erlang_basic/image13.png" alt="monitor case"></p>
+<hr>
+<h2 id="Observer-远程观察"><a href="#Observer-远程观察" class="headerlink" title="Observer 远程观察"></a>Observer 远程观察</h2><h3 id="步骤"><a href="#步骤" class="headerlink" title="步骤"></a>步骤</h3><ol>
+<li><strong>新起一个节点</strong></li>
+</ol>
+<p><img src="/images/erlang_basic/image14.png" alt="新起节点"></p>
+<ol start="2">
+<li><strong>启动 observer</strong></li>
+</ol>
+<p><img src="/images/erlang_basic/image15.png" alt="启动observer"></p>
+<ol start="3">
+<li><strong>连接其他 node</strong></li>
+</ol>
+<p>在本机上即使不连接，能看到其他节点的时候也可以直接切换。<br>在远程，必须先连接上，然后再切换。</p>
+<p><img src="/images/erlang_basic/image16.png" alt="连接节点"></p>
+<p>或者用命令行：</p>
+<p><img src="/images/erlang_basic/image17.png" alt="命令行连接"></p>
+<ol start="4">
+<li><strong>切换到其他节点</strong></li>
+</ol>
+<p><img src="/images/erlang_basic/image18.png" alt="切换节点"></p>
+<ol start="5">
+<li><strong>查看节点信息</strong></li>
+</ol>
+<p><img src="/images/erlang_basic/image19.png" alt="节点信息"></p>
+<hr>
+<h2 id="调试-RabbitMQ-节点"><a href="#调试-RabbitMQ-节点" class="headerlink" title="调试 RabbitMQ 节点"></a>调试 RabbitMQ 节点</h2><h3 id="节点无法连接的调试"><a href="#节点无法连接的调试" class="headerlink" title="节点无法连接的调试"></a>节点无法连接的调试</h3><ul>
+<li>查看防火墙，如果有，需要关闭</li>
+</ul>
+<p><img src="/images/erlang_basic/image20.png" alt="防火墙检查1"></p>
+<p><img src="/images/erlang_basic/image21.png" alt="防火墙检查2"></p>
+<p><img src="/images/erlang_basic/image22.png" alt="防火墙检查3"></p>
+<h3 id="初步启动"><a href="#初步启动" class="headerlink" title="初步启动"></a>初步启动</h3><p><img src="/images/erlang_basic/image23.png" alt="初步启动"></p>
+<h3 id="停止"><a href="#停止" class="headerlink" title="停止"></a>停止</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">(rabbit@centos7-mq1)<span class="number">2</span>&gt; rabbit:stop().</span><br><span class="line">ok</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/erlang_basic/image24.png" alt="停止"></p>
+<h3 id="再次开启"><a href="#再次开启" class="headerlink" title="再次开启"></a>再次开启</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">(rabbit@centos7-mq1)<span class="number">4</span>&gt; rabbit:start().</span><br><span class="line">ok</span><br></pre></td></tr></table></figure>
+
+<h3 id="Node-位置无关性"><a href="#Node-位置无关性" class="headerlink" title="Node 位置无关性"></a>Node 位置无关性</h3><p><img src="/images/erlang_basic/image25.png" alt="位置无关性1"></p>
+<p><img src="/images/erlang_basic/image26.png" alt="位置无关性2"></p>
+<hr>
+<h2 id="代码加载与模块管理"><a href="#代码加载与模块管理" class="headerlink" title="代码加载与模块管理"></a>代码加载与模块管理</h2><h3 id="列出已加载的库（符号表）"><a href="#列出已加载的库（符号表）" class="headerlink" title="列出已加载的库（符号表）"></a>列出已加载的库（符号表）</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">code:all_loaded().</span><br><span class="line"><span class="function"><span class="title">rp</span><span class="params">(code:all_loaded())</span>.</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/erlang_basic/image27.png" alt="已加载模块"></p>
+<h3 id="加载模块"><a href="#加载模块" class="headerlink" title="加载模块"></a>加载模块</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(apple@rabbitmq-<span class="number">1</span>)<span class="number">11</span>&gt; l(ping).</span><br></pre></td></tr></table></figure>
+
+<h3 id="查看包依赖"><a href="#查看包依赖" class="headerlink" title="查看包依赖"></a>查看包依赖</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">% 直接启动试试</span></span><br><span class="line">application:ensure_all_started(systemd).</span><br><span class="line">&#123;ok,[enough,systemd]&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>从 <code>rebar.config</code> 中查看: <code>{deps, [enough]}.</code></li>
+<li><code>rebar3 deps</code></li>
+<li><code>rebar3 tree</code></li>
+</ul>
+<p><img src="/images/erlang_basic/image28.png" alt="依赖树"></p>
+<ul>
+<li><code>make list-deps</code></li>
+</ul>
+<hr>
+<h2 id="把节点变成分布式节点"><a href="#把节点变成分布式节点" class="headerlink" title="把节点变成分布式节点"></a>把节点变成分布式节点</h2><p>参考: <a target="_blank" rel="noopener" href="https://www.erlang.org/doc/man/net_kernel.html#start-1">Erlang – net_kernel</a></p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">net_kernel:start([foo, shortnames]).</span><br></pre></td></tr></table></figure>
+
+<h3 id="启动之前"><a href="#启动之前" class="headerlink" title="启动之前"></a>启动之前</h3><p><img src="/images/erlang_basic/image30.png" alt="启动前"></p>
+<h3 id="启动之后"><a href="#启动之后" class="headerlink" title="启动之后"></a>启动之后</h3><p><img src="/images/erlang_basic/image31.png" alt="启动后1"></p>
+<p><img src="/images/erlang_basic/image32.png" alt="启动后2"></p>
+<p>多出来的部分：</p>
+<p><img src="/images/erlang_basic/image33.png" alt="多出部分"></p>
+<p><img src="/images/erlang_basic/image34.png" alt="分布式详情"></p>
+<p>源码位置: <code>/home/ericksun/program/otp-25.0.4/lib/erlang/lib/kernel-8.4.2/src/erl_distribution.erl</code></p>
+<p><img src="/images/erlang_basic/image35.png" alt="源码1"></p>
+<p><img src="/images/erlang_basic/image36.png" alt="源码2"></p>
+<hr>
+<h2 id="异常处理"><a href="#异常处理" class="headerlink" title="异常处理"></a>异常处理</h2><p><img src="/images/erlang_basic/image37.png" alt="异常类型"></p>
+<h3 id="catch-之后不会结束当前进程"><a href="#catch-之后不会结束当前进程" class="headerlink" title="catch 之后不会结束当前进程"></a>catch 之后不会结束当前进程</h3><p><img src="/images/erlang_basic/image38.png" alt="catch示例1"></p>
+<p><img src="/images/erlang_basic/image39.png" alt="catch示例2"></p>
+<p><img src="/images/erlang_basic/image40.png" alt="catch示例3"></p>
+<hr>
+<h2 id="begin-end"><a href="#begin-end" class="headerlink" title="begin..end"></a>begin..end</h2><p>参考: <a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/20125277/what-is-begin-end-in-erlang-used-for">What is begin…end in Erlang used for?</a></p>
+<p><img src="/images/erlang_basic/image41.png" alt="begin..end 1"></p>
+<p><img src="/images/erlang_basic/image42.png" alt="begin..end 2"></p>
+<p><img src="/images/erlang_basic/image43.png" alt="begin..end 3"></p>
+<p><img src="/images/erlang_basic/image44.png" alt="begin..end 4"></p>
+<hr>
+<h2 id="进程通信"><a href="#进程通信" class="headerlink" title="进程通信"></a>进程通信</h2><h3 id="dollar-sign"><a href="#dollar-sign" class="headerlink" title="$ dollar sign"></a>$ dollar sign</h3><p><img src="/images/erlang_basic/image45.png" alt="dollar sign"></p>
+<h3 id="发送信息到远程节点"><a href="#发送信息到远程节点" class="headerlink" title="发送信息到远程节点"></a>发送信息到远程节点</h3><p>参考: <a target="_blank" rel="noopener" href="https://www.erlang.org/doc/getting_started/conc_prog.html#message-passing">Erlang – Concurrent Programming</a></p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;pong, Pong_Node&#125; ! &#123;ping, self()&#125;,</span><br></pre></td></tr></table></figure>
+
+<p>使用 tuple <code>{registered_name, node_name}</code> 代替单独的 <code>registered_name</code>。</p>
+<p><img src="/images/erlang_basic/image47.png" alt="远程发送"></p>
+<h3 id="进程的注册和获取"><a href="#进程的注册和获取" class="headerlink" title="进程的注册和获取"></a>进程的注册和获取</h3><p><img src="/images/erlang_basic/image48.png" alt="进程注册"></p>
+<h3 id="获取远程进程-PID"><a href="#获取远程进程-PID" class="headerlink" title="获取远程进程 PID"></a>获取远程进程 PID</h3><p>通过 register 方式：</p>
+<p><img src="/images/erlang_basic/image49.png" alt="获取远程PID 1"></p>
+<p><img src="/images/erlang_basic/image50.png" alt="获取远程PID 2"></p>
+<p><img src="/images/erlang_basic/image51.png" alt="获取远程PID 3"></p>
+<h3 id="直接用远程-PID-发送消息"><a href="#直接用远程-PID-发送消息" class="headerlink" title="直接用远程 PID 发送消息"></a>直接用远程 PID 发送消息</h3><p>io_request 发送到远程，无法直接执行打印的时候，放到消息队列：</p>
+<p><img src="/images/erlang_basic/image52.png" alt="io_request"></p>
+<p>发给 group_leader 直接执行，不会放到进程的消息队列中：</p>
+<p><img src="/images/erlang_basic/image53.png" alt="group_leader"></p>
+<h3 id="Observer-观察消息队列"><a href="#Observer-观察消息队列" class="headerlink" title="Observer 观察消息队列"></a>Observer 观察消息队列</h3><p><img src="/images/erlang_basic/image54.png" alt="消息队列1"></p>
+<p><img src="/images/erlang_basic/image55.png" alt="消息队列2"></p>
+<hr>
+<h2 id="模式匹配"><a href="#模式匹配" class="headerlink" title="模式匹配"></a>模式匹配</h2><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">calls</span><span class="params">(TSpecs = [_|_], &#123;Max, Time&#125;, Opts)</span></span></span><br></pre></td></tr></table></figure>
+
+<p>Pattern matching 的重要用途：</p>
+<ul>
+<li>选择控制流分支</li>
+<li>执行变量赋值（绑定）</li>
+<li>解构数据结构（选择和提取部分）</li>
+</ul>
+<p><img src="/images/erlang_basic/image56.png" alt="模式匹配"></p>
+<h3 id="函数参数中的模式匹配"><a href="#函数参数中的模式匹配" class="headerlink" title="函数参数中的模式匹配"></a>函数参数中的模式匹配</h3><p><img src="/images/erlang_basic/image57.png" alt="函数参数模式匹配"></p>
+<p><code>#state{...}=State</code> 是别名模式：同时匹配和赋值。</p>
+<hr>
+<h2 id="短路求值"><a href="#短路求值" class="headerlink" title="短路求值"></a>短路求值</h2><p>参考: <a target="_blank" rel="noopener" href="https://www.erlang.org/doc/reference_manual/expressions.html">Erlang – Expressions</a></p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Expr1 <span class="keyword">orelse</span> Expr2</span><br><span class="line">Expr1 <span class="keyword">andalso</span> Expr2</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/erlang_basic/image58.png" alt="短路求值1"></p>
+<p>修改后只允许一个实例存在：</p>
+<p><img src="/images/erlang_basic/image59.png" alt="短路求值2"></p>
+<hr>
+<h2 id="常用工具函数"><a href="#常用工具函数" class="headerlink" title="常用工具函数"></a>常用工具函数</h2><h3 id="net-adm-localhost-0"><a href="#net-adm-localhost-0" class="headerlink" title="net_adm:localhost&#x2F;0"></a>net_adm:localhost&#x2F;0</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span>&gt; net_adm:localhost().</span><br><span class="line"><span class="string">&quot;centos7-mq1&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="列表打印完全"><a href="#列表打印完全" class="headerlink" title="列表打印完全"></a>列表打印完全</h3><p><code>rp(Term)</code> - 使用 shell 已知的 record 定义打印 term，不限制深度。</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">rp</span><span class="params">(code:all_loaded())</span>.</span></span><br></pre></td></tr></table></figure>
+
+<p>参考: <a target="_blank" rel="noopener" href="https://www.erlang.org/doc/man/shell.html">Erlang – shell</a></p>
+<h3 id="查看-Event-中所有的-Handler"><a href="#查看-Event-中所有的-Handler" class="headerlink" title="查看 Event 中所有的 Handler"></a>查看 Event 中所有的 Handler</h3><p><strong>针对旧版 error_logger：</strong></p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gen_event:which_handlers(error_logger).</span><br></pre></td></tr></table></figure>
+
+<p><strong>针对新的 logger 模块（OTP 21.0+）：</strong></p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">logger:get_handler_config().</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="相关资源"><a href="#相关资源" class="headerlink" title="相关资源"></a>相关资源</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://www.erlang.org/doc/man/erlang.html">Erlang – erlang</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.erlang.org/doc/man/logger.html">Erlang – logger</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.erlang.org/doc/man/code.html">Erlang – code</a></li>
+<li><a target="_blank" rel="noopener" href="https://learnyousomeerlang.com/">Learn You Some Erlang</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.erlang.org/blog/core-erlang-by-example/">Core Erlang by Example</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Erlang/" rel="tag"># Erlang</a>
+              <a href="/tags/RabbitMQ/" rel="tag"># RabbitMQ</a>
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" rel="tag"># 分布式系统</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+            </div>
+            <div class="post-nav-item">
+                <a href="/2024/01/17/test-giscus-comments/" rel="next" title="测试 Giscus 评论功能">
+                  测试 Giscus 评论功能 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2024 – 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Zixiang Sun</span>
+  </div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"hzsunzixiang/hzsunzixiang.github.io","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

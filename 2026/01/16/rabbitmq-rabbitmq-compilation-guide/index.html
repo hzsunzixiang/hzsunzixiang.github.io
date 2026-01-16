@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.svg">
+  <link rel="mask-icon" href="/images/favicon.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Noto+Serif+SC:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Source+Code+Pro:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"hzsunzixiang.github.io","root":"/","images":"/images","scheme":"Pisces","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"default","show_result":true},"fold":{"enable":false,"height":500},"language":false,"highlight_theme":"default"},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="RabbitMQ 服务器编译指南本文档记录了在 macOS (Apple Silicon) 环境下编译 RabbitMQ 服务器的完整过程，包括遇到的问题和解决方案。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RabbitMQ 服务器编译指南">
+<meta property="og:url" content="https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-compilation-guide/">
+<meta property="og:site_name" content="Zixiang Sun&#39;s Blog">
+<meta property="og:description" content="RabbitMQ 服务器编译指南本文档记录了在 macOS (Apple Silicon) 环境下编译 RabbitMQ 服务器的完整过程，包括遇到的问题和解决方案。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-01-16T06:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-16T07:17:51.544Z">
+<meta property="article:author" content="Zixiang Sun">
+<meta property="article:tag" content="Erlang">
+<meta property="article:tag" content="RabbitMQ">
+<meta property="article:tag" content="macOS">
+<meta property="article:tag" content="编译">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-compilation-guide/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-compilation-guide/","path":"2026/01/16/rabbitmq-rabbitmq-compilation-guide/","title":"RabbitMQ 服务器编译指南"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>RabbitMQ 服务器编译指南 | Zixiang Sun's Blog</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="Zixiang Sun's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Zixiang Sun's Blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Sharing thoughts on technology, programming, and life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">7</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">5</span></a></li><li class="menu-item menu-item-erlang"><a href="/erlang/" rel="section"><i class="fa fa-code fa-fw"></i>Erlang</a></li><li class="menu-item menu-item-rabbitmq"><a href="/rabbitmq/" rel="section"><i class="fa fa-server fa-fw"></i>RabbitMQ</a></li><li class="menu-item menu-item-craq"><a href="/craq/" rel="section"><i class="fa fa-book fa-fw"></i>CRAQ</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#RabbitMQ-%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E8%AF%91%E6%8C%87%E5%8D%97"><span class="nav-number">1.</span> <span class="nav-text">RabbitMQ 服务器编译指南</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E4%BF%A1%E6%81%AF"><span class="nav-number">1.1.</span> <span class="nav-text">环境信息</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E8%A6%81%E6%B1%82"><span class="nav-number">1.2.</span> <span class="nav-text">系统要求</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BF%85%E9%9C%80%E5%B7%A5%E5%85%B7"><span class="nav-number">1.2.1.</span> <span class="nav-text">必需工具</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%AF%E9%80%89%E5%B7%A5%E5%85%B7"><span class="nav-number">1.2.2.</span> <span class="nav-text">可选工具</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E8%BF%87%E7%A8%8B"><span class="nav-number">1.3.</span> <span class="nav-text">编译过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87"><span class="nav-number">1.3.1.</span> <span class="nav-text">1. 环境准备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E6%B8%85%E7%90%86%E5%92%8C%E7%BC%96%E8%AF%91"><span class="nav-number">1.3.2.</span> <span class="nav-text">2. 清理和编译</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%81%87%E5%88%B0%E7%9A%84%E9%97%AE%E9%A2%98%E5%92%8C%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">1.4.</span> <span class="nav-text">遇到的问题和解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98-1-Erlang-%E7%89%88%E6%9C%AC%E4%B8%8D%E5%85%BC%E5%AE%B9"><span class="nav-number">1.4.1.</span> <span class="nav-text">问题 1: Erlang 版本不兼容</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98-2-wxWidgets-%E5%85%BC%E5%AE%B9%E6%80%A7%E9%97%AE%E9%A2%98"><span class="nav-number">1.4.2.</span> <span class="nav-text">问题 2: wxWidgets 兼容性问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98-3-%E7%BC%BA%E5%B0%91-7z-%E5%91%BD%E4%BB%A4"><span class="nav-number">1.4.3.</span> <span class="nav-text">问题 3: 缺少 7z 命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98-4-hex-core-%E4%BE%9D%E8%B5%96%E6%9E%84%E5%BB%BA%E5%A4%B1%E8%B4%A5"><span class="nav-number">1.4.4.</span> <span class="nav-text">问题 4: hex_core 依赖构建失败</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98-5-ra-%E6%A8%A1%E5%9D%97%E5%B9%B6%E5%8F%91%E7%BC%96%E8%AF%91%E9%97%AE%E9%A2%98"><span class="nav-number">1.4.5.</span> <span class="nav-text">问题 5: ra 模块并发编译问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98-6-Generic-Unix-%E5%8C%85%E6%9E%84%E5%BB%BA%E4%B8%AD%E7%9A%84%E9%87%8D%E5%A4%8D%E6%96%87%E4%BB%B6%E5%90%8D%E9%94%99%E8%AF%AF"><span class="nav-number">1.4.6.</span> <span class="nav-text">问题 6: Generic Unix 包构建中的重复文件名错误</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8C%85%E6%9E%84%E5%BB%BA%E8%84%9A%E6%9C%AC"><span class="nav-number">1.5.</span> <span class="nav-text">包构建脚本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%8C%E6%95%B4%E7%BC%96%E8%AF%91%E8%84%9A%E6%9C%AC"><span class="nav-number">1.6.</span> <span class="nav-text">完整编译脚本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81%E7%BC%96%E8%AF%91%E7%BB%93%E6%9E%9C"><span class="nav-number">1.7.</span> <span class="nav-text">验证编译结果</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5%E7%94%9F%E6%88%90%E7%9A%84%E6%96%87%E4%BB%B6"><span class="nav-number">1.7.1.</span> <span class="nav-text">检查生成的文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E6%B5%8B%E8%AF%95"><span class="nav-number">1.7.2.</span> <span class="nav-text">运行测试</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5"><span class="nav-number">1.8.</span> <span class="nav-text">常见问题排查</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E6%97%B6%E9%97%B4%E8%BF%87%E9%95%BF"><span class="nav-number">1.8.1.</span> <span class="nav-text">编译时间过长</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E4%B8%8D%E8%B6%B3"><span class="nav-number">1.8.2.</span> <span class="nav-text">内存不足</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9D%83%E9%99%90%E9%97%AE%E9%A2%98"><span class="nav-number">1.8.3.</span> <span class="nav-text">权限问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98"><span class="nav-number">1.8.4.</span> <span class="nav-text">网络问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E5%BB%BA%E8%AE%AE"><span class="nav-number">1.9.</span> <span class="nav-text">性能优化建议</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E8%B5%84%E6%BA%90"><span class="nav-number">1.10.</span> <span class="nav-text">相关资源</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%88%E6%9C%AC%E4%BF%A1%E6%81%AF"><span class="nav-number">1.11.</span> <span class="nav-text">版本信息</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Zixiang Sun"
+      src="/images/avatar.svg">
+  <p class="site-author-name" itemprop="name">Zixiang Sun</p>
+  <div class="site-description" itemprop="description">Welcome to my personal blog where I share thoughts on technology, programming, and life experiences.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/hzsunzixiang" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;hzsunzixiang" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:17842379@qq.com" title="E-Mail → mailto:17842379@qq.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-compilation-guide/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.svg">
+      <meta itemprop="name" content="Zixiang Sun">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Zixiang Sun's Blog">
+      <meta itemprop="description" content="Welcome to my personal blog where I share thoughts on technology, programming, and life experiences.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="RabbitMQ 服务器编译指南 | Zixiang Sun's Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RabbitMQ 服务器编译指南
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-01-16 14:00:00 / 修改时间：15:17:51" itemprop="dateCreated datePublished" datetime="2026-01-16T14:00:00+08:00">2026-01-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/technology/" itemprop="url" rel="index"><span itemprop="name">技术</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/technology/RabbitMQ/" itemprop="url" rel="index"><span itemprop="name">RabbitMQ</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="RabbitMQ-服务器编译指南"><a href="#RabbitMQ-服务器编译指南" class="headerlink" title="RabbitMQ 服务器编译指南"></a>RabbitMQ 服务器编译指南</h1><p>本文档记录了在 macOS (Apple Silicon) 环境下编译 RabbitMQ 服务器的完整过程，包括遇到的问题和解决方案。</p>
+<span id="more"></span>
+
+<h2 id="环境信息"><a href="#环境信息" class="headerlink" title="环境信息"></a>环境信息</h2><ul>
+<li><strong>操作系统</strong>: macOS (Darwin)</li>
+<li><strong>架构</strong>: Apple Silicon (ARM64)</li>
+<li><strong>Shell</strong>: bash</li>
+<li><strong>包管理器</strong>: Homebrew</li>
+</ul>
+<h2 id="系统要求"><a href="#系统要求" class="headerlink" title="系统要求"></a>系统要求</h2><h3 id="必需工具"><a href="#必需工具" class="headerlink" title="必需工具"></a>必需工具</h3><ol>
+<li><p><strong>GNU Make 4+</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install make</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>Erlang 27.x</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install erlang@27</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>p7zip (7z 命令)</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install p7zip</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>Git</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install git</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="可选工具"><a href="#可选工具" class="headerlink" title="可选工具"></a>可选工具</h3><ul>
+<li><strong>Elixir</strong> (用于 CLI 工具)</li>
+<li><strong>rebar3</strong> (Erlang 构建工具)</li>
+</ul>
+<h2 id="编译过程"><a href="#编译过程" class="headerlink" title="编译过程"></a>编译过程</h2><h3 id="1-环境准备"><a href="#1-环境准备" class="headerlink" title="1. 环境准备"></a>1. 环境准备</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 克隆 RabbitMQ 服务器源码</span></span><br><span class="line">git <span class="built_in">clone</span> https://github.com/rabbitmq/rabbitmq-server.git</span><br><span class="line"><span class="built_in">cd</span> rabbitmq-server</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置环境变量</span></span><br><span class="line"><span class="built_in">export</span> PATH=<span class="string">&quot;/opt/homebrew/opt/erlang@27/bin:/opt/homebrew/bin:<span class="variable">$PATH</span>&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="2-清理和编译"><a href="#2-清理和编译" class="headerlink" title="2. 清理和编译"></a>2. 清理和编译</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 清理所有构建产物</span></span><br><span class="line">git clean -xfffd</span><br><span class="line">gmake clean</span><br><span class="line">gmake distclean</span><br><span class="line"></span><br><span class="line"><span class="comment"># 开始编译（推荐使用单线程避免并发问题）</span></span><br><span class="line">gmake -j1</span><br></pre></td></tr></table></figure>
+
+<h2 id="遇到的问题和解决方案"><a href="#遇到的问题和解决方案" class="headerlink" title="遇到的问题和解决方案"></a>遇到的问题和解决方案</h2><h3 id="问题-1-Erlang-版本不兼容"><a href="#问题-1-Erlang-版本不兼容" class="headerlink" title="问题 1: Erlang 版本不兼容"></a>问题 1: Erlang 版本不兼容</h3><p><strong>错误信息</strong>:</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rabbit_data_coercion.erl:76:23: syntax <span class="built_in">error</span> before: <span class="string">&#x27;||&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>原因</strong>: RabbitMQ 4.x 使用了 Erlang 26+ 才支持的 map comprehension 语法，而系统安装的是 Erlang 25。</p>
+<p><strong>解决方案</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 卸载旧版本 Erlang</span></span><br><span class="line">brew uninstall erlang@25</span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装 Erlang 27</span></span><br><span class="line">brew install erlang@27</span><br><span class="line"></span><br><span class="line"><span class="comment"># 更新 PATH</span></span><br><span class="line"><span class="built_in">export</span> PATH=<span class="string">&quot;/opt/homebrew/opt/erlang@27/bin:<span class="variable">$PATH</span>&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>验证</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">erl -version</span><br><span class="line"><span class="comment"># 应该显示: Erlang (SMP,ASYNC_THREADS) (BEAM) emulator version 15.2.7.4</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 测试 map comprehension 语法</span></span><br><span class="line">erl -<span class="built_in">eval</span> <span class="string">&#x27;M = #&#123;a =&gt; 1, b =&gt; 2&#125;, R = #&#123;K =&gt; V || K := V &lt;- M&#125;, io:format(&quot;~p~n&quot;, [R]), halt().&#x27;</span> -noshell</span><br><span class="line"><span class="comment"># 应该输出: #&#123;a =&gt; 1,b =&gt; 2&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="问题-2-wxWidgets-兼容性问题"><a href="#问题-2-wxWidgets-兼容性问题" class="headerlink" title="问题 2: wxWidgets 兼容性问题"></a>问题 2: wxWidgets 兼容性问题</h3><p><strong>错误信息</strong>:</p>
+<figure class="highlight excel"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">observ<span class="symbol">er:st</span>art().</span><br><span class="line">=CRASH REPORT==== Symbol <span class="built_in">not</span> fou<span class="symbol">nd:</span> __ZNK8wxCursor10GetHotSpotEv</span><br></pre></td></tr></table></figure>
+
+<p><strong>原因</strong>: Erlang 27 与现有的 wxWidgets 版本不兼容。</p>
+<p><strong>解决方案</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 卸载 Erlang 27 和 wxWidgets</span></span><br><span class="line">brew uninstall erlang@27</span><br><span class="line">brew uninstall --ignore-dependencies wxwidgets</span><br><span class="line"></span><br><span class="line"><span class="comment"># 重新安装（这会自动安装兼容的 wxWidgets 版本）</span></span><br><span class="line">brew install erlang@27</span><br></pre></td></tr></table></figure>
+
+<p><strong>验证</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 测试 observer 是否正常工作</span></span><br><span class="line">erl -<span class="built_in">eval</span> <span class="string">&#x27;observer:start(), timer:sleep(2000), observer:stop(), halt().&#x27;</span></span><br><span class="line"><span class="comment"># 应该正常启动和关闭，无错误信息</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="问题-3-缺少-7z-命令"><a href="#问题-3-缺少-7z-命令" class="headerlink" title="问题 3: 缺少 7z 命令"></a>问题 3: 缺少 7z 命令</h3><p><strong>错误信息</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/bin/sh: 7z: <span class="built_in">command</span> not found</span><br><span class="line">gmake[2]: *** [../../erlang.mk:3510: escript-zip] Error 127</span><br></pre></td></tr></table></figure>
+
+<p><strong>原因</strong>: RabbitMQ CLI 工具构建需要 7z 命令来创建 escript 归档。</p>
+<p><strong>解决方案</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 安装 p7zip</span></span><br><span class="line">brew install p7zip</span><br><span class="line"></span><br><span class="line"><span class="comment"># 验证安装</span></span><br><span class="line"><span class="built_in">which</span> 7z</span><br><span class="line"><span class="comment"># 应该输出: /opt/homebrew/bin/7z</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="问题-4-hex-core-依赖构建失败"><a href="#问题-4-hex-core-依赖构建失败" class="headerlink" title="问题 4: hex_core 依赖构建失败"></a>问题 4: hex_core 依赖构建失败</h3><p><strong>错误信息</strong>:</p>
+<figure class="highlight gams"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gmake[<span class="number">2</span>]: *** <span class="keyword">No</span> targets specified <span class="keyword">and</span> <span class="keyword">no</span> makefile found.  Stop.</span><br><span class="line">touch: cannot touch <span class="string">&#x27;/Users/.../deps/hex_core/ebin/dep_built&#x27;</span>: <span class="keyword">No</span> such <span class="keyword">file</span> <span class="keyword">or</span> directory</span><br></pre></td></tr></table></figure>
+
+<p><strong>原因</strong>: hex_core 使用 rebar3 构建系统，但 erlang.mk 尝试用 make 构建它。</p>
+<p><strong>解决方案</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 手动编译 hex_core</span></span><br><span class="line"><span class="built_in">cd</span> deps/hex_core</span><br><span class="line"><span class="built_in">mkdir</span> -p ebin</span><br><span class="line">erlc -o ebin src/*.erl</span><br><span class="line"><span class="built_in">cp</span> src/hex_core.app.src ebin/hex_core.app</span><br><span class="line"><span class="built_in">touch</span> ebin/dep_built</span><br><span class="line"><span class="built_in">cd</span> ../..</span><br></pre></td></tr></table></figure>
+
+<h3 id="问题-5-ra-模块并发编译问题"><a href="#问题-5-ra-模块并发编译问题" class="headerlink" title="问题 5: ra 模块并发编译问题"></a>问题 5: ra 模块并发编译问题</h3><p><strong>错误信息</strong>:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">failed <span class="keyword">to</span> <span class="built_in">rename</span> .../ra_snapshot.bea# <span class="keyword">to</span> .../ra_snapshot.beam: <span class="keyword">no</span> such <span class="keyword">file</span> <span class="built_in">or</span> directory</span><br></pre></td></tr></table></figure>
+
+<p><strong>原因</strong>: 并发编译时文件操作冲突。</p>
+<p><strong>解决方案</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 使用单线程编译</span></span><br><span class="line">gmake -j1</span><br><span class="line"></span><br><span class="line"><span class="comment"># 或者清理 ra 目录后重新编译</span></span><br><span class="line"><span class="built_in">rm</span> -rf deps/ra/ebin</span><br><span class="line"><span class="built_in">mkdir</span> deps/ra/ebin</span><br><span class="line">gmake -j1 deps</span><br></pre></td></tr></table></figure>
+
+<h3 id="问题-6-Generic-Unix-包构建中的重复文件名错误"><a href="#问题-6-Generic-Unix-包构建中的重复文件名错误" class="headerlink" title="问题 6: Generic Unix 包构建中的重复文件名错误"></a>问题 6: Generic Unix 包构建中的重复文件名错误</h3><p><strong>错误信息</strong>:</p>
+<figure class="highlight subunit"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ERROR:</span></span><br><span class="line"><span class="keyword"></span>Duplicate filename on disk:</span><br><span class="line">dep_built</span><br><span class="line">dep_built</span><br><span class="line">make[6]: *** [../../erlang.mk:3511: escript-zip] Error 2</span><br></pre></td></tr></table></figure>
+
+<p><strong>原因</strong>: 在创建 escript zip 文件时，多个依赖项中都包含 <code>dep_built</code> 文件，导致 7z 归档时文件名冲突。</p>
+<p><strong>解决方案</strong>:</p>
+<p>方法1 - 临时删除 dep_built 文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 删除所有 dep_built 文件</span></span><br><span class="line">find deps -name <span class="string">&quot;dep_built&quot;</span> -delete</span><br><span class="line"></span><br><span class="line"><span class="comment"># 然后构建包</span></span><br><span class="line">gmake package-generic-unix</span><br></pre></td></tr></table></figure>
+
+<p>方法2 - 修改 erlang.mk（永久解决）：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在 erlang.mk 第3510-3515行，添加 filter-out 来排除 dep_built 文件</span></span><br><span class="line"><span class="comment"># 将：</span></span><br><span class="line"><span class="comment">#   $(subst $(DEPS_DIR)/,,$(addsuffix /*,$(wildcard \</span></span><br><span class="line"><span class="comment"># 改为：</span></span><br><span class="line"><span class="comment">#   $(filter-out %/dep_built,$(subst $(DEPS_DIR)/,,$(addsuffix /*,$(wildcard \</span></span><br></pre></td></tr></table></figure>
+
+<p>方法3 - 使用构建脚本：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 使用提供的自动化脚本</span></span><br><span class="line">./build_package.sh</span><br></pre></td></tr></table></figure>
+
+<p><strong>验证</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 检查生成的包文件</span></span><br><span class="line"><span class="built_in">ls</span> -la PACKAGES/rabbitmq-server-*.tar.xz</span><br></pre></td></tr></table></figure>
+
+<h2 id="包构建脚本"><a href="#包构建脚本" class="headerlink" title="包构建脚本"></a>包构建脚本</h2><p>创建 <code>build_package.sh</code> 脚本来自动化包构建过程：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"><span class="comment"># RabbitMQ Generic Unix Package Build Script</span></span><br><span class="line"><span class="built_in">set</span> -e</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;开始构建 RabbitMQ Generic Unix 包...&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置环境变量</span></span><br><span class="line"><span class="built_in">export</span> PATH=<span class="string">&quot;/opt/homebrew/opt/erlang@27/bin:/opt/homebrew/bin:<span class="variable">$PATH</span>&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 验证环境</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;验证构建环境...&quot;</span></span><br><span class="line"><span class="built_in">which</span> gmake || &#123; <span class="built_in">echo</span> <span class="string">&quot;错误: 未找到 gmake&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line"><span class="built_in">which</span> erl || &#123; <span class="built_in">echo</span> <span class="string">&quot;错误: 未找到 erlang&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line"><span class="built_in">which</span> 7z || &#123; <span class="built_in">echo</span> <span class="string">&quot;错误: 未找到 7z&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查 Erlang 版本</span></span><br><span class="line">ERL_VERSION=$(erl -<span class="built_in">eval</span> <span class="string">&#x27;io:format(&quot;~s&quot;, [erlang:system_info(otp_release)]), halt().&#x27;</span> -noshell)</span><br><span class="line"><span class="keyword">if</span> [[ <span class="string">&quot;<span class="variable">$ERL_VERSION</span>&quot;</span> &lt; <span class="string">&quot;27&quot;</span> ]]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;错误: 需要 Erlang 27+，当前版本: <span class="variable">$ERL_VERSION</span>&quot;</span></span><br><span class="line">    <span class="built_in">exit</span> 1</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;Erlang 版本: <span class="variable">$ERL_VERSION</span> ✓&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 清理可能导致问题的 dep_built 文件</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;清理 dep_built 文件...&quot;</span></span><br><span class="line">find deps -name <span class="string">&quot;dep_built&quot;</span> -delete 2&gt;/dev/null || <span class="literal">true</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 确保主项目已经构建</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;确保主项目已构建...&quot;</span></span><br><span class="line"><span class="keyword">if</span> [ ! -f <span class="string">&quot;sbin/rabbitmq-server&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;主项目未构建，开始构建...&quot;</span></span><br><span class="line">    gmake -j1</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 构建 generic-unix 包</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;构建 Generic Unix 包...&quot;</span></span><br><span class="line">gmake package-generic-unix</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;构建完成！&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查输出</span></span><br><span class="line">PACKAGE_DIR=<span class="string">&quot;PACKAGES&quot;</span></span><br><span class="line"><span class="keyword">if</span> [ -d <span class="string">&quot;<span class="variable">$PACKAGE_DIR</span>&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;生成的包文件:&quot;</span></span><br><span class="line">    <span class="built_in">ls</span> -la <span class="string">&quot;<span class="variable">$PACKAGE_DIR</span>&quot;</span>/rabbitmq-server-*.tar.xz 2&gt;/dev/null || <span class="built_in">echo</span> <span class="string">&quot;未找到 .tar.xz 文件&quot;</span></span><br><span class="line">    <span class="built_in">ls</span> -la <span class="string">&quot;<span class="variable">$PACKAGE_DIR</span>&quot;</span>/rabbitmq-server-*.tar.gz 2&gt;/dev/null || <span class="built_in">echo</span> <span class="string">&quot;未找到 .tar.gz 文件&quot;</span></span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;警告: 未找到 PACKAGES 目录&quot;</span></span><br><span class="line"><span class="keyword">fi</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="完整编译脚本"><a href="#完整编译脚本" class="headerlink" title="完整编译脚本"></a>完整编译脚本</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># RabbitMQ 服务器编译脚本</span></span><br><span class="line"><span class="built_in">set</span> -e</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;开始编译 RabbitMQ 服务器...&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置环境变量</span></span><br><span class="line"><span class="built_in">export</span> PATH=<span class="string">&quot;/opt/homebrew/opt/erlang@27/bin:/opt/homebrew/bin:<span class="variable">$PATH</span>&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 验证必需工具</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;验证构建工具...&quot;</span></span><br><span class="line"><span class="built_in">which</span> gmake || &#123; <span class="built_in">echo</span> <span class="string">&quot;错误: 未找到 gmake&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line"><span class="built_in">which</span> erl || &#123; <span class="built_in">echo</span> <span class="string">&quot;错误: 未找到 erlang&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line"><span class="built_in">which</span> 7z || &#123; <span class="built_in">echo</span> <span class="string">&quot;错误: 未找到 7z&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查 Erlang 版本</span></span><br><span class="line">ERL_VERSION=$(erl -<span class="built_in">eval</span> <span class="string">&#x27;io:format(&quot;~s&quot;, [erlang:system_info(otp_release)]), halt().&#x27;</span> -noshell)</span><br><span class="line"><span class="keyword">if</span> [[ <span class="string">&quot;<span class="variable">$ERL_VERSION</span>&quot;</span> &lt; <span class="string">&quot;27&quot;</span> ]]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;错误: 需要 Erlang 27+，当前版本: <span class="variable">$ERL_VERSION</span>&quot;</span></span><br><span class="line">    <span class="built_in">exit</span> 1</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;Erlang 版本: <span class="variable">$ERL_VERSION</span> ✓&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 清理构建产物</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;清理构建产物...&quot;</span></span><br><span class="line">git clean -xfffd</span><br><span class="line">gmake clean</span><br><span class="line">gmake distclean</span><br><span class="line"></span><br><span class="line"><span class="comment"># 手动构建 hex_core（如果需要）</span></span><br><span class="line"><span class="keyword">if</span> [ ! -f <span class="string">&quot;deps/hex_core/ebin/dep_built&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;手动构建 hex_core...&quot;</span></span><br><span class="line">    <span class="built_in">cd</span> deps/hex_core</span><br><span class="line">    <span class="built_in">mkdir</span> -p ebin</span><br><span class="line">    erlc -o ebin src/*.erl 2&gt;/dev/null || <span class="literal">true</span></span><br><span class="line">    <span class="built_in">cp</span> src/hex_core.app.src ebin/hex_core.app 2&gt;/dev/null || <span class="literal">true</span></span><br><span class="line">    <span class="built_in">touch</span> ebin/dep_built</span><br><span class="line">    <span class="built_in">cd</span> ../..</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 开始编译</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;开始编译 RabbitMQ...&quot;</span></span><br><span class="line">gmake -j1</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;编译完成！&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 验证编译结果</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;验证编译结果...&quot;</span></span><br><span class="line"><span class="keyword">if</span> [ -f <span class="string">&quot;sbin/rabbitmq-server&quot;</span> ] &amp;&amp; [ -f <span class="string">&quot;escript/rabbitmqctl&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;✓ 编译成功！&quot;</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;  - 服务器脚本: sbin/rabbitmq-server&quot;</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;  - 控制工具: escript/rabbitmqctl&quot;</span></span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;✗ 编译可能不完整，请检查错误信息&quot;</span></span><br><span class="line">    <span class="built_in">exit</span> 1</span><br><span class="line"><span class="keyword">fi</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="验证编译结果"><a href="#验证编译结果" class="headerlink" title="验证编译结果"></a>验证编译结果</h2><h3 id="检查生成的文件"><a href="#检查生成的文件" class="headerlink" title="检查生成的文件"></a>检查生成的文件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 检查主要可执行文件</span></span><br><span class="line"><span class="built_in">ls</span> -la sbin/rabbitmq-server</span><br><span class="line"><span class="built_in">ls</span> -la escript/rabbitmqctl</span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查插件目录</span></span><br><span class="line"><span class="built_in">ls</span> -la plugins/</span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查 Erlang beam 文件</span></span><br><span class="line">find deps/rabbit/ebin -name <span class="string">&quot;*.beam&quot;</span> | <span class="built_in">head</span> -5</span><br></pre></td></tr></table></figure>
+
+<h3 id="运行测试"><a href="#运行测试" class="headerlink" title="运行测试"></a>运行测试</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 启动开发模式服务器</span></span><br><span class="line">gmake run-broker</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在另一个终端中测试连接</span></span><br><span class="line">./escript/rabbitmqctl status</span><br></pre></td></tr></table></figure>
+
+<h2 id="常见问题排查"><a href="#常见问题排查" class="headerlink" title="常见问题排查"></a>常见问题排查</h2><h3 id="编译时间过长"><a href="#编译时间过长" class="headerlink" title="编译时间过长"></a>编译时间过长</h3><ul>
+<li><strong>原因</strong>: RabbitMQ 是大型项目，包含众多模块</li>
+<li><strong>解决</strong>: 正常现象，完整编译需要 15-25 分钟</li>
+</ul>
+<h3 id="内存不足"><a href="#内存不足" class="headerlink" title="内存不足"></a>内存不足</h3><ul>
+<li><strong>症状</strong>: 编译过程中系统卡顿或进程被杀死</li>
+<li><strong>解决</strong>: 使用 <code>gmake -j1</code> 减少并发，或增加虚拟内存</li>
+</ul>
+<h3 id="权限问题"><a href="#权限问题" class="headerlink" title="权限问题"></a>权限问题</h3><ul>
+<li><strong>症状</strong>: 无法创建文件或目录</li>
+<li><strong>解决</strong>: 确保对项目目录有写权限，避免使用 sudo</li>
+</ul>
+<h3 id="网络问题"><a href="#网络问题" class="headerlink" title="网络问题"></a>网络问题</h3><ul>
+<li><strong>症状</strong>: 依赖下载失败</li>
+<li><strong>解决</strong>: 检查网络连接，考虑使用代理或镜像源</li>
+</ul>
+<h2 id="性能优化建议"><a href="#性能优化建议" class="headerlink" title="性能优化建议"></a>性能优化建议</h2><ol>
+<li><strong>使用 SSD</strong>: 确保项目在 SSD 上编译</li>
+<li><strong>充足内存</strong>: 推荐 8GB+ 内存</li>
+<li><strong>单线程编译</strong>: 使用 <code>-j1</code> 避免并发问题</li>
+<li><strong>清理缓存</strong>: 定期运行 <code>gmake distclean</code></li>
+</ol>
+<h2 id="相关资源"><a href="#相关资源" class="headerlink" title="相关资源"></a>相关资源</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://www.rabbitmq.com/docs/">RabbitMQ 官方文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/rabbitmq/rabbitmq-server">RabbitMQ GitHub 仓库</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.erlang.org/docs">Erlang&#x2F;OTP 文档</a></li>
+</ul>
+<h2 id="版本信息"><a href="#版本信息" class="headerlink" title="版本信息"></a>版本信息</h2><ul>
+<li><strong>文档版本</strong>: 1.0</li>
+<li><strong>RabbitMQ 版本</strong>: 4.x (main 分支)</li>
+<li><strong>Erlang 版本</strong>: 27.3.4.6</li>
+<li><strong>创建日期</strong>: 2026-01-16</li>
+<li><strong>最后更新</strong>: 2026-01-16</li>
+</ul>
+<hr>
+<p><strong>注意</strong>: 本文档基于 macOS Apple Silicon 环境编写，其他平台可能需要调整部分步骤。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Erlang/" rel="tag"># Erlang</a>
+              <a href="/tags/RabbitMQ/" rel="tag"># RabbitMQ</a>
+              <a href="/tags/%E7%BC%96%E8%AF%91/" rel="tag"># 编译</a>
+              <a href="/tags/macOS/" rel="tag"># macOS</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/01/16/erlang-erlang-links-and-monitors-cn/" rel="prev" title="Erlang 进程链接与监视器（中文版）">
+                  <i class="fa fa-angle-left"></i> Erlang 进程链接与监视器（中文版）
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/01/16/rabbitmq-rabbitmq-build-issue-analysis/" rel="next" title="RabbitMQ 构建问题分析与社区补丁提案">
+                  RabbitMQ 构建问题分析与社区补丁提案 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2024 – 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Zixiang Sun</span>
+  </div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"hzsunzixiang/hzsunzixiang.github.io","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

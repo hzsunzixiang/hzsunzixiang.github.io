@@ -22,4 +22,14 @@ date: 2024-01-15
 
 ---
 
+## 🔗 相关资源
+
+- [RabbitMQ 官方文档](https://www.rabbitmq.com/docs/)
+- [RabbitMQ GitHub 仓库](https://github.com/rabbitmq/rabbitmq-server)
+- [Erlang/OTP 文档](https://www.erlang.org/docs)
+
+---
+
 [← 返回首页](/) | [↑ 返回顶部](#top)
+
+*本文档集合持续更新中。*

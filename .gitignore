@@ -28,3 +28,8 @@ yarn-error.log*
 # Backup
 *.backup
 *-backup/
+
+# Large PDF files
+erlang.otp.pdf
+erlang_otp_en.pdf
+*.pdf

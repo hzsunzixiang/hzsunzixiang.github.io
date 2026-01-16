@@ -17,7 +17,10 @@ Erlang 编程语言相关的技术文档和知识总结。
 
 | 文档 | 描述 |
 |------|------|
-| [Erlang 知识点汇总](/2024/01/16/erlang-basic-knowledge/) | Erlang 开发常用知识点，包括基础语法、分布式节点通信、调试技巧等 |
+| [Erlang 知识点汇总](/2024/01/16/erlang-erlang-basic-knowledge/) | Erlang 开发常用知识点，包括基础语法、分布式节点通信、调试技巧等 |
+| [第四章：通用型服务器 gen_server](/2024/01/18/erlang-erlang-otp-gen-server/) | OTP 中最常用的 behavior，包括同步/异步消息、超时处理等 |
+| [Erlang 进程链接与监视器](/2026/01/16/erlang-erlang-links-and-monitors/) | 用于监督的 Links 和 Monitors 机制（英文原版） |
+| [Erlang 进程链接与监视器（中文版）](/2026/01/16/erlang-erlang-links-and-monitors-cn/) | 用于监督的 Links 和 Monitors 机制（完整中文翻译） |
 
 [↑ 返回顶部](#top)
 

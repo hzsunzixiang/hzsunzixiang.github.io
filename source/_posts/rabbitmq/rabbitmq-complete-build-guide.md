@@ -15,7 +15,7 @@ tags:
 
 ## 概述
 
-基于 RabbitMQ 4.0.5 源码深度分析和实际构建验证，本文档全面解析五种编译方式的技术原理、实现机制和最佳实践。
+基于 RabbitMQ 4.0.5 源码深度分析和实际构建验证，本文档全面解析六种编译方式的技术原理、实现机制和最佳实践。
 
 ## 快速对比表
 
@@ -24,6 +24,7 @@ tags:
 | `make` | 编译 | 源码目录 + beam 文件 | 开发调试 | 最快 | 中等 | 本地开发、调试 |
 | `make dist` | 打包文件 | 插件目录结构 | 目录部署 | 快 | 大 | 生产环境、插件开发 |
 | `make dist DIST_AS_EZS=true` | 打包成 ez 文件 | .ez 压缩包 | 插件安装 | 中等 | 小 | 插件分发、热加载 |
+| `make source-dist` | 创建源码包 | tar.xz 源码归档 | 源码分发 | 快 | 小 | 离线构建、版本发布 |
 | `make package-generic-unix` | 打包成 PACKAGE 文件 | tar.xz 包 | 解压安装 | 慢 | 最小 | 容器、跨平台 |
 | `make install` | 安装 | 系统目录 | 系统安装 | 中等 | 中等 | 生产部署 |
 
@@ -278,11 +279,148 @@ rabbitmq-plugins enable plugin_name
 
 ---
 
-## 4. `make package-generic-unix` - 通用 Unix 包
+## 4. `make source-dist` - 源码分发包
 
 ### 技术原理
 
-创建跨平台的 tar.xz 安装包，包含完整的 RabbitMQ 运行环境。
+`make source-dist` 创建一个完整的、可复现的源码归档包（tar.xz），包含所有依赖和构建所需的文件。这是 `make package-generic-unix` 的前置步骤。
+
+#### 核心实现源码
+
+```makefile
+# 来源：Makefile (第 142-152 行)
+SOURCE_DIST_BASE ?= rabbitmq-server
+SOURCE_DIST_SUFFIXES ?= tar.xz
+SOURCE_DIST ?= $(PACKAGES_DIR)/$(SOURCE_DIST_BASE)-$(PROJECT_VERSION)
+
+# 源码包文件
+SOURCE_DIST_FILES = $(addprefix $(SOURCE_DIST).,$(SOURCE_DIST_SUFFIXES))
+
+source-dist: $(SOURCE_DIST_FILES)
+	@:
+
+# 来源：Makefile (第 234-306 行)
+$(SOURCE_DIST): $(ERLANG_MK_RECURSIVE_DEPS_LIST)
+	$(verbose) mkdir -p $(dir $@)
+	$(gen_verbose) $(RSYNC) $(RSYNC_FLAGS) ./ $@/
+	# 收集依赖、许可证、版本信息等
+```
+
+#### 打包流程详解
+
+```
+make source-dist
+  ↓
+解析依赖列表 (ERLANG_MK_RECURSIVE_DEPS_LIST)
+  ↓
+rsync 复制主项目 (排除 .git, .beam, deps/ 等)
+  ↓
+收集所有依赖到 deps/
+  ↓
+处理许可证文件 (LICENSE)
+  ↓
+更新版本信息 (.app.src 文件)
+  ↓
+生成 git-revisions.txt (版本追踪)
+  ↓
+处理 Mix/Hex 缓存 (用于离线构建)
+  ↓
+固定文件时间戳 (可复现性)
+  ↓
+生成 manifest 文件
+  ↓
+创建 tar.xz 归档
+```
+
+#### RSYNC 排除规则
+
+```makefile
+RSYNC_FLAGS += -a $(RSYNC_V)              \
+	--exclude '.sw?' --exclude '.*.sw?'   \  # vim 交换文件
+	--exclude '*.beam'                    \  # 编译产物
+	--exclude '*.d'                       \  # 依赖文件
+	--exclude '*.pyc'                     \  # Python 缓存
+	--exclude '.git*'                     \  # Git 文件
+	--exclude '.hg*'                      \  # Mercurial 文件
+	--exclude '*.bzl'                     \  # Bazel 文件
+	--exclude '*.bazel'                   \
+	--exclude 'BUILD.*'                   \
+	--exclude 'deps/'                     \  # 依赖目录（单独处理）
+	--exclude 'ebin/'                     \  # 编译输出
+	--exclude 'plugins/'                  \  # 插件目录
+	--exclude 'test/'                     \  # 测试文件
+	--exclude 'sbin/'                     \  # 生成的脚本
+	# ... 更多排除规则
+```
+
+### 实际生成的文件
+
+```bash
+PACKAGES/
+├── rabbitmq-server-4.0.5/              # 解压后的源码目录
+│   ├── Makefile                        # 主构建文件
+│   ├── erlang.mk                       # Erlang.mk 构建系统
+│   ├── plugins.mk                      # 插件定义
+│   ├── deps/                           # 所有依赖源码
+│   │   ├── rabbit/                     # 核心模块
+│   │   ├── rabbit_common/              # 公共模块
+│   │   ├── rabbitmq_management/        # 管理插件
+│   │   └── ...                         # 其他依赖
+│   ├── LICENSE                         # 合并的许可证文件
+│   ├── LICENSE-*                       # 各组件许可证
+│   └── git-revisions.txt               # Git 版本追踪
+├── rabbitmq-server-4.0.5.tar.xz        # 源码归档包 (~5MB)
+└── rabbitmq-server-4.0.5.manifest      # 文件清单
+```
+
+### 可复现性特性
+
+1. **固定时间戳** - 所有文件时间戳基于最新 Git 提交
+2. **排序文件列表** - manifest 使用 `LC_COLLATE=C sort` 确保一致性
+3. **Hex 缓存处理** - 将 ETS 缓存转为 Erlang term 文件避免二进制差异
+4. **版本信息嵌入** - 自动更新所有 `.app.src` 中的版本号
+
+### 使用场景与最佳实践
+
+#### 离线构建
+```bash
+# 1. 在联网环境创建源码包
+make source-dist
+
+# 2. 传输到离线环境
+scp PACKAGES/rabbitmq-server-4.0.5.tar.xz offline-server:/tmp/
+
+# 3. 离线构建
+ssh offline-server
+tar -xf /tmp/rabbitmq-server-4.0.5.tar.xz
+cd rabbitmq-server-4.0.5
+make
+```
+
+#### 版本发布
+```bash
+# 官方发布流程
+make source-dist
+# 生成的 tar.xz 可上传到 GitHub Releases
+```
+
+#### 作为 package-generic-unix 的输入
+```bash
+# make package-generic-unix 内部依赖 source-dist
+make package-generic-unix
+# 实际执行：
+# 1. make source-dist (生成源码包)
+# 2. 解压源码包
+# 3. 编译并打包为通用包
+```
+
+---
+
+## 5. `make package-generic-unix` - 通用 Unix 包
+
+### 技术原理
+
+创建跨平台的 tar.xz 安装包，包含完整的 RabbitMQ 运行环境。**依赖 `make source-dist` 生成的源码包作为输入。**
 
 #### 核心实现源码
 
@@ -387,7 +525,7 @@ ssh user@server 'cd /opt && tar -xf /tmp/rabbitmq-server-generic-unix-*.tar.xz'
 
 ---
 
-## 5. `make install` - 系统级安装
+## 6. `make install` - 系统级安装
 
 ### 技术原理
 
@@ -564,6 +702,7 @@ endef
 | `make` | 最快 (30s) | 中等 (200MB) | 低 (100MB) | 不适用 | 简单 | 低 |
 | `make dist` | 快 (45s) | 大 (300MB) | 中等 (150MB) | 大 (300MB) | 中等 | 中等 |
 | `make dist DIST_AS_EZS=true` | 中等 (60s) | 小 (15MB) | 中等 (150MB) | 小 (15MB) | 简单 | 低 |
+| `make source-dist` | 快 (40s) | 小 (~5MB) | 低 (100MB) | 小 (~5MB) | 简单 | 低 |
 | `make package-generic-unix` | 慢 (120s) | 最小 (15.51MB) | 高 (200MB) | 最小 (15.51MB) | 简单 | 低 |
 | `make install` | 中等 (75s) | 中等 (250MB) | 低 (100MB) | 不适用 | 复杂 | 高 |
 
@@ -764,6 +903,8 @@ sudo chown -R rabbitmq:rabbitmq /opt/rabbitmq
 | **本地开发** | `make` | 最快，支持增量编译 |
 | **功能测试** | `make dist` | 完整插件结构，便于调试 |
 | **插件开发** | `make dist` → `make dist DIST_AS_EZS=true` | 开发用目录，分发用 EZ |
+| **离线构建** | `make source-dist` | 包含所有依赖，可复现 |
+| **版本发布** | `make source-dist` | 官方发布流程，可复现归档 |
 | **容器部署** | `make package-generic-unix` | 自包含，标准化 |
 | **生产部署** | `make package-generic-unix` 或 `make install` | 稳定，便于管理 |
 | **插件分发** | `make dist DIST_AS_EZS=true` | 压缩，便于传输 |
@@ -773,9 +914,10 @@ sudo chown -R rabbitmq:rabbitmq /opt/rabbitmq
 
 1. **EZ 格式是王道** - 对于插件分发和热加载
 2. **通用包最实用** - 对于生产部署和容器化
-3. **增量编译是关键** - 对于开发效率
-4. **构建系统很灵活** - 支持高度定制
-5. **标准化很重要** - 遵循 Unix 和 Erlang 标准
+3. **源码包是基础** - `source-dist` 是 `package-generic-unix` 的前置依赖
+4. **增量编译是关键** - 对于开发效率
+5. **构建系统很灵活** - 支持高度定制
+6. **标准化很重要** - 遵循 Unix 和 Erlang 标准
 
 RabbitMQ 的构建系统设计精良，通过不同的编译命令满足了从开发到生产的各种需求。理解这些编译方式的原理和最佳实践，将显著提升 RabbitMQ 的开发、部署和运维效率。
 

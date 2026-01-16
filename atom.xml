@@ -102,11 +102,11 @@
     
     <category term="RabbitMQ" scheme="https://hzsunzixiang.github.io/tags/RabbitMQ/"/>
     
-    <category term="问题排查" scheme="https://hzsunzixiang.github.io/tags/%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/"/>
-    
     <category term="插件" scheme="https://hzsunzixiang.github.io/tags/%E6%8F%92%E4%BB%B6/"/>
     
     <category term="源码编译" scheme="https://hzsunzixiang.github.io/tags/%E6%BA%90%E7%A0%81%E7%BC%96%E8%AF%91/"/>
+    
+    <category term="问题排查" scheme="https://hzsunzixiang.github.io/tags/%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/"/>
     
   </entry>
   
@@ -133,9 +133,9 @@
     
     <category term="RabbitMQ" scheme="https://hzsunzixiang.github.io/tags/RabbitMQ/"/>
     
-    <category term="网络配置" scheme="https://hzsunzixiang.github.io/tags/%E7%BD%91%E7%BB%9C%E9%85%8D%E7%BD%AE/"/>
-    
     <category term="问题排查" scheme="https://hzsunzixiang.github.io/tags/%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/"/>
+    
+    <category term="网络配置" scheme="https://hzsunzixiang.github.io/tags/%E7%BD%91%E7%BB%9C%E9%85%8D%E7%BD%AE/"/>
     
   </entry>
   

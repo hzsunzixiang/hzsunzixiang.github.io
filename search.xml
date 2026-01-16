@@ -1,22 +1,354 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>测试 Giscus 评论功能</title>
-    <url>/2024/01/17/test-giscus-comments/</url>
-    <content><![CDATA[<h1 id="测试评论功能"><a href="#测试评论功能" class="headerlink" title="测试评论功能"></a>测试评论功能</h1><p>这是一篇测试文章，用于验证 Giscus 评论系统是否正常工作。</p>
-<h2 id="功能测试"><a href="#功能测试" class="headerlink" title="功能测试"></a>功能测试</h2><ul>
-<li>✅ 评论功能</li>
-<li>✅ 点赞&#x2F;表情反应</li>
-<li>✅ GitHub 账号登录</li>
+    <title>Erlang 进程链接与监视器</title>
+    <url>/2026/01/16/erlang-erlang-links-and-monitors/</url>
+    <content><![CDATA[<h1 id="Links-and-Monitors-for-Supervision"><a href="#Links-and-Monitors-for-Supervision" class="headerlink" title="Links and Monitors for Supervision"></a>Links and Monitors for Supervision</h1><p>When processes depend on each other, we have essentially two choices: to have them live and die together, or to let one process be informed when another one crashes. The “let it fail” philosophy of Erlang, discussed in Chapter 3, leads us to a preference for the latter alternative.</p>
+<p>Linked processes form a group that, by default, all crash together. If one of the linked processes exits abnormally, all the other processes in its group get an <code>EXIT</code> signal and crash as well. Monitors allow a process to monitor another process without automatically getting coupled into the same group.</p>
+<span id="more"></span>
+
+<h2 id="Links"><a href="#Links" class="headerlink" title="Links"></a>Links</h2><p>Links are bidirectional. If two processes are linked, they are said to belong to the same link set. If one of them terminates abnormally, an exit signal is propagated to all processes that belong to its link set.</p>
+<p>For setting up a link between two processes, the following BIFs can be used:</p>
+<ul>
+<li><p><code>link(Pid)</code> sets up a bidirectional link between the calling process and the process with process identifier <code>Pid</code>.</p>
+</li>
+<li><p><code>spawn_link(Module, Function, Args)</code> atomically spawns and links to a process. This is equivalent to spawning a process and linking to it, but is done atomically so there is no risk of the spawned process dying before the link is set up.</p>
+</li>
+<li><p><code>unlink(Pid)</code> removes any link between the calling process and the process with process identifier <code>Pid</code>.</p>
+</li>
 </ul>
-<h2 id="请在下方评论区测试"><a href="#请在下方评论区测试" class="headerlink" title="请在下方评论区测试"></a>请在下方评论区测试</h2><p>滚动到页面底部，您应该能看到评论区。</p>
-<p>如果看到 “使用 GitHub 登录” 的提示，说明 Giscus 已正确加载。</p>
+<h3 id="Example"><a href="#Example" class="headerlink" title="Example"></a>Example</h3><figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>&gt; Pid = spawn(<span class="keyword">fun</span>() -&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span> <span class="keyword">end</span>).</span><br><span class="line">&lt;<span class="number">0.25</span>.<span class="number">0</span>&gt;</span><br><span class="line"><span class="number">2</span>&gt; link(Pid).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="number">3</span>&gt; exit(Pid, kill).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line">** exception exit: killed</span><br></pre></td></tr></table></figure>
+
+<p>In this example, linking to the spawned process and then sending a kill signal causes both the spawned process and the shell to crash.</p>
+<h2 id="Trapping-Exits"><a href="#Trapping-Exits" class="headerlink" title="Trapping Exits"></a>Trapping Exits</h2><p>A process can trap exit signals by setting:</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">process_flag</span><span class="params">(trap_exit, true)</span></span></span><br></pre></td></tr></table></figure>
+
+<p>When a process is trapping exits, the exit signals are converted into messages of the form <code>{&#39;EXIT&#39;, Pid, Reason}</code> that can be handled in a normal receive statement.</p>
+<h3 id="Example-1"><a href="#Example-1" class="headerlink" title="Example"></a>Example</h3><figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>&gt; process_flag(trap_exit, <span class="literal">true</span>).</span><br><span class="line"><span class="literal">false</span></span><br><span class="line"><span class="number">2</span>&gt; Pid = spawn_link(<span class="keyword">fun</span>() -&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span> <span class="keyword">end</span>).</span><br><span class="line">&lt;<span class="number">0.35</span>.<span class="number">0</span>&gt;</span><br><span class="line"><span class="number">3</span>&gt; exit(Pid, reason).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="number">4</span>&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span>.</span><br><span class="line">&#123;&#x27;EXIT&#x27;,&lt;<span class="number">0.35</span>.<span class="number">0</span>&gt;,reason&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Table-2-1-Propagation-semantics"><a href="#Table-2-1-Propagation-semantics" class="headerlink" title="Table 2-1. Propagation semantics"></a>Table 2-1. Propagation semantics</h2><table>
+<thead>
+<tr>
+<th>Reason</th>
+<th>Trapping exits (<code>trap_exit=true</code>)</th>
+<th>Not trapping exits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>normal</code></td>
+<td>Receives <code>{&#39;EXIT&#39;, Pid, normal}</code></td>
+<td>Nothing happens</td>
+</tr>
+<tr>
+<td><code>kill</code></td>
+<td>Terminates with reason <code>killed</code></td>
+<td>Terminates with reason <code>killed</code></td>
+</tr>
+<tr>
+<td>Other</td>
+<td>Receives <code>{&#39;EXIT&#39;, Pid, Other}</code></td>
+<td>Terminates with reason <code>Other</code></td>
+</tr>
+</tbody></table>
+<h2 id="Monitors"><a href="#Monitors" class="headerlink" title="Monitors"></a>Monitors</h2><p>Unlike links, monitors are unidirectional. The monitoring process receives a message <code>{&#39;DOWN&#39;, Reference, process, Pid, Reason}</code> in its mailbox when the monitored process terminates, but no signal is sent in the opposite direction.</p>
+<p>Setting up monitors with the BIF:</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line">Reference = monitor(process, Pid)</span><br></pre></td></tr></table></figure>
+
+<p>The <code>Reference</code> can be used to identify the particular monitor if more than one is set up.</p>
+<p>To remove a monitor, use:</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">demonitor</span><span class="params">(Reference)</span></span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Monitors-vs-Links"><a href="#Monitors-vs-Links" class="headerlink" title="Monitors vs Links"></a>Monitors vs Links</h3><table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Links</th>
+<th>Monitors</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Directionality</td>
+<td>Bidirectional</td>
+<td>Unidirectional</td>
+</tr>
+<tr>
+<td>Default behavior</td>
+<td>Crash together</td>
+<td>Message on exit</td>
+</tr>
+<tr>
+<td>Signal propagation</td>
+<td>Both directions</td>
+<td>One direction</td>
+</tr>
+<tr>
+<td>Setup function</td>
+<td><code>link/1</code></td>
+<td><code>monitor/2</code></td>
+</tr>
+<tr>
+<td>Remove function</td>
+<td><code>unlink/1</code></td>
+<td><code>demonitor/1</code></td>
+</tr>
+</tbody></table>
+<h3 id="Example-2"><a href="#Example-2" class="headerlink" title="Example"></a>Example</h3><figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>&gt; Pid = spawn(<span class="keyword">fun</span>() -&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span> <span class="keyword">end</span>).</span><br><span class="line">&lt;<span class="number">0.25</span>.<span class="number">0</span>&gt;</span><br><span class="line"><span class="number">2</span>&gt; Ref = monitor(process, Pid).</span><br><span class="line">#Ref&lt;<span class="number">0.0</span>.<span class="number">0.26</span>&gt;</span><br><span class="line"><span class="number">3</span>&gt; exit(Pid, reason).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="number">4</span>&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span>.</span><br><span class="line">&#123;&#x27;DOWN&#x27;,#Ref&lt;<span class="number">0.0</span>.<span class="number">0.26</span>&gt;,process,&lt;<span class="number">0.25</span>.<span class="number">0</span>&gt;,reason&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Summary"><a href="#Summary" class="headerlink" title="Summary"></a>Summary</h2><ul>
+<li><strong>Links</strong> create a bidirectional connection between processes. When one dies, all linked processes receive an exit signal.</li>
+<li><strong>Monitors</strong> create a unidirectional observation. The monitoring process receives a <code>&#39;DOWN&#39;</code> message when the monitored process terminates.</li>
+<li>Use <code>process_flag(trap_exit, true)</code> to convert exit signals into messages.</li>
+<li>The <code>kill</code> reason cannot be trapped and always terminates the process.</li>
+</ul>
 ]]></content>
       <categories>
-        <category>测试</category>
+        <category>技术</category>
+        <category>Erlang</category>
       </categories>
       <tags>
-        <tag>Test</tag>
+        <tag>Erlang</tag>
+        <tag>OTP</tag>
+        <tag>并发编程</tag>
+        <tag>进程链接</tag>
+        <tag>监视器</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>RabbitMQ 构建问题分析与社区补丁提案</title>
+    <url>/2026/01/16/rabbitmq-rabbitmq-build-issue-analysis/</url>
+    <content><![CDATA[<h1 id="RabbitMQ-Build-Issue-Analysis-Community-Patch-Proposal"><a href="#RabbitMQ-Build-Issue-Analysis-Community-Patch-Proposal" class="headerlink" title="RabbitMQ Build Issue Analysis &amp; Community Patch Proposal"></a>RabbitMQ Build Issue Analysis &amp; Community Patch Proposal</h1><h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>在构建 RabbitMQ 4.1.0+beta.3 的 Generic Unix 包时，遇到了一个关键的构建错误。本文档详细分析了问题原因、解决方案，并提出了向社区贡献补丁的建议。</p>
+<span id="more"></span>
+
+<h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><h3 id="错误信息"><a href="#错误信息" class="headerlink" title="错误信息"></a>错误信息</h3><figure class="highlight subunit"><table><tr><td class="code"><pre><span class="line"><span class="keyword">ERROR:</span></span><br><span class="line"><span class="keyword"></span>Duplicate filename on disk:</span><br><span class="line">dep_built</span><br><span class="line">dep_built</span><br><span class="line">make[6]: *** [../../erlang.mk:3511: escript-zip] Error 2</span><br></pre></td></tr></table></figure>
+
+<h3 id="构建环境"><a href="#构建环境" class="headerlink" title="构建环境"></a>构建环境</h3><ul>
+<li><strong>操作系统</strong>: macOS (Apple Silicon)</li>
+<li><strong>Erlang 版本</strong>: 27.3.4.6 (OTP 27)</li>
+<li><strong>构建工具</strong>: GNU Make 4.4.1</li>
+<li><strong>RabbitMQ 版本</strong>: 4.1.0+beta.3.976.g7083ba3</li>
+<li><strong>构建命令</strong>: <code>gmake package-generic-unix</code></li>
+</ul>
+<h3 id="错误发生位置"><a href="#错误发生位置" class="headerlink" title="错误发生位置"></a>错误发生位置</h3><p>错误发生在 <code>erlang.mk</code> 文件的第 3511 行，具体在 <code>escript-zip</code> 目标的执行过程中。</p>
+<h2 id="根本原因分析"><a href="#根本原因分析" class="headerlink" title="根本原因分析"></a>根本原因分析</h2><h3 id="1-问题根源"><a href="#1-问题根源" class="headerlink" title="1. 问题根源"></a>1. 问题根源</h3><p>在 RabbitMQ 的构建系统中，每个依赖项目录的 <code>ebin/</code> 文件夹中都会创建一个名为 <code>dep_built</code> 的标记文件，用于指示该依赖项已经构建完成。</p>
+<h3 id="2-冲突机制"><a href="#2-冲突机制" class="headerlink" title="2. 冲突机制"></a>2. 冲突机制</h3><p>当执行 <code>escript-zip</code> 目标时，构建系统会尝试将所有依赖项的 <code>ebin/*</code> 文件打包到一个 zip 归档中。由于多个依赖项都包含同名的 <code>dep_built</code> 文件，7z 归档工具会报告重复文件名错误。</p>
+<h3 id="3-影响范围"><a href="#3-影响范围" class="headerlink" title="3. 影响范围"></a>3. 影响范围</h3><p>这个问题影响所有包含多个依赖项的 RabbitMQ escript 构建，特别是：</p>
+<ul>
+<li><code>rabbitmqctl</code> escript</li>
+<li>其他 CLI 工具的 escript 构建</li>
+<li>Generic Unix 包的创建过程</li>
+</ul>
+<h2 id="技术分析"><a href="#技术分析" class="headerlink" title="技术分析"></a>技术分析</h2><h3 id="当前代码问题"><a href="#当前代码问题" class="headerlink" title="当前代码问题"></a>当前代码问题</h3><p>在 <code>erlang.mk</code> 第 3510-3515 行：</p>
+<figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 原始代码（有问题）</span></span><br><span class="line"><span class="variable">$(gen_verbose)</span> cd .. &amp;&amp; <span class="variable">$(ESCRIPT_ZIP)</span> <span class="variable">$(<span class="built_in">abspath</span> <span class="variable">$(ESCRIPT_ZIP_FILE)</span>)</span> <span class="variable">$(<span class="built_in">notdir</span> <span class="variable">$(CURDIR)</span>)</span>/ebin/*</span><br><span class="line"><span class="keyword">ifneq</span> (<span class="variable">$(DEPS)</span>,)</span><br><span class="line">  <span class="variable">$(verbose)</span> cd <span class="variable">$(DEPS_DIR)</span> &amp;&amp; <span class="variable">$(ESCRIPT_ZIP)</span> <span class="variable">$(<span class="built_in">abspath</span> <span class="variable">$(ESCRIPT_ZIP_FILE)</span>)</span> \</span><br><span class="line">    <span class="variable">$(<span class="built_in">subst</span> <span class="variable">$(DEPS_DIR)</span>/,,$(<span class="built_in">addsuffix</span> /*,$(<span class="built_in">wildcard</span> \</span></span><br><span class="line"><span class="variable">    $(<span class="built_in">addsuffix</span> /ebin,$(<span class="built_in">shell</span> cat <span class="variable">$(ESCRIPT_RUNTIME_DEPS_FILE)</span>)</span>))))</span><br><span class="line"><span class="keyword">endif</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h3><ol>
+<li><code>$(notdir $(CURDIR))/ebin/*</code> 和依赖项的 <code>ebin/*</code> 都包含 <code>dep_built</code> 文件</li>
+<li>7z 在添加同名文件到归档时会失败</li>
+<li>构建系统没有过滤掉这些内部标记文件</li>
+</ol>
+<h3 id="已有的过滤机制"><a href="#已有的过滤机制" class="headerlink" title="已有的过滤机制"></a>已有的过滤机制</h3><p>在 <code>deps/rabbit_common/mk/rabbitmq-dist.mk</code> 中已经存在类似的过滤逻辑：</p>
+<figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 第 61 行 - 已有的过滤机制</span></span><br><span class="line"><span class="variable">$(<span class="built_in">filter</span>-out %/dep_built %/ebin/test,$(<span class="built_in">call</span> core_find,$(<span class="built_in">wildcard</span> $(3)</span>/ebin $(3)/<span class="keyword">include</span> $(3)/priv),*)),)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第 134 行 - 清理逻辑</span></span><br><span class="line"><span class="variable">$(verbose)</span> rm -f <span class="variable">$(EZ_DIR_UNIX)</span>/ebin/dep_built <span class="variable">$(EZ_DIR_UNIX)</span>/ebin/test</span><br></pre></td></tr></table></figure>
+
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><h3 id="修复代码"><a href="#修复代码" class="headerlink" title="修复代码"></a>修复代码</h3><figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 修复后的代码</span></span><br><span class="line"><span class="variable">$(gen_verbose)</span> cd .. &amp;&amp; <span class="variable">$(ESCRIPT_ZIP)</span> <span class="variable">$(<span class="built_in">abspath</span> <span class="variable">$(ESCRIPT_ZIP_FILE)</span>)</span> <span class="variable">$(<span class="built_in">filter</span>-out %/dep_built,$(<span class="built_in">notdir</span> <span class="variable">$(CURDIR)</span>)</span>/ebin/*)</span><br><span class="line"><span class="keyword">ifneq</span> (<span class="variable">$(DEPS)</span>,)</span><br><span class="line">  <span class="variable">$(verbose)</span> cd <span class="variable">$(DEPS_DIR)</span> &amp;&amp; <span class="variable">$(ESCRIPT_ZIP)</span> <span class="variable">$(<span class="built_in">abspath</span> <span class="variable">$(ESCRIPT_ZIP_FILE)</span>)</span> \</span><br><span class="line">    <span class="variable">$(<span class="built_in">filter</span>-out %/dep_built,$(<span class="built_in">subst</span> <span class="variable">$(DEPS_DIR)</span>/,,$(<span class="built_in">addsuffix</span> /*,$(<span class="built_in">wildcard</span> \</span></span><br><span class="line"><span class="variable">    $(<span class="built_in">addsuffix</span> /ebin,$(<span class="built_in">shell</span> cat <span class="variable">$(ESCRIPT_RUNTIME_DEPS_FILE)</span>)</span>)))))</span><br><span class="line"><span class="keyword">endif</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="修改说明"><a href="#修改说明" class="headerlink" title="修改说明"></a>修改说明</h3><ol>
+<li><strong>第 3510 行</strong>: 添加 <code>$(filter-out %/dep_built,...)</code> 过滤主项目的 <code>dep_built</code> 文件</li>
+<li><strong>第 3513 行</strong>: 添加 <code>$(filter-out %/dep_built,...)</code> 过滤依赖项的 <code>dep_built</code> 文件</li>
+</ol>
+<h3 id="修改的技术原理"><a href="#修改的技术原理" class="headerlink" title="修改的技术原理"></a>修改的技术原理</h3><ul>
+<li><code>filter-out</code> 是 GNU Make 的内置函数，用于从列表中排除匹配模式的项目</li>
+<li><code>%/dep_built</code> 模式匹配所有以 <code>/dep_built</code> 结尾的路径</li>
+<li>这种方法与现有的 <code>rabbitmq-dist.mk</code> 中的过滤逻辑保持一致</li>
+</ul>
+<h2 id="验证结果"><a href="#验证结果" class="headerlink" title="验证结果"></a>验证结果</h2><h3 id="修复前"><a href="#修复前" class="headerlink" title="修复前"></a>修复前</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ gmake package-generic-unix</span><br><span class="line"><span class="comment"># ... 构建过程 ...</span></span><br><span class="line">ERROR:</span><br><span class="line">Duplicate filename on disk:</span><br><span class="line">dep_built</span><br><span class="line">dep_built</span><br><span class="line">make[6]: *** [../../erlang.mk:3511: escript-zip] Error 2</span><br></pre></td></tr></table></figure>
+
+<h3 id="修复后"><a href="#修复后" class="headerlink" title="修复后"></a>修复后</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ gmake package-generic-unix</span><br><span class="line"><span class="comment"># ... 构建过程 ...</span></span><br><span class="line"><span class="comment"># 构建成功，生成以下文件：</span></span><br><span class="line">$ <span class="built_in">ls</span> PACKAGES/</span><br><span class="line">rabbitmq-server-4.1.0+beta.3.976.g7083ba3/</span><br><span class="line">rabbitmq-server-4.1.0+beta.3.976.g7083ba3.dirty/</span><br><span class="line">rabbitmq-server-4.1.0+beta.3.976.g7083ba3.dirty.manifest</span><br><span class="line">rabbitmq-server-4.1.0+beta.3.976.g7083ba3.dirty.tar.xz</span><br><span class="line">rabbitmq-server-4.1.0+beta.3.976.g7083ba3.manifest</span><br><span class="line">rabbitmq-server-4.1.0+beta.3.976.g7083ba3.tar.xz</span><br><span class="line">rabbitmq-server-generic-unix-4.1.0+beta.3.976.g7083ba3.dirty.tar.xz</span><br></pre></td></tr></table></figure>
+
+<h2 id="社区贡献建议"><a href="#社区贡献建议" class="headerlink" title="社区贡献建议"></a>社区贡献建议</h2><h3 id="1-补丁内容"><a href="#1-补丁内容" class="headerlink" title="1. 补丁内容"></a>1. 补丁内容</h3><figure class="highlight diff"><table><tr><td class="code"><pre><span class="line"><span class="comment">diff --git a/erlang.mk b/erlang.mk</span></span><br><span class="line"><span class="comment">index 49c4519b82..1715d3b132 100644</span></span><br><span class="line"><span class="comment">--- a/erlang.mk</span></span><br><span class="line"><span class="comment">+++ b/erlang.mk</span></span><br><span class="line"><span class="meta">@@ -3507,11 +3507,11 @@</span> escript-prepare: deps app</span><br><span class="line"> escript-zip:: escript-prepare</span><br><span class="line">   $(verbose) mkdir -p $(dir $(abspath $(ESCRIPT_ZIP_FILE)))</span><br><span class="line">   $(verbose) rm -f $(abspath $(ESCRIPT_ZIP_FILE))</span><br><span class="line"><span class="deletion">-  $(gen_verbose) cd .. &amp;&amp; $(ESCRIPT_ZIP) $(abspath $(ESCRIPT_ZIP_FILE)) $(notdir $(CURDIR))/ebin/*</span></span><br><span class="line"><span class="addition">+  $(gen_verbose) cd .. &amp;&amp; $(ESCRIPT_ZIP) $(abspath $(ESCRIPT_ZIP_FILE)) $(filter-out %/dep_built,$(notdir $(CURDIR))/ebin/*)</span></span><br><span class="line"> ifneq ($(DEPS),)</span><br><span class="line">   $(verbose) cd $(DEPS_DIR) &amp;&amp; $(ESCRIPT_ZIP) $(abspath $(ESCRIPT_ZIP_FILE)) \</span><br><span class="line"><span class="deletion">-    $(subst $(DEPS_DIR)/,,$(addsuffix /*,$(wildcard \</span></span><br><span class="line"><span class="deletion">-    $(addsuffix /ebin,$(shell cat $(ESCRIPT_RUNTIME_DEPS_FILE))))))</span></span><br><span class="line"><span class="addition">+    $(filter-out %/dep_built,$(subst $(DEPS_DIR)/,,$(addsuffix /*,$(wildcard \</span></span><br><span class="line"><span class="addition">+    $(addsuffix /ebin,$(shell cat $(ESCRIPT_RUNTIME_DEPS_FILE)))))))</span></span><br><span class="line"> endif</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-提交信息建议"><a href="#2-提交信息建议" class="headerlink" title="2. 提交信息建议"></a>2. 提交信息建议</h3><figure class="highlight livecodeserver"><table><tr><td class="code"><pre><span class="line">Fix escript-zip duplicate filename error <span class="keyword">for</span> dep_built <span class="built_in">files</span></span><br><span class="line"></span><br><span class="line">When building escript archives, multiple dependencies contain dep_built</span><br><span class="line">marker <span class="built_in">files</span> <span class="keyword">in</span> their ebin <span class="built_in">directories</span>. This causes <span class="number">7</span>z <span class="built_in">to</span> fail <span class="keyword">with</span></span><br><span class="line"><span class="string">&quot;Duplicate filename on disk&quot;</span> error when creating <span class="keyword">the</span> escript zip <span class="built_in">file</span>.</span><br><span class="line"></span><br><span class="line">This fix adds <span class="built_in">filter</span>-out patterns <span class="built_in">to</span> exclude dep_built <span class="built_in">files</span> <span class="built_in">from</span></span><br><span class="line">escript archives, consistent <span class="keyword">with</span> <span class="keyword">the</span> existing filtering logic <span class="keyword">in</span></span><br><span class="line">rabbitmq-dist.mk.</span><br><span class="line"></span><br><span class="line">Fixes: Generic Unix package build failure</span><br><span class="line">Tested-<span class="keyword">on</span>: <span class="title">macOS</span> <span class="title">Apple</span> <span class="title">Silicon</span>, <span class="title">Erlang</span> <span class="title">27</span><span class="number">.3</span><span class="number">.4</span><span class="number">.6</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="3-Pull-Request-描述"><a href="#3-Pull-Request-描述" class="headerlink" title="3. Pull Request 描述"></a>3. Pull Request 描述</h3><p><strong>Problem</strong></p>
+<p>Building RabbitMQ generic-unix packages fails with duplicate filename error:</p>
+<figure class="highlight subunit"><table><tr><td class="code"><pre><span class="line"><span class="keyword">ERROR:</span></span><br><span class="line"><span class="keyword"></span>Duplicate filename on disk:</span><br><span class="line">dep_built</span><br><span class="line">dep_built</span><br></pre></td></tr></table></figure>
+
+<p><strong>Root Cause</strong></p>
+<p>Multiple dependencies have <code>dep_built</code> marker files in their <code>ebin/</code> directories. When creating escript zip archives, these files conflict because they have the same name.</p>
+<p><strong>Solution</strong></p>
+<p>Filter out <code>dep_built</code> files from escript archives using <code>filter-out</code>, consistent with existing filtering logic in <code>rabbitmq-dist.mk</code>.</p>
+<p><strong>Testing</strong></p>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Builds successfully on macOS Apple Silicon</li>
+<li><input checked="" disabled="" type="checkbox"> Generic Unix package creation completes without errors</li>
+<li><input checked="" disabled="" type="checkbox"> Generated escript files work correctly</li>
+<li><input checked="" disabled="" type="checkbox"> No regression in existing functionality</li>
+</ul>
+<p><strong>Files Changed</strong></p>
+<ul>
+<li><code>erlang.mk</code>: Added <code>filter-out %/dep_built</code> to escript-zip target</li>
+</ul>
+<h3 id="4-影响评估"><a href="#4-影响评估" class="headerlink" title="4. 影响评估"></a>4. 影响评估</h3><p><strong>正面影响</strong>:</p>
+<ul>
+<li>修复了 Generic Unix 包构建失败的问题</li>
+<li>与现有代码风格和过滤逻辑保持一致</li>
+<li>不影响运行时功能，只影响构建过程</li>
+<li>修复范围小，风险低</li>
+</ul>
+<p><strong>潜在风险</strong>:</p>
+<ul>
+<li>无已知风险</li>
+<li>修改仅影响构建时的文件过滤，不影响最终产品</li>
+</ul>
+<h3 id="5-测试建议"><a href="#5-测试建议" class="headerlink" title="5. 测试建议"></a>5. 测试建议</h3><p>在提交 PR 前，建议进行以下测试：</p>
+<ol>
+<li><p><strong>基本构建测试</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">gmake clean &amp;&amp; gmake</span><br><span class="line">gmake package-generic-unix</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>跨平台测试</strong>:</p>
+<ul>
+<li>Linux (Ubuntu&#x2F;CentOS)</li>
+<li>macOS (Intel&#x2F;Apple Silicon)</li>
+<li>Windows (如果支持)</li>
+</ul>
+</li>
+<li><p><strong>功能测试</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 测试生成的 escript 工具</span></span><br><span class="line">./escript/rabbitmqctl <span class="built_in">help</span></span><br><span class="line">./escript/rabbitmq-plugins list</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>回归测试</strong>:</p>
+<ul>
+<li>确保现有的构建目标仍然工作</li>
+<li>验证其他 escript 构建不受影响</li>
+</ul>
+</li>
+</ol>
+<h2 id="长期建议"><a href="#长期建议" class="headerlink" title="长期建议"></a>长期建议</h2><h3 id="1-构建系统改进"><a href="#1-构建系统改进" class="headerlink" title="1. 构建系统改进"></a>1. 构建系统改进</h3><p>考虑在构建系统中统一处理内部标记文件的过滤逻辑，避免类似问题在其他地方重现。</p>
+<h3 id="2-文档更新"><a href="#2-文档更新" class="headerlink" title="2. 文档更新"></a>2. 文档更新</h3><p>在构建文档中添加关于 <code>dep_built</code> 文件用途和处理方式的说明。</p>
+<h3 id="3-自动化测试"><a href="#3-自动化测试" class="headerlink" title="3. 自动化测试"></a>3. 自动化测试</h3><p>在 CI&#x2F;CD 流水线中添加包构建测试，确保类似问题能够及早发现。</p>
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>这是一个明确的构建系统 bug，有清晰的根本原因和简单的修复方案。修复方案风险低、影响范围明确，非常适合作为社区贡献提交。建议尽快向 RabbitMQ 项目提交 Pull Request，帮助其他开发者避免遇到同样的问题。</p>
+<hr>
+<p><strong>修复验证</strong>: ✅ 已在 macOS Apple Silicon + Erlang 27.3.4.6 环境下验证成功<br><strong>社区贡献准备</strong>: ✅ 补丁、测试和文档已准备就绪<br><strong>风险评估</strong>: ✅ 低风险，仅影响构建过程，不影响运行时功能</p>
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>RabbitMQ</category>
+      </categories>
+      <tags>
+        <tag>Erlang</tag>
+        <tag>RabbitMQ</tag>
+        <tag>构建系统</tag>
+        <tag>开源贡献</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Erlang 进程链接与监视器（中文版）</title>
+    <url>/2026/01/16/erlang-erlang-links-and-monitors-cn/</url>
+    <content><![CDATA[<h1 id="用于监督的链接和监视器"><a href="#用于监督的链接和监视器" class="headerlink" title="用于监督的链接和监视器"></a>用于监督的链接和监视器</h1><p>当进程相互依赖时，我们基本上有两种选择：让它们同生共死，或者让一个进程在另一个进程崩溃时得到通知。第三章讨论的 Erlang “任其崩溃”哲学，使我们倾向于后一种选择。</p>
+<p>链接的进程形成一个组，默认情况下会一起崩溃。如果其中一个链接的进程异常退出，其组中的所有其他进程都会收到 <code>EXIT</code> 信号并一起崩溃。监视器允许一个进程监视另一个进程，而不会自动被耦合到同一个组中。</p>
+<span id="more"></span>
+
+<h2 id="链接（Links）"><a href="#链接（Links）" class="headerlink" title="链接（Links）"></a>链接（Links）</h2><p>链接是双向的。如果两个进程被链接，它们被称为属于同一个链接集。如果其中一个异常终止，退出信号会传播到属于其链接集的所有进程。</p>
+<p>设置两个进程之间的链接，可以使用以下 BIF：</p>
+<ul>
+<li><p><code>link(Pid)</code> 在调用进程和进程标识符为 <code>Pid</code> 的进程之间建立双向链接。</p>
+</li>
+<li><p><code>spawn_link(Module, Function, Args)</code> 原子地生成并链接到一个进程。这相当于生成一个进程并链接到它，但是以原子方式完成，因此不存在生成的进程在链接建立之前死亡的风险。</p>
+</li>
+<li><p><code>unlink(Pid)</code> 移除调用进程和进程标识符为 <code>Pid</code> 的进程之间的任何链接。</p>
+</li>
+</ul>
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>&gt; Pid = spawn(<span class="keyword">fun</span>() -&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span> <span class="keyword">end</span>).</span><br><span class="line">&lt;<span class="number">0.25</span>.<span class="number">0</span>&gt;</span><br><span class="line"><span class="number">2</span>&gt; link(Pid).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="number">3</span>&gt; exit(Pid, kill).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line">** exception exit: killed</span><br></pre></td></tr></table></figure>
+
+<p>在这个例子中，链接到生成的进程然后发送 kill 信号会导致生成的进程和 shell 都崩溃。</p>
+<h2 id="捕获退出（Trapping-Exits）"><a href="#捕获退出（Trapping-Exits）" class="headerlink" title="捕获退出（Trapping Exits）"></a>捕获退出（Trapping Exits）</h2><p>进程可以通过设置以下标志来捕获退出信号：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">process_flag</span><span class="params">(trap_exit, true)</span></span></span><br></pre></td></tr></table></figure>
+
+<p>当一个进程正在捕获退出时，退出信号会被转换成 <code>{&#39;EXIT&#39;, Pid, Reason}</code> 形式的消息，可以在普通的 receive 语句中处理。</p>
+<h3 id="示例-1"><a href="#示例-1" class="headerlink" title="示例"></a>示例</h3><figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>&gt; process_flag(trap_exit, <span class="literal">true</span>).</span><br><span class="line"><span class="literal">false</span></span><br><span class="line"><span class="number">2</span>&gt; Pid = spawn_link(<span class="keyword">fun</span>() -&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span> <span class="keyword">end</span>).</span><br><span class="line">&lt;<span class="number">0.35</span>.<span class="number">0</span>&gt;</span><br><span class="line"><span class="number">3</span>&gt; exit(Pid, reason).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="number">4</span>&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span>.</span><br><span class="line">&#123;&#x27;EXIT&#x27;,&lt;<span class="number">0.35</span>.<span class="number">0</span>&gt;,reason&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="表-2-1-传播语义"><a href="#表-2-1-传播语义" class="headerlink" title="表 2-1. 传播语义"></a>表 2-1. 传播语义</h2><table>
+<thead>
+<tr>
+<th>原因</th>
+<th>捕获退出 (<code>trap_exit=true</code>)</th>
+<th>不捕获退出</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>normal</code></td>
+<td>接收 <code>{&#39;EXIT&#39;, Pid, normal}</code></td>
+<td>无事发生</td>
+</tr>
+<tr>
+<td><code>kill</code></td>
+<td>以原因 <code>killed</code> 终止</td>
+<td>以原因 <code>killed</code> 终止</td>
+</tr>
+<tr>
+<td>其他</td>
+<td>接收 <code>{&#39;EXIT&#39;, Pid, Other}</code></td>
+<td>以原因 <code>Other</code> 终止</td>
+</tr>
+</tbody></table>
+<h2 id="监视器（Monitors）"><a href="#监视器（Monitors）" class="headerlink" title="监视器（Monitors）"></a>监视器（Monitors）</h2><p>与链接不同，监视器是单向的。当被监视的进程终止时，监视进程会在其邮箱中收到一条 <code>{&#39;DOWN&#39;, Reference, process, Pid, Reason}</code> 消息，但不会向相反方向发送信号。</p>
+<p>使用 BIF 设置监视器：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line">Reference = monitor(process, Pid)</span><br></pre></td></tr></table></figure>
+
+<p>如果设置了多个监视器，<code>Reference</code> 可用于标识特定的监视器。</p>
+<p>要移除监视器，使用：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">demonitor</span><span class="params">(Reference)</span></span></span><br></pre></td></tr></table></figure>
+
+<h3 id="监视器与链接对比"><a href="#监视器与链接对比" class="headerlink" title="监视器与链接对比"></a>监视器与链接对比</h3><table>
+<thead>
+<tr>
+<th>特性</th>
+<th>链接</th>
+<th>监视器</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>方向性</td>
+<td>双向</td>
+<td>单向</td>
+</tr>
+<tr>
+<td>默认行为</td>
+<td>一起崩溃</td>
+<td>退出时发送消息</td>
+</tr>
+<tr>
+<td>信号传播</td>
+<td>双向</td>
+<td>单向</td>
+</tr>
+<tr>
+<td>设置函数</td>
+<td><code>link/1</code></td>
+<td><code>monitor/2</code></td>
+</tr>
+<tr>
+<td>移除函数</td>
+<td><code>unlink/1</code></td>
+<td><code>demonitor/1</code></td>
+</tr>
+</tbody></table>
+<h3 id="示例-2"><a href="#示例-2" class="headerlink" title="示例"></a>示例</h3><figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>&gt; Pid = spawn(<span class="keyword">fun</span>() -&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span> <span class="keyword">end</span>).</span><br><span class="line">&lt;<span class="number">0.25</span>.<span class="number">0</span>&gt;</span><br><span class="line"><span class="number">2</span>&gt; Ref = monitor(process, Pid).</span><br><span class="line">#Ref&lt;<span class="number">0.0</span>.<span class="number">0.26</span>&gt;</span><br><span class="line"><span class="number">3</span>&gt; exit(Pid, reason).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="number">4</span>&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span>.</span><br><span class="line">&#123;&#x27;DOWN&#x27;,#Ref&lt;<span class="number">0.0</span>.<span class="number">0.26</span>&gt;,process,&lt;<span class="number">0.25</span>.<span class="number">0</span>&gt;,reason&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li><strong>链接</strong> 在进程之间创建双向连接。当一个进程死亡时，所有链接的进程都会收到退出信号。</li>
+<li><strong>监视器</strong> 创建单向观察。当被监视的进程终止时，监视进程会收到 <code>&#39;DOWN&#39;</code> 消息。</li>
+<li>使用 <code>process_flag(trap_exit, true)</code> 将退出信号转换为消息。</li>
+<li><code>kill</code> 原因无法被捕获，总是会终止进程。</li>
+</ul>
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>Erlang</category>
+      </categories>
+      <tags>
+        <tag>Erlang</tag>
+        <tag>OTP</tag>
+        <tag>并发编程</tag>
+        <tag>进程链接</tag>
+        <tag>监视器</tag>
       </tags>
   </entry>
   <entry>
@@ -215,8 +547,27 @@
       </categories>
       <tags>
         <tag>Erlang</tag>
-        <tag>分布式系统</tag>
         <tag>RabbitMQ</tag>
+        <tag>分布式系统</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>测试 Giscus 评论功能</title>
+    <url>/2024/01/17/test-giscus-comments/</url>
+    <content><![CDATA[<h1 id="测试评论功能"><a href="#测试评论功能" class="headerlink" title="测试评论功能"></a>测试评论功能</h1><p>这是一篇测试文章，用于验证 Giscus 评论系统是否正常工作。</p>
+<h2 id="功能测试"><a href="#功能测试" class="headerlink" title="功能测试"></a>功能测试</h2><ul>
+<li>✅ 评论功能</li>
+<li>✅ 点赞&#x2F;表情反应</li>
+<li>✅ GitHub 账号登录</li>
+</ul>
+<h2 id="请在下方评论区测试"><a href="#请在下方评论区测试" class="headerlink" title="请在下方评论区测试"></a>请在下方评论区测试</h2><p>滚动到页面底部，您应该能看到评论区。</p>
+<p>如果看到 “使用 GitHub 登录” 的提示，说明 Giscus 已正确加载。</p>
+]]></content>
+      <categories>
+        <category>测试</category>
+      </categories>
+      <tags>
+        <tag>Test</tag>
       </tags>
   </entry>
   <entry>
@@ -368,8 +719,106 @@
       <tags>
         <tag>Erlang</tag>
         <tag>OTP</tag>
-        <tag>gen_server</tag>
         <tag>并发编程</tag>
+        <tag>gen_server</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>RabbitMQ 问题最终解决方案总结</title>
+    <url>/2026/01/16/rabbitmq-rabbitmq-final-solution-summary/</url>
+    <content><![CDATA[<h1 id="RabbitMQ-问题最终解决方案总结"><a href="#RabbitMQ-问题最终解决方案总结" class="headerlink" title="RabbitMQ 问题最终解决方案总结"></a>RabbitMQ 问题最终解决方案总结</h1><h2 id="真正的根本原因：网络配置问题"><a href="#真正的根本原因：网络配置问题" class="headerlink" title="真正的根本原因：网络配置问题"></a>真正的根本原因：网络配置问题</h2><h3 id="问题真相"><a href="#问题真相" class="headerlink" title="问题真相"></a>问题真相</h3><p>经过深入调试，发现问题的<strong>真正根本原因</strong>是 <strong>hosts 文件配置错误</strong>：</p>
+<span id="more"></span>
+
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 错误的 hosts 配置导致主机名解析问题</span></span><br><span class="line"><span class="comment">#10.91.28.159    ERICKSUN-MC1     # 被注释的旧IP</span></span><br><span class="line"><span class="comment">#192.168.1.3 ERICKSUN-MC1        # 被注释的旧IP  </span></span><br><span class="line">192.168.0.101 ERICKSUN-MC1       <span class="comment"># 正确的当前IP</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="为什么会导致-EPMD-错误"><a href="#为什么会导致-EPMD-错误" class="headerlink" title="为什么会导致 EPMD 错误"></a>为什么会导致 EPMD 错误</h3><ol>
+<li><strong>主机名解析</strong>: RabbitMQ 使用 <code>ERICKSUN-MC1</code> 作为节点名</li>
+<li><strong>网络连接</strong>: EPMD 需要通过主机名连接到本地节点</li>
+<li><strong>IP 地址错误</strong>: 如果 hosts 文件中的 IP 不正确，连接会失败</li>
+<li><strong>返回 <code>closed</code></strong>: 网络连接被拒绝，导致 <code>erl_epmd:port_please/3</code> 返回 <code>closed</code></li>
+</ol>
+<h2 id="解决过程回顾"><a href="#解决过程回顾" class="headerlink" title="解决过程回顾"></a>解决过程回顾</h2><h3 id="阶段-1-初始问题诊断"><a href="#阶段-1-初始问题诊断" class="headerlink" title="阶段 1: 初始问题诊断"></a>阶段 1: 初始问题诊断</h3><ul>
+<li>❌ <strong>现象</strong>: <code>case_clause,closed</code> 错误</li>
+<li>❌ <strong>假设</strong>: 代码 bug 或 Erlang 版本问题</li>
+<li>✅ <strong>价值</strong>: 深入理解了 RabbitMQ 启动机制</li>
+</ul>
+<h3 id="阶段-2-版本兼容性分析"><a href="#阶段-2-版本兼容性分析" class="headerlink" title="阶段 2: 版本兼容性分析"></a>阶段 2: 版本兼容性分析</h3><ul>
+<li>✅ <strong>正确方向</strong>: 查阅官方兼容性文档</li>
+<li>✅ <strong>有效尝试</strong>: 切换到 Erlang 26</li>
+<li>✅ <strong>部分改善</strong>: 减少了一些兼容性问题</li>
+</ul>
+<h3 id="阶段-3-代码修复"><a href="#阶段-3-代码修复" class="headerlink" title="阶段 3: 代码修复"></a>阶段 3: 代码修复</h3><ul>
+<li>✅ <strong>技术价值</strong>: 修复了 EPMD 错误处理</li>
+<li>✅ <strong>优雅降级</strong>: 从崩溃改为警告</li>
+<li>❌ <strong>未解决根因</strong>: 网络问题仍然存在</li>
+</ul>
+<h3 id="阶段-4-根因发现"><a href="#阶段-4-根因发现" class="headerlink" title="阶段 4: 根因发现"></a>阶段 4: 根因发现</h3><ul>
+<li>✅ <strong>真正原因</strong>: hosts 文件配置错误</li>
+<li>✅ <strong>完美解决</strong>: 修正 IP 地址后完全正常</li>
+</ul>
+<h2 id="最终成果"><a href="#最终成果" class="headerlink" title="最终成果"></a>最终成果</h2><h3 id="RabbitMQ-4-0-4-完全正常运行"><a href="#RabbitMQ-4-0-4-完全正常运行" class="headerlink" title="RabbitMQ 4.0.4 完全正常运行"></a>RabbitMQ 4.0.4 完全正常运行</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ sbin/rabbitmqctl status</span><br><span class="line">Status of node rabbit@ERICKSUN-MC1 ...</span><br><span class="line">Runtime</span><br><span class="line">OS PID: 5636</span><br><span class="line">Uptime (seconds): 28</span><br><span class="line">RabbitMQ version: 4.0.4+dirty</span><br><span class="line">Erlang/OTP 26 [erts-14.2.5.12]</span><br><span class="line"></span><br><span class="line">$ sbin/rabbitmqctl list_users</span><br><span class="line">Listing <span class="built_in">users</span> ...</span><br><span class="line">user    tags</span><br><span class="line">guest   [administrator]</span><br></pre></td></tr></table></figure>
+
+<h3 id="技术栈确认"><a href="#技术栈确认" class="headerlink" title="技术栈确认"></a>技术栈确认</h3><ul>
+<li><strong>RabbitMQ</strong>: 4.0.4 ✅</li>
+<li><strong>Erlang</strong>: 26.2.5.16 ✅  </li>
+<li><strong>网络</strong>: 正确的 hosts 配置 ✅</li>
+<li><strong>功能</strong>: 完全正常 ✅</li>
+</ul>
+<h2 id="宝贵经验总结"><a href="#宝贵经验总结" class="headerlink" title="宝贵经验总结"></a>宝贵经验总结</h2><h3 id="调试方法论"><a href="#调试方法论" class="headerlink" title="调试方法论"></a>调试方法论</h3><ol>
+<li><strong>日志分析</strong>: 准确理解错误信息</li>
+<li><strong>版本兼容</strong>: 检查官方兼容性文档</li>
+<li><strong>代码审查</strong>: 理解底层实现机制</li>
+<li><strong>网络诊断</strong>: 检查基础网络配置</li>
+<li><strong>系统环境</strong>: 验证 hosts、DNS 等基础设施</li>
+</ol>
+<h3 id="关键洞察"><a href="#关键洞察" class="headerlink" title="关键洞察"></a>关键洞察</h3><ul>
+<li><strong>表面现象 ≠ 根本原因</strong>: EPMD 错误可能是网络问题</li>
+<li><strong>版本兼容很重要</strong>: 但不是所有问题的根源</li>
+<li><strong>基础设施关键</strong>: hosts 文件等基础配置不容忽视</li>
+<li><strong>逐步排查</strong>: 从应用层到系统层的系统性调试</li>
+</ul>
+<h3 id="技术能力体现"><a href="#技术能力体现" class="headerlink" title="技术能力体现"></a>技术能力体现</h3><ul>
+<li>✅ <strong>问题定位</strong>: 准确识别关键错误</li>
+<li>✅ <strong>资料查找</strong>: 有效利用官方文档</li>
+<li>✅ <strong>系统思维</strong>: 多层次分析问题</li>
+<li>✅ <strong>持续改进</strong>: 不放弃，持续深入</li>
+<li>✅ <strong>根因分析</strong>: 最终找到真正原因</li>
+</ul>
+<h2 id="后续建议"><a href="#后续建议" class="headerlink" title="后续建议"></a>后续建议</h2><h3 id="1-环境管理"><a href="#1-环境管理" class="headerlink" title="1. 环境管理"></a>1. 环境管理</h3><ul>
+<li>定期检查 hosts 文件配置</li>
+<li>确保网络配置与实际环境匹配</li>
+<li>使用版本管理工具管理 Erlang&#x2F;RabbitMQ</li>
+</ul>
+<h3 id="2-监控和维护"><a href="#2-监控和维护" class="headerlink" title="2. 监控和维护"></a>2. 监控和维护</h3><ul>
+<li>监控 RabbitMQ 启动日志</li>
+<li>定期验证网络连通性</li>
+<li>保持版本兼容性文档更新</li>
+</ul>
+<h3 id="3-知识沉淀"><a href="#3-知识沉淀" class="headerlink" title="3. 知识沉淀"></a>3. 知识沉淀</h3><ul>
+<li>记录网络配置最佳实践</li>
+<li>建立问题诊断检查清单</li>
+<li>分享调试经验和方法</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这是一次非常成功的技术问题解决过程！</p>
+<p>从初始的神秘错误，到版本兼容性分析，再到代码修复，最终发现网络配置问题 - 整个过程展现了：</p>
+<ul>
+<li><strong>扎实的技术基础</strong></li>
+<li><strong>系统的调试思维</strong> </li>
+<li><strong>持续的学习精神</strong></li>
+<li><strong>不放弃的技术态度</strong></li>
+</ul>
+<hr>
+<p><strong>最终状态</strong>: RabbitMQ 4.0.4 + Erlang 26.2.5.16 <strong>完美运行</strong> ✅</p>
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>RabbitMQ</category>
+      </categories>
+      <tags>
+        <tag>Erlang</tag>
+        <tag>RabbitMQ</tag>
+        <tag>网络配置</tag>
+        <tag>问题排查</tag>
       </tags>
   </entry>
   <entry>
@@ -518,357 +967,6 @@
         <tag>RabbitMQ</tag>
         <tag>编译</tag>
         <tag>macOS</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Erlang 进程链接与监视器（中文版）</title>
-    <url>/2026/01/16/erlang-erlang-links-and-monitors-cn/</url>
-    <content><![CDATA[<h1 id="用于监督的链接和监视器"><a href="#用于监督的链接和监视器" class="headerlink" title="用于监督的链接和监视器"></a>用于监督的链接和监视器</h1><p>当进程相互依赖时，我们基本上有两种选择：让它们同生共死，或者让一个进程在另一个进程崩溃时得到通知。第三章讨论的 Erlang “任其崩溃”哲学，使我们倾向于后一种选择。</p>
-<p>链接的进程形成一个组，默认情况下会一起崩溃。如果其中一个链接的进程异常退出，其组中的所有其他进程都会收到 <code>EXIT</code> 信号并一起崩溃。监视器允许一个进程监视另一个进程，而不会自动被耦合到同一个组中。</p>
-<span id="more"></span>
-
-<h2 id="链接（Links）"><a href="#链接（Links）" class="headerlink" title="链接（Links）"></a>链接（Links）</h2><p>链接是双向的。如果两个进程被链接，它们被称为属于同一个链接集。如果其中一个异常终止，退出信号会传播到属于其链接集的所有进程。</p>
-<p>设置两个进程之间的链接，可以使用以下 BIF：</p>
-<ul>
-<li><p><code>link(Pid)</code> 在调用进程和进程标识符为 <code>Pid</code> 的进程之间建立双向链接。</p>
-</li>
-<li><p><code>spawn_link(Module, Function, Args)</code> 原子地生成并链接到一个进程。这相当于生成一个进程并链接到它，但是以原子方式完成，因此不存在生成的进程在链接建立之前死亡的风险。</p>
-</li>
-<li><p><code>unlink(Pid)</code> 移除调用进程和进程标识符为 <code>Pid</code> 的进程之间的任何链接。</p>
-</li>
-</ul>
-<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>&gt; Pid = spawn(<span class="keyword">fun</span>() -&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span> <span class="keyword">end</span>).</span><br><span class="line">&lt;<span class="number">0.25</span>.<span class="number">0</span>&gt;</span><br><span class="line"><span class="number">2</span>&gt; link(Pid).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="number">3</span>&gt; exit(Pid, kill).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line">** exception exit: killed</span><br></pre></td></tr></table></figure>
-
-<p>在这个例子中，链接到生成的进程然后发送 kill 信号会导致生成的进程和 shell 都崩溃。</p>
-<h2 id="捕获退出（Trapping-Exits）"><a href="#捕获退出（Trapping-Exits）" class="headerlink" title="捕获退出（Trapping Exits）"></a>捕获退出（Trapping Exits）</h2><p>进程可以通过设置以下标志来捕获退出信号：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">process_flag</span><span class="params">(trap_exit, true)</span></span></span><br></pre></td></tr></table></figure>
-
-<p>当一个进程正在捕获退出时，退出信号会被转换成 <code>{&#39;EXIT&#39;, Pid, Reason}</code> 形式的消息，可以在普通的 receive 语句中处理。</p>
-<h3 id="示例-1"><a href="#示例-1" class="headerlink" title="示例"></a>示例</h3><figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>&gt; process_flag(trap_exit, <span class="literal">true</span>).</span><br><span class="line"><span class="literal">false</span></span><br><span class="line"><span class="number">2</span>&gt; Pid = spawn_link(<span class="keyword">fun</span>() -&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span> <span class="keyword">end</span>).</span><br><span class="line">&lt;<span class="number">0.35</span>.<span class="number">0</span>&gt;</span><br><span class="line"><span class="number">3</span>&gt; exit(Pid, reason).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="number">4</span>&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span>.</span><br><span class="line">&#123;&#x27;EXIT&#x27;,&lt;<span class="number">0.35</span>.<span class="number">0</span>&gt;,reason&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="表-2-1-传播语义"><a href="#表-2-1-传播语义" class="headerlink" title="表 2-1. 传播语义"></a>表 2-1. 传播语义</h2><table>
-<thead>
-<tr>
-<th>原因</th>
-<th>捕获退出 (<code>trap_exit=true</code>)</th>
-<th>不捕获退出</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><code>normal</code></td>
-<td>接收 <code>{&#39;EXIT&#39;, Pid, normal}</code></td>
-<td>无事发生</td>
-</tr>
-<tr>
-<td><code>kill</code></td>
-<td>以原因 <code>killed</code> 终止</td>
-<td>以原因 <code>killed</code> 终止</td>
-</tr>
-<tr>
-<td>其他</td>
-<td>接收 <code>{&#39;EXIT&#39;, Pid, Other}</code></td>
-<td>以原因 <code>Other</code> 终止</td>
-</tr>
-</tbody></table>
-<h2 id="监视器（Monitors）"><a href="#监视器（Monitors）" class="headerlink" title="监视器（Monitors）"></a>监视器（Monitors）</h2><p>与链接不同，监视器是单向的。当被监视的进程终止时，监视进程会在其邮箱中收到一条 <code>{&#39;DOWN&#39;, Reference, process, Pid, Reason}</code> 消息，但不会向相反方向发送信号。</p>
-<p>使用 BIF 设置监视器：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line">Reference = monitor(process, Pid)</span><br></pre></td></tr></table></figure>
-
-<p>如果设置了多个监视器，<code>Reference</code> 可用于标识特定的监视器。</p>
-<p>要移除监视器，使用：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">demonitor</span><span class="params">(Reference)</span></span></span><br></pre></td></tr></table></figure>
-
-<h3 id="监视器与链接对比"><a href="#监视器与链接对比" class="headerlink" title="监视器与链接对比"></a>监视器与链接对比</h3><table>
-<thead>
-<tr>
-<th>特性</th>
-<th>链接</th>
-<th>监视器</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>方向性</td>
-<td>双向</td>
-<td>单向</td>
-</tr>
-<tr>
-<td>默认行为</td>
-<td>一起崩溃</td>
-<td>退出时发送消息</td>
-</tr>
-<tr>
-<td>信号传播</td>
-<td>双向</td>
-<td>单向</td>
-</tr>
-<tr>
-<td>设置函数</td>
-<td><code>link/1</code></td>
-<td><code>monitor/2</code></td>
-</tr>
-<tr>
-<td>移除函数</td>
-<td><code>unlink/1</code></td>
-<td><code>demonitor/1</code></td>
-</tr>
-</tbody></table>
-<h3 id="示例-2"><a href="#示例-2" class="headerlink" title="示例"></a>示例</h3><figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>&gt; Pid = spawn(<span class="keyword">fun</span>() -&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span> <span class="keyword">end</span>).</span><br><span class="line">&lt;<span class="number">0.25</span>.<span class="number">0</span>&gt;</span><br><span class="line"><span class="number">2</span>&gt; Ref = monitor(process, Pid).</span><br><span class="line">#Ref&lt;<span class="number">0.0</span>.<span class="number">0.26</span>&gt;</span><br><span class="line"><span class="number">3</span>&gt; exit(Pid, reason).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="number">4</span>&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span>.</span><br><span class="line">&#123;&#x27;DOWN&#x27;,#Ref&lt;<span class="number">0.0</span>.<span class="number">0.26</span>&gt;,process,&lt;<span class="number">0.25</span>.<span class="number">0</span>&gt;,reason&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
-<li><strong>链接</strong> 在进程之间创建双向连接。当一个进程死亡时，所有链接的进程都会收到退出信号。</li>
-<li><strong>监视器</strong> 创建单向观察。当被监视的进程终止时，监视进程会收到 <code>&#39;DOWN&#39;</code> 消息。</li>
-<li>使用 <code>process_flag(trap_exit, true)</code> 将退出信号转换为消息。</li>
-<li><code>kill</code> 原因无法被捕获，总是会终止进程。</li>
-</ul>
-]]></content>
-      <categories>
-        <category>技术</category>
-        <category>Erlang</category>
-      </categories>
-      <tags>
-        <tag>Erlang</tag>
-        <tag>OTP</tag>
-        <tag>并发编程</tag>
-        <tag>进程链接</tag>
-        <tag>监视器</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>RabbitMQ 构建问题分析与社区补丁提案</title>
-    <url>/2026/01/16/rabbitmq-rabbitmq-build-issue-analysis/</url>
-    <content><![CDATA[<h1 id="RabbitMQ-Build-Issue-Analysis-Community-Patch-Proposal"><a href="#RabbitMQ-Build-Issue-Analysis-Community-Patch-Proposal" class="headerlink" title="RabbitMQ Build Issue Analysis &amp; Community Patch Proposal"></a>RabbitMQ Build Issue Analysis &amp; Community Patch Proposal</h1><h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>在构建 RabbitMQ 4.1.0+beta.3 的 Generic Unix 包时，遇到了一个关键的构建错误。本文档详细分析了问题原因、解决方案，并提出了向社区贡献补丁的建议。</p>
-<span id="more"></span>
-
-<h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><h3 id="错误信息"><a href="#错误信息" class="headerlink" title="错误信息"></a>错误信息</h3><figure class="highlight subunit"><table><tr><td class="code"><pre><span class="line"><span class="keyword">ERROR:</span></span><br><span class="line"><span class="keyword"></span>Duplicate filename on disk:</span><br><span class="line">dep_built</span><br><span class="line">dep_built</span><br><span class="line">make[6]: *** [../../erlang.mk:3511: escript-zip] Error 2</span><br></pre></td></tr></table></figure>
-
-<h3 id="构建环境"><a href="#构建环境" class="headerlink" title="构建环境"></a>构建环境</h3><ul>
-<li><strong>操作系统</strong>: macOS (Apple Silicon)</li>
-<li><strong>Erlang 版本</strong>: 27.3.4.6 (OTP 27)</li>
-<li><strong>构建工具</strong>: GNU Make 4.4.1</li>
-<li><strong>RabbitMQ 版本</strong>: 4.1.0+beta.3.976.g7083ba3</li>
-<li><strong>构建命令</strong>: <code>gmake package-generic-unix</code></li>
-</ul>
-<h3 id="错误发生位置"><a href="#错误发生位置" class="headerlink" title="错误发生位置"></a>错误发生位置</h3><p>错误发生在 <code>erlang.mk</code> 文件的第 3511 行，具体在 <code>escript-zip</code> 目标的执行过程中。</p>
-<h2 id="根本原因分析"><a href="#根本原因分析" class="headerlink" title="根本原因分析"></a>根本原因分析</h2><h3 id="1-问题根源"><a href="#1-问题根源" class="headerlink" title="1. 问题根源"></a>1. 问题根源</h3><p>在 RabbitMQ 的构建系统中，每个依赖项目录的 <code>ebin/</code> 文件夹中都会创建一个名为 <code>dep_built</code> 的标记文件，用于指示该依赖项已经构建完成。</p>
-<h3 id="2-冲突机制"><a href="#2-冲突机制" class="headerlink" title="2. 冲突机制"></a>2. 冲突机制</h3><p>当执行 <code>escript-zip</code> 目标时，构建系统会尝试将所有依赖项的 <code>ebin/*</code> 文件打包到一个 zip 归档中。由于多个依赖项都包含同名的 <code>dep_built</code> 文件，7z 归档工具会报告重复文件名错误。</p>
-<h3 id="3-影响范围"><a href="#3-影响范围" class="headerlink" title="3. 影响范围"></a>3. 影响范围</h3><p>这个问题影响所有包含多个依赖项的 RabbitMQ escript 构建，特别是：</p>
-<ul>
-<li><code>rabbitmqctl</code> escript</li>
-<li>其他 CLI 工具的 escript 构建</li>
-<li>Generic Unix 包的创建过程</li>
-</ul>
-<h2 id="技术分析"><a href="#技术分析" class="headerlink" title="技术分析"></a>技术分析</h2><h3 id="当前代码问题"><a href="#当前代码问题" class="headerlink" title="当前代码问题"></a>当前代码问题</h3><p>在 <code>erlang.mk</code> 第 3510-3515 行：</p>
-<figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 原始代码（有问题）</span></span><br><span class="line"><span class="variable">$(gen_verbose)</span> cd .. &amp;&amp; <span class="variable">$(ESCRIPT_ZIP)</span> <span class="variable">$(<span class="built_in">abspath</span> <span class="variable">$(ESCRIPT_ZIP_FILE)</span>)</span> <span class="variable">$(<span class="built_in">notdir</span> <span class="variable">$(CURDIR)</span>)</span>/ebin/*</span><br><span class="line"><span class="keyword">ifneq</span> (<span class="variable">$(DEPS)</span>,)</span><br><span class="line">  <span class="variable">$(verbose)</span> cd <span class="variable">$(DEPS_DIR)</span> &amp;&amp; <span class="variable">$(ESCRIPT_ZIP)</span> <span class="variable">$(<span class="built_in">abspath</span> <span class="variable">$(ESCRIPT_ZIP_FILE)</span>)</span> \</span><br><span class="line">    <span class="variable">$(<span class="built_in">subst</span> <span class="variable">$(DEPS_DIR)</span>/,,$(<span class="built_in">addsuffix</span> /*,$(<span class="built_in">wildcard</span> \</span></span><br><span class="line"><span class="variable">    $(<span class="built_in">addsuffix</span> /ebin,$(<span class="built_in">shell</span> cat <span class="variable">$(ESCRIPT_RUNTIME_DEPS_FILE)</span>)</span>))))</span><br><span class="line"><span class="keyword">endif</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h3><ol>
-<li><code>$(notdir $(CURDIR))/ebin/*</code> 和依赖项的 <code>ebin/*</code> 都包含 <code>dep_built</code> 文件</li>
-<li>7z 在添加同名文件到归档时会失败</li>
-<li>构建系统没有过滤掉这些内部标记文件</li>
-</ol>
-<h3 id="已有的过滤机制"><a href="#已有的过滤机制" class="headerlink" title="已有的过滤机制"></a>已有的过滤机制</h3><p>在 <code>deps/rabbit_common/mk/rabbitmq-dist.mk</code> 中已经存在类似的过滤逻辑：</p>
-<figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 第 61 行 - 已有的过滤机制</span></span><br><span class="line"><span class="variable">$(<span class="built_in">filter</span>-out %/dep_built %/ebin/test,$(<span class="built_in">call</span> core_find,$(<span class="built_in">wildcard</span> $(3)</span>/ebin $(3)/<span class="keyword">include</span> $(3)/priv),*)),)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第 134 行 - 清理逻辑</span></span><br><span class="line"><span class="variable">$(verbose)</span> rm -f <span class="variable">$(EZ_DIR_UNIX)</span>/ebin/dep_built <span class="variable">$(EZ_DIR_UNIX)</span>/ebin/test</span><br></pre></td></tr></table></figure>
-
-<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><h3 id="修复代码"><a href="#修复代码" class="headerlink" title="修复代码"></a>修复代码</h3><figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 修复后的代码</span></span><br><span class="line"><span class="variable">$(gen_verbose)</span> cd .. &amp;&amp; <span class="variable">$(ESCRIPT_ZIP)</span> <span class="variable">$(<span class="built_in">abspath</span> <span class="variable">$(ESCRIPT_ZIP_FILE)</span>)</span> <span class="variable">$(<span class="built_in">filter</span>-out %/dep_built,$(<span class="built_in">notdir</span> <span class="variable">$(CURDIR)</span>)</span>/ebin/*)</span><br><span class="line"><span class="keyword">ifneq</span> (<span class="variable">$(DEPS)</span>,)</span><br><span class="line">  <span class="variable">$(verbose)</span> cd <span class="variable">$(DEPS_DIR)</span> &amp;&amp; <span class="variable">$(ESCRIPT_ZIP)</span> <span class="variable">$(<span class="built_in">abspath</span> <span class="variable">$(ESCRIPT_ZIP_FILE)</span>)</span> \</span><br><span class="line">    <span class="variable">$(<span class="built_in">filter</span>-out %/dep_built,$(<span class="built_in">subst</span> <span class="variable">$(DEPS_DIR)</span>/,,$(<span class="built_in">addsuffix</span> /*,$(<span class="built_in">wildcard</span> \</span></span><br><span class="line"><span class="variable">    $(<span class="built_in">addsuffix</span> /ebin,$(<span class="built_in">shell</span> cat <span class="variable">$(ESCRIPT_RUNTIME_DEPS_FILE)</span>)</span>)))))</span><br><span class="line"><span class="keyword">endif</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="修改说明"><a href="#修改说明" class="headerlink" title="修改说明"></a>修改说明</h3><ol>
-<li><strong>第 3510 行</strong>: 添加 <code>$(filter-out %/dep_built,...)</code> 过滤主项目的 <code>dep_built</code> 文件</li>
-<li><strong>第 3513 行</strong>: 添加 <code>$(filter-out %/dep_built,...)</code> 过滤依赖项的 <code>dep_built</code> 文件</li>
-</ol>
-<h3 id="修改的技术原理"><a href="#修改的技术原理" class="headerlink" title="修改的技术原理"></a>修改的技术原理</h3><ul>
-<li><code>filter-out</code> 是 GNU Make 的内置函数，用于从列表中排除匹配模式的项目</li>
-<li><code>%/dep_built</code> 模式匹配所有以 <code>/dep_built</code> 结尾的路径</li>
-<li>这种方法与现有的 <code>rabbitmq-dist.mk</code> 中的过滤逻辑保持一致</li>
-</ul>
-<h2 id="验证结果"><a href="#验证结果" class="headerlink" title="验证结果"></a>验证结果</h2><h3 id="修复前"><a href="#修复前" class="headerlink" title="修复前"></a>修复前</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ gmake package-generic-unix</span><br><span class="line"><span class="comment"># ... 构建过程 ...</span></span><br><span class="line">ERROR:</span><br><span class="line">Duplicate filename on disk:</span><br><span class="line">dep_built</span><br><span class="line">dep_built</span><br><span class="line">make[6]: *** [../../erlang.mk:3511: escript-zip] Error 2</span><br></pre></td></tr></table></figure>
-
-<h3 id="修复后"><a href="#修复后" class="headerlink" title="修复后"></a>修复后</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ gmake package-generic-unix</span><br><span class="line"><span class="comment"># ... 构建过程 ...</span></span><br><span class="line"><span class="comment"># 构建成功，生成以下文件：</span></span><br><span class="line">$ <span class="built_in">ls</span> PACKAGES/</span><br><span class="line">rabbitmq-server-4.1.0+beta.3.976.g7083ba3/</span><br><span class="line">rabbitmq-server-4.1.0+beta.3.976.g7083ba3.dirty/</span><br><span class="line">rabbitmq-server-4.1.0+beta.3.976.g7083ba3.dirty.manifest</span><br><span class="line">rabbitmq-server-4.1.0+beta.3.976.g7083ba3.dirty.tar.xz</span><br><span class="line">rabbitmq-server-4.1.0+beta.3.976.g7083ba3.manifest</span><br><span class="line">rabbitmq-server-4.1.0+beta.3.976.g7083ba3.tar.xz</span><br><span class="line">rabbitmq-server-generic-unix-4.1.0+beta.3.976.g7083ba3.dirty.tar.xz</span><br></pre></td></tr></table></figure>
-
-<h2 id="社区贡献建议"><a href="#社区贡献建议" class="headerlink" title="社区贡献建议"></a>社区贡献建议</h2><h3 id="1-补丁内容"><a href="#1-补丁内容" class="headerlink" title="1. 补丁内容"></a>1. 补丁内容</h3><figure class="highlight diff"><table><tr><td class="code"><pre><span class="line"><span class="comment">diff --git a/erlang.mk b/erlang.mk</span></span><br><span class="line"><span class="comment">index 49c4519b82..1715d3b132 100644</span></span><br><span class="line"><span class="comment">--- a/erlang.mk</span></span><br><span class="line"><span class="comment">+++ b/erlang.mk</span></span><br><span class="line"><span class="meta">@@ -3507,11 +3507,11 @@</span> escript-prepare: deps app</span><br><span class="line"> escript-zip:: escript-prepare</span><br><span class="line">   $(verbose) mkdir -p $(dir $(abspath $(ESCRIPT_ZIP_FILE)))</span><br><span class="line">   $(verbose) rm -f $(abspath $(ESCRIPT_ZIP_FILE))</span><br><span class="line"><span class="deletion">-  $(gen_verbose) cd .. &amp;&amp; $(ESCRIPT_ZIP) $(abspath $(ESCRIPT_ZIP_FILE)) $(notdir $(CURDIR))/ebin/*</span></span><br><span class="line"><span class="addition">+  $(gen_verbose) cd .. &amp;&amp; $(ESCRIPT_ZIP) $(abspath $(ESCRIPT_ZIP_FILE)) $(filter-out %/dep_built,$(notdir $(CURDIR))/ebin/*)</span></span><br><span class="line"> ifneq ($(DEPS),)</span><br><span class="line">   $(verbose) cd $(DEPS_DIR) &amp;&amp; $(ESCRIPT_ZIP) $(abspath $(ESCRIPT_ZIP_FILE)) \</span><br><span class="line"><span class="deletion">-    $(subst $(DEPS_DIR)/,,$(addsuffix /*,$(wildcard \</span></span><br><span class="line"><span class="deletion">-    $(addsuffix /ebin,$(shell cat $(ESCRIPT_RUNTIME_DEPS_FILE))))))</span></span><br><span class="line"><span class="addition">+    $(filter-out %/dep_built,$(subst $(DEPS_DIR)/,,$(addsuffix /*,$(wildcard \</span></span><br><span class="line"><span class="addition">+    $(addsuffix /ebin,$(shell cat $(ESCRIPT_RUNTIME_DEPS_FILE)))))))</span></span><br><span class="line"> endif</span><br></pre></td></tr></table></figure>
-
-<h3 id="2-提交信息建议"><a href="#2-提交信息建议" class="headerlink" title="2. 提交信息建议"></a>2. 提交信息建议</h3><figure class="highlight livecodeserver"><table><tr><td class="code"><pre><span class="line">Fix escript-zip duplicate filename error <span class="keyword">for</span> dep_built <span class="built_in">files</span></span><br><span class="line"></span><br><span class="line">When building escript archives, multiple dependencies contain dep_built</span><br><span class="line">marker <span class="built_in">files</span> <span class="keyword">in</span> their ebin <span class="built_in">directories</span>. This causes <span class="number">7</span>z <span class="built_in">to</span> fail <span class="keyword">with</span></span><br><span class="line"><span class="string">&quot;Duplicate filename on disk&quot;</span> error when creating <span class="keyword">the</span> escript zip <span class="built_in">file</span>.</span><br><span class="line"></span><br><span class="line">This fix adds <span class="built_in">filter</span>-out patterns <span class="built_in">to</span> exclude dep_built <span class="built_in">files</span> <span class="built_in">from</span></span><br><span class="line">escript archives, consistent <span class="keyword">with</span> <span class="keyword">the</span> existing filtering logic <span class="keyword">in</span></span><br><span class="line">rabbitmq-dist.mk.</span><br><span class="line"></span><br><span class="line">Fixes: Generic Unix package build failure</span><br><span class="line">Tested-<span class="keyword">on</span>: <span class="title">macOS</span> <span class="title">Apple</span> <span class="title">Silicon</span>, <span class="title">Erlang</span> <span class="title">27</span><span class="number">.3</span><span class="number">.4</span><span class="number">.6</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="3-Pull-Request-描述"><a href="#3-Pull-Request-描述" class="headerlink" title="3. Pull Request 描述"></a>3. Pull Request 描述</h3><p><strong>Problem</strong></p>
-<p>Building RabbitMQ generic-unix packages fails with duplicate filename error:</p>
-<figure class="highlight subunit"><table><tr><td class="code"><pre><span class="line"><span class="keyword">ERROR:</span></span><br><span class="line"><span class="keyword"></span>Duplicate filename on disk:</span><br><span class="line">dep_built</span><br><span class="line">dep_built</span><br></pre></td></tr></table></figure>
-
-<p><strong>Root Cause</strong></p>
-<p>Multiple dependencies have <code>dep_built</code> marker files in their <code>ebin/</code> directories. When creating escript zip archives, these files conflict because they have the same name.</p>
-<p><strong>Solution</strong></p>
-<p>Filter out <code>dep_built</code> files from escript archives using <code>filter-out</code>, consistent with existing filtering logic in <code>rabbitmq-dist.mk</code>.</p>
-<p><strong>Testing</strong></p>
-<ul>
-<li><input checked="" disabled="" type="checkbox"> Builds successfully on macOS Apple Silicon</li>
-<li><input checked="" disabled="" type="checkbox"> Generic Unix package creation completes without errors</li>
-<li><input checked="" disabled="" type="checkbox"> Generated escript files work correctly</li>
-<li><input checked="" disabled="" type="checkbox"> No regression in existing functionality</li>
-</ul>
-<p><strong>Files Changed</strong></p>
-<ul>
-<li><code>erlang.mk</code>: Added <code>filter-out %/dep_built</code> to escript-zip target</li>
-</ul>
-<h3 id="4-影响评估"><a href="#4-影响评估" class="headerlink" title="4. 影响评估"></a>4. 影响评估</h3><p><strong>正面影响</strong>:</p>
-<ul>
-<li>修复了 Generic Unix 包构建失败的问题</li>
-<li>与现有代码风格和过滤逻辑保持一致</li>
-<li>不影响运行时功能，只影响构建过程</li>
-<li>修复范围小，风险低</li>
-</ul>
-<p><strong>潜在风险</strong>:</p>
-<ul>
-<li>无已知风险</li>
-<li>修改仅影响构建时的文件过滤，不影响最终产品</li>
-</ul>
-<h3 id="5-测试建议"><a href="#5-测试建议" class="headerlink" title="5. 测试建议"></a>5. 测试建议</h3><p>在提交 PR 前，建议进行以下测试：</p>
-<ol>
-<li><p><strong>基本构建测试</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">gmake clean &amp;&amp; gmake</span><br><span class="line">gmake package-generic-unix</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><strong>跨平台测试</strong>:</p>
-<ul>
-<li>Linux (Ubuntu&#x2F;CentOS)</li>
-<li>macOS (Intel&#x2F;Apple Silicon)</li>
-<li>Windows (如果支持)</li>
-</ul>
-</li>
-<li><p><strong>功能测试</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 测试生成的 escript 工具</span></span><br><span class="line">./escript/rabbitmqctl <span class="built_in">help</span></span><br><span class="line">./escript/rabbitmq-plugins list</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><strong>回归测试</strong>:</p>
-<ul>
-<li>确保现有的构建目标仍然工作</li>
-<li>验证其他 escript 构建不受影响</li>
-</ul>
-</li>
-</ol>
-<h2 id="长期建议"><a href="#长期建议" class="headerlink" title="长期建议"></a>长期建议</h2><h3 id="1-构建系统改进"><a href="#1-构建系统改进" class="headerlink" title="1. 构建系统改进"></a>1. 构建系统改进</h3><p>考虑在构建系统中统一处理内部标记文件的过滤逻辑，避免类似问题在其他地方重现。</p>
-<h3 id="2-文档更新"><a href="#2-文档更新" class="headerlink" title="2. 文档更新"></a>2. 文档更新</h3><p>在构建文档中添加关于 <code>dep_built</code> 文件用途和处理方式的说明。</p>
-<h3 id="3-自动化测试"><a href="#3-自动化测试" class="headerlink" title="3. 自动化测试"></a>3. 自动化测试</h3><p>在 CI&#x2F;CD 流水线中添加包构建测试，确保类似问题能够及早发现。</p>
-<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>这是一个明确的构建系统 bug，有清晰的根本原因和简单的修复方案。修复方案风险低、影响范围明确，非常适合作为社区贡献提交。建议尽快向 RabbitMQ 项目提交 Pull Request，帮助其他开发者避免遇到同样的问题。</p>
-<hr>
-<p><strong>修复验证</strong>: ✅ 已在 macOS Apple Silicon + Erlang 27.3.4.6 环境下验证成功<br><strong>社区贡献准备</strong>: ✅ 补丁、测试和文档已准备就绪<br><strong>风险评估</strong>: ✅ 低风险，仅影响构建过程，不影响运行时功能</p>
-]]></content>
-      <categories>
-        <category>技术</category>
-        <category>RabbitMQ</category>
-      </categories>
-      <tags>
-        <tag>Erlang</tag>
-        <tag>RabbitMQ</tag>
-        <tag>构建系统</tag>
-        <tag>开源贡献</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Erlang 进程链接与监视器</title>
-    <url>/2026/01/16/erlang-erlang-links-and-monitors/</url>
-    <content><![CDATA[<h1 id="Links-and-Monitors-for-Supervision"><a href="#Links-and-Monitors-for-Supervision" class="headerlink" title="Links and Monitors for Supervision"></a>Links and Monitors for Supervision</h1><p>When processes depend on each other, we have essentially two choices: to have them live and die together, or to let one process be informed when another one crashes. The “let it fail” philosophy of Erlang, discussed in Chapter 3, leads us to a preference for the latter alternative.</p>
-<p>Linked processes form a group that, by default, all crash together. If one of the linked processes exits abnormally, all the other processes in its group get an <code>EXIT</code> signal and crash as well. Monitors allow a process to monitor another process without automatically getting coupled into the same group.</p>
-<span id="more"></span>
-
-<h2 id="Links"><a href="#Links" class="headerlink" title="Links"></a>Links</h2><p>Links are bidirectional. If two processes are linked, they are said to belong to the same link set. If one of them terminates abnormally, an exit signal is propagated to all processes that belong to its link set.</p>
-<p>For setting up a link between two processes, the following BIFs can be used:</p>
-<ul>
-<li><p><code>link(Pid)</code> sets up a bidirectional link between the calling process and the process with process identifier <code>Pid</code>.</p>
-</li>
-<li><p><code>spawn_link(Module, Function, Args)</code> atomically spawns and links to a process. This is equivalent to spawning a process and linking to it, but is done atomically so there is no risk of the spawned process dying before the link is set up.</p>
-</li>
-<li><p><code>unlink(Pid)</code> removes any link between the calling process and the process with process identifier <code>Pid</code>.</p>
-</li>
-</ul>
-<h3 id="Example"><a href="#Example" class="headerlink" title="Example"></a>Example</h3><figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>&gt; Pid = spawn(<span class="keyword">fun</span>() -&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span> <span class="keyword">end</span>).</span><br><span class="line">&lt;<span class="number">0.25</span>.<span class="number">0</span>&gt;</span><br><span class="line"><span class="number">2</span>&gt; link(Pid).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="number">3</span>&gt; exit(Pid, kill).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line">** exception exit: killed</span><br></pre></td></tr></table></figure>
-
-<p>In this example, linking to the spawned process and then sending a kill signal causes both the spawned process and the shell to crash.</p>
-<h2 id="Trapping-Exits"><a href="#Trapping-Exits" class="headerlink" title="Trapping Exits"></a>Trapping Exits</h2><p>A process can trap exit signals by setting:</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">process_flag</span><span class="params">(trap_exit, true)</span></span></span><br></pre></td></tr></table></figure>
-
-<p>When a process is trapping exits, the exit signals are converted into messages of the form <code>{&#39;EXIT&#39;, Pid, Reason}</code> that can be handled in a normal receive statement.</p>
-<h3 id="Example-1"><a href="#Example-1" class="headerlink" title="Example"></a>Example</h3><figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>&gt; process_flag(trap_exit, <span class="literal">true</span>).</span><br><span class="line"><span class="literal">false</span></span><br><span class="line"><span class="number">2</span>&gt; Pid = spawn_link(<span class="keyword">fun</span>() -&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span> <span class="keyword">end</span>).</span><br><span class="line">&lt;<span class="number">0.35</span>.<span class="number">0</span>&gt;</span><br><span class="line"><span class="number">3</span>&gt; exit(Pid, reason).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="number">4</span>&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span>.</span><br><span class="line">&#123;&#x27;EXIT&#x27;,&lt;<span class="number">0.35</span>.<span class="number">0</span>&gt;,reason&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="Table-2-1-Propagation-semantics"><a href="#Table-2-1-Propagation-semantics" class="headerlink" title="Table 2-1. Propagation semantics"></a>Table 2-1. Propagation semantics</h2><table>
-<thead>
-<tr>
-<th>Reason</th>
-<th>Trapping exits (<code>trap_exit=true</code>)</th>
-<th>Not trapping exits</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><code>normal</code></td>
-<td>Receives <code>{&#39;EXIT&#39;, Pid, normal}</code></td>
-<td>Nothing happens</td>
-</tr>
-<tr>
-<td><code>kill</code></td>
-<td>Terminates with reason <code>killed</code></td>
-<td>Terminates with reason <code>killed</code></td>
-</tr>
-<tr>
-<td>Other</td>
-<td>Receives <code>{&#39;EXIT&#39;, Pid, Other}</code></td>
-<td>Terminates with reason <code>Other</code></td>
-</tr>
-</tbody></table>
-<h2 id="Monitors"><a href="#Monitors" class="headerlink" title="Monitors"></a>Monitors</h2><p>Unlike links, monitors are unidirectional. The monitoring process receives a message <code>{&#39;DOWN&#39;, Reference, process, Pid, Reason}</code> in its mailbox when the monitored process terminates, but no signal is sent in the opposite direction.</p>
-<p>Setting up monitors with the BIF:</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line">Reference = monitor(process, Pid)</span><br></pre></td></tr></table></figure>
-
-<p>The <code>Reference</code> can be used to identify the particular monitor if more than one is set up.</p>
-<p>To remove a monitor, use:</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">demonitor</span><span class="params">(Reference)</span></span></span><br></pre></td></tr></table></figure>
-
-<h3 id="Monitors-vs-Links"><a href="#Monitors-vs-Links" class="headerlink" title="Monitors vs Links"></a>Monitors vs Links</h3><table>
-<thead>
-<tr>
-<th>Feature</th>
-<th>Links</th>
-<th>Monitors</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>Directionality</td>
-<td>Bidirectional</td>
-<td>Unidirectional</td>
-</tr>
-<tr>
-<td>Default behavior</td>
-<td>Crash together</td>
-<td>Message on exit</td>
-</tr>
-<tr>
-<td>Signal propagation</td>
-<td>Both directions</td>
-<td>One direction</td>
-</tr>
-<tr>
-<td>Setup function</td>
-<td><code>link/1</code></td>
-<td><code>monitor/2</code></td>
-</tr>
-<tr>
-<td>Remove function</td>
-<td><code>unlink/1</code></td>
-<td><code>demonitor/1</code></td>
-</tr>
-</tbody></table>
-<h3 id="Example-2"><a href="#Example-2" class="headerlink" title="Example"></a>Example</h3><figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>&gt; Pid = spawn(<span class="keyword">fun</span>() -&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span> <span class="keyword">end</span>).</span><br><span class="line">&lt;<span class="number">0.25</span>.<span class="number">0</span>&gt;</span><br><span class="line"><span class="number">2</span>&gt; Ref = monitor(process, Pid).</span><br><span class="line">#Ref&lt;<span class="number">0.0</span>.<span class="number">0.26</span>&gt;</span><br><span class="line"><span class="number">3</span>&gt; exit(Pid, reason).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="number">4</span>&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span>.</span><br><span class="line">&#123;&#x27;DOWN&#x27;,#Ref&lt;<span class="number">0.0</span>.<span class="number">0.26</span>&gt;,process,&lt;<span class="number">0.25</span>.<span class="number">0</span>&gt;,reason&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="Summary"><a href="#Summary" class="headerlink" title="Summary"></a>Summary</h2><ul>
-<li><strong>Links</strong> create a bidirectional connection between processes. When one dies, all linked processes receive an exit signal.</li>
-<li><strong>Monitors</strong> create a unidirectional observation. The monitoring process receives a <code>&#39;DOWN&#39;</code> message when the monitored process terminates.</li>
-<li>Use <code>process_flag(trap_exit, true)</code> to convert exit signals into messages.</li>
-<li>The <code>kill</code> reason cannot be trapped and always terminates the process.</li>
-</ul>
-]]></content>
-      <categories>
-        <category>技术</category>
-        <category>Erlang</category>
-      </categories>
-      <tags>
-        <tag>Erlang</tag>
-        <tag>OTP</tag>
-        <tag>并发编程</tag>
-        <tag>进程链接</tag>
-        <tag>监视器</tag>
       </tags>
   </entry>
 </search>

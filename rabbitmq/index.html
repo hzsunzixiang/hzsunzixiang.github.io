@@ -20,16 +20,16 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"hzsunzixiang.github.io","root":"/","images":"/images","scheme":"Pisces","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"default","show_result":true},"fold":{"enable":false,"height":500},"language":false,"highlight_theme":"default"},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
-    <meta name="description" content="← 返回首页 RabbitMQ 技术文档  📚 文档列表   文档 描述    RabbitMQ 服务器编译指南 macOS 环境下编译 RabbitMQ 服务器的完整指南，包括问题排查   RabbitMQ 构建问题分析与社区补丁提案 Generic Unix 包构建错误分析及修复方案    🔗 相关资源 RabbitMQ 官方文档 RabbitMQ GitHub 仓库 Erlang&amp;#x">
+    <meta name="description" content="← 返回首页 RabbitMQ 技术文档  📚 文档列表   文档 描述    RabbitMQ 服务器编译指南 macOS 环境下编译 RabbitMQ 服务器的完整指南，包括问题排查   RabbitMQ 构建问题分析与社区补丁提案 Generic Unix 包构建错误分析及修复方案   RabbitMQ 问题最终解决方案总结 EPMD 错误的根因分析：hosts 文件配置问题    🔗">
 <meta property="og:type" content="website">
 <meta property="og:title" content="RabbitMQ 技术文档">
 <meta property="og:url" content="https://hzsunzixiang.github.io/rabbitmq/">
 <meta property="og:site_name" content="Zixiang Sun&#39;s Blog">
-<meta property="og:description" content="← 返回首页 RabbitMQ 技术文档  📚 文档列表   文档 描述    RabbitMQ 服务器编译指南 macOS 环境下编译 RabbitMQ 服务器的完整指南，包括问题排查   RabbitMQ 构建问题分析与社区补丁提案 Generic Unix 包构建错误分析及修复方案    🔗 相关资源 RabbitMQ 官方文档 RabbitMQ GitHub 仓库 Erlang&amp;#x">
+<meta property="og:description" content="← 返回首页 RabbitMQ 技术文档  📚 文档列表   文档 描述    RabbitMQ 服务器编译指南 macOS 环境下编译 RabbitMQ 服务器的完整指南，包括问题排查   RabbitMQ 构建问题分析与社区补丁提案 Generic Unix 包构建错误分析及修复方案   RabbitMQ 问题最终解决方案总结 EPMD 错误的根因分析：hosts 文件配置问题    🔗">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://hzsunzixiang.github.io/images/rabbitmq/rabbitmq_icon.png">
 <meta property="article:published_time" content="2024-01-14T16:00:00.000Z">
-<meta property="article:modified_time" content="2026-01-16T07:30:27.937Z">
+<meta property="article:modified_time" content="2026-01-16T12:55:25.069Z">
 <meta property="article:author" content="Zixiang Sun">
 <meta property="article:tag" content="CRAQ">
 <meta property="article:tag" content="blog">
@@ -118,7 +118,7 @@
 
 
 <nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">7</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">5</span></a></li><li class="menu-item menu-item-erlang"><a href="/erlang/" rel="section"><i class="fa fa-code fa-fw"></i>Erlang</a></li><li class="menu-item menu-item-rabbitmq"><a href="/rabbitmq/" rel="section"><i class="fa fa-server fa-fw"></i>RabbitMQ</a></li><li class="menu-item menu-item-craq"><a href="/craq/" rel="section"><i class="fa fa-book fa-fw"></i>CRAQ</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">8</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">5</span></a></li><li class="menu-item menu-item-erlang"><a href="/erlang/" rel="section"><i class="fa fa-code fa-fw"></i>Erlang</a></li><li class="menu-item menu-item-rabbitmq"><a href="/rabbitmq/" rel="section"><i class="fa fa-server fa-fw"></i>RabbitMQ</a></li><li class="menu-item menu-item-craq"><a href="/craq/" rel="section"><i class="fa fa-book fa-fw"></i>CRAQ</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
       <li class="menu-item menu-item-search">
         <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
         </a>
@@ -184,7 +184,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-count">8</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -195,7 +195,7 @@
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-count">15</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -257,6 +257,10 @@
 <tr>
 <td><a href="/2026/01/16/rabbitmq-rabbitmq-build-issue-analysis/">RabbitMQ 构建问题分析与社区补丁提案</a></td>
 <td>Generic Unix 包构建错误分析及修复方案</td>
+</tr>
+<tr>
+<td><a href="/2026/01/16/rabbitmq-rabbitmq-final-solution-summary/">RabbitMQ 问题最终解决方案总结</a></td>
+<td>EPMD 错误的根因分析：hosts 文件配置问题</td>
 </tr>
 </tbody></table>
 <hr>

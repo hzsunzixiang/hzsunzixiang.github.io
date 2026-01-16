@@ -113,7 +113,7 @@
 
 
 <nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">7</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">5</span></a></li><li class="menu-item menu-item-erlang"><a href="/erlang/" rel="section"><i class="fa fa-code fa-fw"></i>Erlang</a></li><li class="menu-item menu-item-rabbitmq"><a href="/rabbitmq/" rel="section"><i class="fa fa-server fa-fw"></i>RabbitMQ</a></li><li class="menu-item menu-item-craq"><a href="/craq/" rel="section"><i class="fa fa-book fa-fw"></i>CRAQ</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">8</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">5</span></a></li><li class="menu-item menu-item-erlang"><a href="/erlang/" rel="section"><i class="fa fa-code fa-fw"></i>Erlang</a></li><li class="menu-item menu-item-rabbitmq"><a href="/rabbitmq/" rel="section"><i class="fa fa-server fa-fw"></i>RabbitMQ</a></li><li class="menu-item menu-item-craq"><a href="/craq/" rel="section"><i class="fa fa-book fa-fw"></i>CRAQ</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
       <li class="menu-item menu-item-search">
         <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
         </a>
@@ -178,7 +178,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-count">8</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -189,7 +189,7 @@
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-count">15</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -214,6 +214,96 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-final-solution-summary/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.svg">
+      <meta itemprop="name" content="Zixiang Sun">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Zixiang Sun's Blog">
+      <meta itemprop="description" content="Welcome to my personal blog where I share thoughts on technology, programming, and life experiences.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | Zixiang Sun's Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/01/16/rabbitmq-rabbitmq-final-solution-summary/" class="post-title-link" itemprop="url">RabbitMQ 问题最终解决方案总结</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-01-16 16:00:00 / 修改时间：20:55:17" itemprop="dateCreated datePublished" datetime="2026-01-16T16:00:00+08:00">2026-01-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/technology/" itemprop="url" rel="index"><span itemprop="name">技术</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/technology/RabbitMQ/" itemprop="url" rel="index"><span itemprop="name">RabbitMQ</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="RabbitMQ-问题最终解决方案总结"><a href="#RabbitMQ-问题最终解决方案总结" class="headerlink" title="RabbitMQ 问题最终解决方案总结"></a>RabbitMQ 问题最终解决方案总结</h1><h2 id="真正的根本原因：网络配置问题"><a href="#真正的根本原因：网络配置问题" class="headerlink" title="真正的根本原因：网络配置问题"></a>真正的根本原因：网络配置问题</h2><h3 id="问题真相"><a href="#问题真相" class="headerlink" title="问题真相"></a>问题真相</h3><p>经过深入调试，发现问题的<strong>真正根本原因</strong>是 <strong>hosts 文件配置错误</strong>：</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2026/01/16/rabbitmq-rabbitmq-final-solution-summary/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 

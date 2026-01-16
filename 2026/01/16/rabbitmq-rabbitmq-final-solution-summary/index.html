@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.svg">
+  <link rel="mask-icon" href="/images/favicon.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Noto+Serif+SC:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Source+Code+Pro:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"hzsunzixiang.github.io","root":"/","images":"/images","scheme":"Pisces","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"default","show_result":true},"fold":{"enable":false,"height":500},"language":false,"highlight_theme":"default"},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="RabbitMQ 问题最终解决方案总结真正的根本原因：网络配置问题问题真相经过深入调试，发现问题的真正根本原因是 hosts 文件配置错误：">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RabbitMQ 问题最终解决方案总结">
+<meta property="og:url" content="https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-final-solution-summary/">
+<meta property="og:site_name" content="Zixiang Sun&#39;s Blog">
+<meta property="og:description" content="RabbitMQ 问题最终解决方案总结真正的根本原因：网络配置问题问题真相经过深入调试，发现问题的真正根本原因是 hosts 文件配置错误：">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-01-16T08:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-16T12:55:17.321Z">
+<meta property="article:author" content="Zixiang Sun">
+<meta property="article:tag" content="Erlang">
+<meta property="article:tag" content="RabbitMQ">
+<meta property="article:tag" content="网络配置">
+<meta property="article:tag" content="问题排查">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-final-solution-summary/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-final-solution-summary/","path":"2026/01/16/rabbitmq-rabbitmq-final-solution-summary/","title":"RabbitMQ 问题最终解决方案总结"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>RabbitMQ 问题最终解决方案总结 | Zixiang Sun's Blog</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="Zixiang Sun's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Zixiang Sun's Blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Sharing thoughts on technology, programming, and life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">8</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">5</span></a></li><li class="menu-item menu-item-erlang"><a href="/erlang/" rel="section"><i class="fa fa-code fa-fw"></i>Erlang</a></li><li class="menu-item menu-item-rabbitmq"><a href="/rabbitmq/" rel="section"><i class="fa fa-server fa-fw"></i>RabbitMQ</a></li><li class="menu-item menu-item-craq"><a href="/craq/" rel="section"><i class="fa fa-book fa-fw"></i>CRAQ</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#RabbitMQ-%E9%97%AE%E9%A2%98%E6%9C%80%E7%BB%88%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E6%80%BB%E7%BB%93"><span class="nav-number">1.</span> <span class="nav-text">RabbitMQ 问题最终解决方案总结</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9C%9F%E6%AD%A3%E7%9A%84%E6%A0%B9%E6%9C%AC%E5%8E%9F%E5%9B%A0%EF%BC%9A%E7%BD%91%E7%BB%9C%E9%85%8D%E7%BD%AE%E9%97%AE%E9%A2%98"><span class="nav-number">1.1.</span> <span class="nav-text">真正的根本原因：网络配置问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E7%9C%9F%E7%9B%B8"><span class="nav-number">1.1.1.</span> <span class="nav-text">问题真相</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BC%9A%E5%AF%BC%E8%87%B4-EPMD-%E9%94%99%E8%AF%AF"><span class="nav-number">1.1.2.</span> <span class="nav-text">为什么会导致 EPMD 错误</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E8%BF%87%E7%A8%8B%E5%9B%9E%E9%A1%BE"><span class="nav-number">1.2.</span> <span class="nav-text">解决过程回顾</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%98%B6%E6%AE%B5-1-%E5%88%9D%E5%A7%8B%E9%97%AE%E9%A2%98%E8%AF%8A%E6%96%AD"><span class="nav-number">1.2.1.</span> <span class="nav-text">阶段 1: 初始问题诊断</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%98%B6%E6%AE%B5-2-%E7%89%88%E6%9C%AC%E5%85%BC%E5%AE%B9%E6%80%A7%E5%88%86%E6%9E%90"><span class="nav-number">1.2.2.</span> <span class="nav-text">阶段 2: 版本兼容性分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%98%B6%E6%AE%B5-3-%E4%BB%A3%E7%A0%81%E4%BF%AE%E5%A4%8D"><span class="nav-number">1.2.3.</span> <span class="nav-text">阶段 3: 代码修复</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%98%B6%E6%AE%B5-4-%E6%A0%B9%E5%9B%A0%E5%8F%91%E7%8E%B0"><span class="nav-number">1.2.4.</span> <span class="nav-text">阶段 4: 根因发现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%80%E7%BB%88%E6%88%90%E6%9E%9C"><span class="nav-number">1.3.</span> <span class="nav-text">最终成果</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#RabbitMQ-4-0-4-%E5%AE%8C%E5%85%A8%E6%AD%A3%E5%B8%B8%E8%BF%90%E8%A1%8C"><span class="nav-number">1.3.1.</span> <span class="nav-text">RabbitMQ 4.0.4 完全正常运行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8A%80%E6%9C%AF%E6%A0%88%E7%A1%AE%E8%AE%A4"><span class="nav-number">1.3.2.</span> <span class="nav-text">技术栈确认</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9D%E8%B4%B5%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number">1.4.</span> <span class="nav-text">宝贵经验总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E8%AF%95%E6%96%B9%E6%B3%95%E8%AE%BA"><span class="nav-number">1.4.1.</span> <span class="nav-text">调试方法论</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E6%B4%9E%E5%AF%9F"><span class="nav-number">1.4.2.</span> <span class="nav-text">关键洞察</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8A%80%E6%9C%AF%E8%83%BD%E5%8A%9B%E4%BD%93%E7%8E%B0"><span class="nav-number">1.4.3.</span> <span class="nav-text">技术能力体现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8E%E7%BB%AD%E5%BB%BA%E8%AE%AE"><span class="nav-number">1.5.</span> <span class="nav-text">后续建议</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E7%8E%AF%E5%A2%83%E7%AE%A1%E7%90%86"><span class="nav-number">1.5.1.</span> <span class="nav-text">1. 环境管理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E7%9B%91%E6%8E%A7%E5%92%8C%E7%BB%B4%E6%8A%A4"><span class="nav-number">1.5.2.</span> <span class="nav-text">2. 监控和维护</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E7%9F%A5%E8%AF%86%E6%B2%89%E6%B7%80"><span class="nav-number">1.5.3.</span> <span class="nav-text">3. 知识沉淀</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.6.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Zixiang Sun"
+      src="/images/avatar.svg">
+  <p class="site-author-name" itemprop="name">Zixiang Sun</p>
+  <div class="site-description" itemprop="description">Welcome to my personal blog where I share thoughts on technology, programming, and life experiences.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/hzsunzixiang" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;hzsunzixiang" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:17842379@qq.com" title="E-Mail → mailto:17842379@qq.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-final-solution-summary/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.svg">
+      <meta itemprop="name" content="Zixiang Sun">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Zixiang Sun's Blog">
+      <meta itemprop="description" content="Welcome to my personal blog where I share thoughts on technology, programming, and life experiences.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="RabbitMQ 问题最终解决方案总结 | Zixiang Sun's Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RabbitMQ 问题最终解决方案总结
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-01-16 16:00:00 / 修改时间：20:55:17" itemprop="dateCreated datePublished" datetime="2026-01-16T16:00:00+08:00">2026-01-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/technology/" itemprop="url" rel="index"><span itemprop="name">技术</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/technology/RabbitMQ/" itemprop="url" rel="index"><span itemprop="name">RabbitMQ</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="RabbitMQ-问题最终解决方案总结"><a href="#RabbitMQ-问题最终解决方案总结" class="headerlink" title="RabbitMQ 问题最终解决方案总结"></a>RabbitMQ 问题最终解决方案总结</h1><h2 id="真正的根本原因：网络配置问题"><a href="#真正的根本原因：网络配置问题" class="headerlink" title="真正的根本原因：网络配置问题"></a>真正的根本原因：网络配置问题</h2><h3 id="问题真相"><a href="#问题真相" class="headerlink" title="问题真相"></a>问题真相</h3><p>经过深入调试，发现问题的<strong>真正根本原因</strong>是 <strong>hosts 文件配置错误</strong>：</p>
+<span id="more"></span>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 错误的 hosts 配置导致主机名解析问题</span></span><br><span class="line"><span class="comment">#10.91.28.159    ERICKSUN-MC1     # 被注释的旧IP</span></span><br><span class="line"><span class="comment">#192.168.1.3 ERICKSUN-MC1        # 被注释的旧IP  </span></span><br><span class="line">192.168.0.101 ERICKSUN-MC1       <span class="comment"># 正确的当前IP</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="为什么会导致-EPMD-错误"><a href="#为什么会导致-EPMD-错误" class="headerlink" title="为什么会导致 EPMD 错误"></a>为什么会导致 EPMD 错误</h3><ol>
+<li><strong>主机名解析</strong>: RabbitMQ 使用 <code>ERICKSUN-MC1</code> 作为节点名</li>
+<li><strong>网络连接</strong>: EPMD 需要通过主机名连接到本地节点</li>
+<li><strong>IP 地址错误</strong>: 如果 hosts 文件中的 IP 不正确，连接会失败</li>
+<li><strong>返回 <code>closed</code></strong>: 网络连接被拒绝，导致 <code>erl_epmd:port_please/3</code> 返回 <code>closed</code></li>
+</ol>
+<h2 id="解决过程回顾"><a href="#解决过程回顾" class="headerlink" title="解决过程回顾"></a>解决过程回顾</h2><h3 id="阶段-1-初始问题诊断"><a href="#阶段-1-初始问题诊断" class="headerlink" title="阶段 1: 初始问题诊断"></a>阶段 1: 初始问题诊断</h3><ul>
+<li>❌ <strong>现象</strong>: <code>case_clause,closed</code> 错误</li>
+<li>❌ <strong>假设</strong>: 代码 bug 或 Erlang 版本问题</li>
+<li>✅ <strong>价值</strong>: 深入理解了 RabbitMQ 启动机制</li>
+</ul>
+<h3 id="阶段-2-版本兼容性分析"><a href="#阶段-2-版本兼容性分析" class="headerlink" title="阶段 2: 版本兼容性分析"></a>阶段 2: 版本兼容性分析</h3><ul>
+<li>✅ <strong>正确方向</strong>: 查阅官方兼容性文档</li>
+<li>✅ <strong>有效尝试</strong>: 切换到 Erlang 26</li>
+<li>✅ <strong>部分改善</strong>: 减少了一些兼容性问题</li>
+</ul>
+<h3 id="阶段-3-代码修复"><a href="#阶段-3-代码修复" class="headerlink" title="阶段 3: 代码修复"></a>阶段 3: 代码修复</h3><ul>
+<li>✅ <strong>技术价值</strong>: 修复了 EPMD 错误处理</li>
+<li>✅ <strong>优雅降级</strong>: 从崩溃改为警告</li>
+<li>❌ <strong>未解决根因</strong>: 网络问题仍然存在</li>
+</ul>
+<h3 id="阶段-4-根因发现"><a href="#阶段-4-根因发现" class="headerlink" title="阶段 4: 根因发现"></a>阶段 4: 根因发现</h3><ul>
+<li>✅ <strong>真正原因</strong>: hosts 文件配置错误</li>
+<li>✅ <strong>完美解决</strong>: 修正 IP 地址后完全正常</li>
+</ul>
+<h2 id="最终成果"><a href="#最终成果" class="headerlink" title="最终成果"></a>最终成果</h2><h3 id="RabbitMQ-4-0-4-完全正常运行"><a href="#RabbitMQ-4-0-4-完全正常运行" class="headerlink" title="RabbitMQ 4.0.4 完全正常运行"></a>RabbitMQ 4.0.4 完全正常运行</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">$ sbin/rabbitmqctl status</span><br><span class="line">Status of node rabbit@ERICKSUN-MC1 ...</span><br><span class="line">Runtime</span><br><span class="line">OS PID: 5636</span><br><span class="line">Uptime (seconds): 28</span><br><span class="line">RabbitMQ version: 4.0.4+dirty</span><br><span class="line">Erlang/OTP 26 [erts-14.2.5.12]</span><br><span class="line"></span><br><span class="line">$ sbin/rabbitmqctl list_users</span><br><span class="line">Listing <span class="built_in">users</span> ...</span><br><span class="line">user    tags</span><br><span class="line">guest   [administrator]</span><br></pre></td></tr></table></figure>
+
+<h3 id="技术栈确认"><a href="#技术栈确认" class="headerlink" title="技术栈确认"></a>技术栈确认</h3><ul>
+<li><strong>RabbitMQ</strong>: 4.0.4 ✅</li>
+<li><strong>Erlang</strong>: 26.2.5.16 ✅  </li>
+<li><strong>网络</strong>: 正确的 hosts 配置 ✅</li>
+<li><strong>功能</strong>: 完全正常 ✅</li>
+</ul>
+<h2 id="宝贵经验总结"><a href="#宝贵经验总结" class="headerlink" title="宝贵经验总结"></a>宝贵经验总结</h2><h3 id="调试方法论"><a href="#调试方法论" class="headerlink" title="调试方法论"></a>调试方法论</h3><ol>
+<li><strong>日志分析</strong>: 准确理解错误信息</li>
+<li><strong>版本兼容</strong>: 检查官方兼容性文档</li>
+<li><strong>代码审查</strong>: 理解底层实现机制</li>
+<li><strong>网络诊断</strong>: 检查基础网络配置</li>
+<li><strong>系统环境</strong>: 验证 hosts、DNS 等基础设施</li>
+</ol>
+<h3 id="关键洞察"><a href="#关键洞察" class="headerlink" title="关键洞察"></a>关键洞察</h3><ul>
+<li><strong>表面现象 ≠ 根本原因</strong>: EPMD 错误可能是网络问题</li>
+<li><strong>版本兼容很重要</strong>: 但不是所有问题的根源</li>
+<li><strong>基础设施关键</strong>: hosts 文件等基础配置不容忽视</li>
+<li><strong>逐步排查</strong>: 从应用层到系统层的系统性调试</li>
+</ul>
+<h3 id="技术能力体现"><a href="#技术能力体现" class="headerlink" title="技术能力体现"></a>技术能力体现</h3><ul>
+<li>✅ <strong>问题定位</strong>: 准确识别关键错误</li>
+<li>✅ <strong>资料查找</strong>: 有效利用官方文档</li>
+<li>✅ <strong>系统思维</strong>: 多层次分析问题</li>
+<li>✅ <strong>持续改进</strong>: 不放弃，持续深入</li>
+<li>✅ <strong>根因分析</strong>: 最终找到真正原因</li>
+</ul>
+<h2 id="后续建议"><a href="#后续建议" class="headerlink" title="后续建议"></a>后续建议</h2><h3 id="1-环境管理"><a href="#1-环境管理" class="headerlink" title="1. 环境管理"></a>1. 环境管理</h3><ul>
+<li>定期检查 hosts 文件配置</li>
+<li>确保网络配置与实际环境匹配</li>
+<li>使用版本管理工具管理 Erlang&#x2F;RabbitMQ</li>
+</ul>
+<h3 id="2-监控和维护"><a href="#2-监控和维护" class="headerlink" title="2. 监控和维护"></a>2. 监控和维护</h3><ul>
+<li>监控 RabbitMQ 启动日志</li>
+<li>定期验证网络连通性</li>
+<li>保持版本兼容性文档更新</li>
+</ul>
+<h3 id="3-知识沉淀"><a href="#3-知识沉淀" class="headerlink" title="3. 知识沉淀"></a>3. 知识沉淀</h3><ul>
+<li>记录网络配置最佳实践</li>
+<li>建立问题诊断检查清单</li>
+<li>分享调试经验和方法</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这是一次非常成功的技术问题解决过程！</p>
+<p>从初始的神秘错误，到版本兼容性分析，再到代码修复，最终发现网络配置问题 - 整个过程展现了：</p>
+<ul>
+<li><strong>扎实的技术基础</strong></li>
+<li><strong>系统的调试思维</strong> </li>
+<li><strong>持续的学习精神</strong></li>
+<li><strong>不放弃的技术态度</strong></li>
+</ul>
+<hr>
+<p><strong>最终状态</strong>: RabbitMQ 4.0.4 + Erlang 26.2.5.16 <strong>完美运行</strong> ✅</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Erlang/" rel="tag"># Erlang</a>
+              <a href="/tags/RabbitMQ/" rel="tag"># RabbitMQ</a>
+              <a href="/tags/%E7%BD%91%E7%BB%9C%E9%85%8D%E7%BD%AE/" rel="tag"># 网络配置</a>
+              <a href="/tags/%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/" rel="tag"># 问题排查</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/01/16/rabbitmq-rabbitmq-build-issue-analysis/" rel="prev" title="RabbitMQ 构建问题分析与社区补丁提案">
+                  <i class="fa fa-angle-left"></i> RabbitMQ 构建问题分析与社区补丁提案
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2024 – 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Zixiang Sun</span>
+  </div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"hzsunzixiang/hzsunzixiang.github.io","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

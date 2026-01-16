@@ -22,6 +22,7 @@ date: 2024-01-15
 | [RabbitMQ 问题最终解决方案总结](/2026/01/16/rabbitmq-rabbitmq-final-solution-summary/) | EPMD 错误的根因分析：hosts 文件配置问题 |
 | [RabbitMQ 插件启用问题排查指南](/2026/01/16/rabbitmq-rabbitmq-plugins-enable-guide/) | 源码编译环境下插件启用报错的解决方案 |
 | [RabbitMQ 编译方式深度解析与源码分析](/2026/01/16/rabbitmq-rabbitmq-build-deep-analysis/) | 五种编译方式的原理、实现机制和适用场景 |
+| [RabbitMQ 编译构建完全指南](/2026/01/16/rabbitmq-rabbitmq-complete-build-guide/) | 完整的编译构建指南，包含最佳实践和故障排除 |
 
 ---
 

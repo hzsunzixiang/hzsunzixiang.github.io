@@ -15,9 +15,11 @@ tags:
 
 ## 概述
 
-基于 RabbitMQ 4.0.5 源码深度分析和实际构建验证，本文档全面解析六种编译方式的技术原理、实现机制和最佳实践。
+基于 RabbitMQ 4.0.5 源码深度分析和实际构建验证，本文档全面解析各种编译方式的技术原理、实现机制和最佳实践。
 
 ## 快速对比表
+
+### 构建命令
 
 | 命令 | 作用 | 输出格式 | 部署方式 | 编译时间 | 磁盘占用 | 适用场景 |
 |------|------|----------|----------|----------|----------|----------|
@@ -26,7 +28,18 @@ tags:
 | `make dist DIST_AS_EZS=true` | 打包成 ez 文件 | .ez 压缩包 | 插件安装 | 中等 | 小 | 插件分发、热加载 |
 | `make source-dist` | 创建源码包 | tar.xz 源码归档 | 源码分发 | 快 | 小 | 离线构建、版本发布 |
 | `make package-generic-unix` | 打包成 PACKAGE 文件 | tar.xz 包 | 解压安装 | 慢 | 最小 | 容器、跨平台 |
-| `make install` | 安装 | 系统目录 | 系统安装 | 中等 | 中等 | 生产部署 |
+| `make install` | 安装到系统 | 系统目录 | 系统安装 | 中等 | 中等 | 生产部署 |
+| `make install PREFIX=/opt/rabbitmq` | 安装到指定目录 | 自定义目录 | 自定义安装 | 中等 | 中等 | 自定义部署路径 |
+
+### 开发调试命令
+
+| 命令 | 作用 | 适用场景 |
+|------|------|----------|
+| `make run-broker` | 启动 RabbitMQ 服务器（前台运行） | 开发调试、日志查看 |
+| `make run-broker PLUGINS="plugin_name"` | 启动并加载指定插件 | 插件测试、功能验证 |
+| `make shell` | 进入 Erlang Shell | 代码调试、模块测试 |
+| `make run-background-broker` | 后台启动 RabbitMQ | 自动化测试 |
+| `make run-node` | 启动裸 Erlang 节点（无 RabbitMQ） | Erlang 调试 |
 
 ---
 
@@ -618,6 +631,183 @@ fpm -s dir -t deb -C /tmp/rabbitmq-package \
 
 ---
 
+## 7. 开发调试命令
+
+### `make run-broker` - 启动开发服务器
+
+#### 技术原理
+
+`make run-broker` 在前台启动 RabbitMQ 服务器，适合开发调试。日志直接输出到终端，便于实时查看。
+
+#### 核心实现源码
+
+```makefile
+# 来源：deps/rabbit_common/mk/rabbitmq-run.mk (第 269-278 行)
+run-broker run-tls-broker: RABBITMQ_CONFIG_FILE := $(basename $(TEST_CONFIG_FILE))
+run-broker:     config = $(test_rabbitmq_config)
+run-tls-broker: config = $(test_rabbitmq_config_with_tls)
+
+run-broker run-tls-broker: node-tmpdir $(DIST_TARGET) $(TEST_CONFIG_FILE)
+	$(BASIC_SCRIPT_ENV_SETTINGS) \
+	  RABBITMQ_ALLOW_INPUT=true \
+	  RABBITMQ_CONFIG_FILE=$(RABBITMQ_CONFIG_FILE) \
+	  $(RABBITMQ_SERVER)
+```
+
+#### 执行流程
+
+```
+make run-broker
+  ↓
+创建临时目录 (node-tmpdir)
+  ↓
+执行 make dist (如需要)
+  ↓
+生成测试配置文件
+  ↓
+设置环境变量
+  ↓
+启动 rabbitmq-server (前台)
+```
+
+#### 使用场景
+
+```bash
+# 1. 基础开发调试
+make run-broker
+# 日志直接输出到终端，Ctrl+C 停止
+
+# 2. 后台启动
+make run-background-broker
+# 服务在后台运行
+
+# 3. TLS 模式启动
+make run-tls-broker
+# 使用 TLS 配置启动
+```
+
+### `make run-broker PLUGINS=` - 插件测试
+
+#### 技术原理
+
+通过 `PLUGINS` 环境变量指定要加载的插件，用于测试特定插件功能。
+
+#### 使用场景
+
+```bash
+# 1. 测试管理插件
+make run-broker PLUGINS="rabbitmq_management"
+
+# 2. 测试多个插件
+make run-broker PLUGINS="rabbitmq_management rabbitmq_prometheus"
+
+# 3. 测试自定义插件
+make run-broker PLUGINS="my_custom_plugin"
+```
+
+#### 注意事项
+
+- 插件名称使用空格分隔
+- 插件需要先编译完成（`make dist`）
+- 依赖插件会自动加载
+
+### `make shell` - Erlang Shell
+
+#### 技术原理
+
+启动一个加载了所有 RabbitMQ 模块的 Erlang Shell，用于代码调试和模块测试。
+
+#### 核心实现源码
+
+```makefile
+# 来源：erlang.mk (第 7053-7054 行)
+shell:: build-shell-deps
+	$(gen_verbose) $(SHELL_ERL) -pa $(SHELL_PATHS) $(SHELL_OPTS)
+```
+
+#### 使用场景
+
+```bash
+# 1. 进入 Erlang Shell
+make shell
+
+# 在 Shell 中：
+# 测试模块函数
+1> rabbit_misc:version().
+"4.0.5"
+
+# 检查模块信息
+2> m(rabbit).
+
+# 编译并加载修改后的模块
+3> c(my_module).
+```
+
+#### 与 `erl` 的区别
+
+| 特性 | `make shell` | `erl` |
+|------|--------------|-------|
+| 代码路径 | 自动设置所有依赖 | 需手动指定 |
+| 模块加载 | RabbitMQ 模块可用 | 需手动加载 |
+| 环境变量 | 继承项目配置 | 默认配置 |
+| 用途 | RabbitMQ 开发调试 | 通用 Erlang 开发 |
+
+### `make run-node` - 裸 Erlang 节点
+
+#### 技术原理
+
+启动一个不运行 RabbitMQ 应用的 Erlang 节点，仅加载代码但不启动服务。
+
+```makefile
+# 来源：deps/rabbit_common/mk/rabbitmq-run.mk (第 288-292 行)
+run-node: node-tmpdir $(DIST_TARGET)
+	$(BASIC_SCRIPT_ENV_SETTINGS) \
+	  RABBITMQ_NODE_ONLY=true \
+	  RABBITMQ_ALLOW_INPUT=true \
+	  $(RABBITMQ_SERVER)
+```
+
+#### 使用场景
+
+```bash
+# 1. Erlang 级别调试
+make run-node
+
+# 2. 手动启动 RabbitMQ 应用
+1> application:ensure_all_started(rabbit).
+
+# 3. 测试特定模块而不启动完整服务
+1> rabbit_misc:version().
+```
+
+### 开发工作流最佳实践
+
+```bash
+# 完整开发工作流
+
+# 1. 编译项目
+make
+
+# 2. 测试模块（不启动服务）
+make shell
+> my_module:test().
+
+# 3. 启动服务验证
+make run-broker
+
+# 4. 测试特定插件
+make run-broker PLUGINS="rabbitmq_management"
+
+# 5. 查看管理界面
+# 浏览器访问 http://localhost:15672
+
+# 6. 修改代码后重新编译
+make  # 增量编译
+make run-broker  # 重新启动
+```
+
+---
+
 ## 构建系统架构深度解析
 
 ### 核心组件关系
@@ -697,6 +887,8 @@ endef
 
 ### 性能和资源详细对比
 
+#### 构建命令
+
 | 编译方式 | 编译时间 | 磁盘占用 | 内存使用 | 网络传输 | 部署复杂度 | 维护成本 |
 |----------|----------|----------|----------|----------|------------|----------|
 | `make` | 最快 (30s) | 中等 (200MB) | 低 (100MB) | 不适用 | 简单 | 低 |
@@ -705,6 +897,16 @@ endef
 | `make source-dist` | 快 (40s) | 小 (~5MB) | 低 (100MB) | 小 (~5MB) | 简单 | 低 |
 | `make package-generic-unix` | 慢 (120s) | 最小 (15.51MB) | 高 (200MB) | 最小 (15.51MB) | 简单 | 低 |
 | `make install` | 中等 (75s) | 中等 (250MB) | 低 (100MB) | 不适用 | 复杂 | 高 |
+
+#### 开发调试命令
+
+| 命令 | 启动时间 | 用途 | 交互性 |
+|------|----------|------|--------|
+| `make run-broker` | 快 (5s) | 开发调试 | 前台，可查看日志 |
+| `make run-broker PLUGINS=...` | 快 (5s) | 插件测试 | 前台，指定插件 |
+| `make shell` | 最快 (2s) | 模块调试 | 交互式 Erlang Shell |
+| `make run-background-broker` | 快 (5s) | 自动化测试 | 后台运行 |
+| `make run-node` | 最快 (2s) | Erlang 调试 | 裸节点，无 RabbitMQ |
 
 ---
 
@@ -896,7 +1098,9 @@ sudo chown -R rabbitmq:rabbitmq /opt/rabbitmq
 
 ## 总结与建议
 
-### 编译方式选择矩阵
+### 命令选择矩阵
+
+#### 构建场景
 
 | 场景 | 推荐方式 | 理由 |
 |------|----------|------|
@@ -907,16 +1111,28 @@ sudo chown -R rabbitmq:rabbitmq /opt/rabbitmq
 | **版本发布** | `make source-dist` | 官方发布流程，可复现归档 |
 | **容器部署** | `make package-generic-unix` | 自包含，标准化 |
 | **生产部署** | `make package-generic-unix` 或 `make install` | 稳定，便于管理 |
+| **自定义安装** | `make install PREFIX=/opt/rabbitmq` | 指定安装路径 |
 | **插件分发** | `make dist DIST_AS_EZS=true` | 压缩，便于传输 |
 | **CI/CD** | `make package-generic-unix` | 可重现，标准化 |
+
+#### 开发调试场景
+
+| 场景 | 推荐方式 | 理由 |
+|------|----------|------|
+| **日常开发调试** | `make run-broker` | 前台运行，实时查看日志 |
+| **插件功能验证** | `make run-broker PLUGINS="plugin_name"` | 按需加载插件 |
+| **模块级调试** | `make shell` | 交互式测试函数 |
+| **自动化测试** | `make run-background-broker` | 后台运行，脚本控制 |
+| **Erlang 底层调试** | `make run-node` | 不启动 RabbitMQ 应用 |
 
 ### 关键技术洞察
 
 1. **EZ 格式是王道** - 对于插件分发和热加载
 2. **通用包最实用** - 对于生产部署和容器化
 3. **源码包是基础** - `source-dist` 是 `package-generic-unix` 的前置依赖
-4. **增量编译是关键** - 对于开发效率
-5. **构建系统很灵活** - 支持高度定制
+4. **开发调试用 run-broker** - 比 `sbin/rabbitmq-server` 更方便
+5. **增量编译是关键** - 对于开发效率
+6. **构建系统很灵活** - 支持高度定制
 6. **标准化很重要** - 遵循 Unix 和 Erlang 标准
 
 RabbitMQ 的构建系统设计精良，通过不同的编译命令满足了从开发到生产的各种需求。理解这些编译方式的原理和最佳实践，将显著提升 RabbitMQ 的开发、部署和运维效率。

@@ -1,6 +1,138 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>测试 Giscus 评论功能</title>
+    <url>/2024/01/17/test-giscus-comments/</url>
+    <content><![CDATA[<h1 id="测试评论功能"><a href="#测试评论功能" class="headerlink" title="测试评论功能"></a>测试评论功能</h1><p>这是一篇测试文章，用于验证 Giscus 评论系统是否正常工作。</p>
+<h2 id="功能测试"><a href="#功能测试" class="headerlink" title="功能测试"></a>功能测试</h2><ul>
+<li>✅ 评论功能</li>
+<li>✅ 点赞&#x2F;表情反应</li>
+<li>✅ GitHub 账号登录</li>
+</ul>
+<h2 id="请在下方评论区测试"><a href="#请在下方评论区测试" class="headerlink" title="请在下方评论区测试"></a>请在下方评论区测试</h2><p>滚动到页面底部，您应该能看到评论区。</p>
+<p>如果看到 “使用 GitHub 登录” 的提示，说明 Giscus 已正确加载。</p>
+]]></content>
+      <categories>
+        <category>测试</category>
+      </categories>
+      <tags>
+        <tag>Test</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Erlang 进程链接与监视器（中文版）</title>
+    <url>/2026/01/16/erlang-erlang-links-and-monitors-cn/</url>
+    <content><![CDATA[<h1 id="用于监督的链接和监视器"><a href="#用于监督的链接和监视器" class="headerlink" title="用于监督的链接和监视器"></a>用于监督的链接和监视器</h1><p>当进程相互依赖时，我们基本上有两种选择：让它们同生共死，或者让一个进程在另一个进程崩溃时得到通知。第三章讨论的 Erlang “任其崩溃”哲学，使我们倾向于后一种选择。</p>
+<p>链接的进程形成一个组，默认情况下会一起崩溃。如果其中一个链接的进程异常退出，其组中的所有其他进程都会收到 <code>EXIT</code> 信号并一起崩溃。监视器允许一个进程监视另一个进程，而不会自动被耦合到同一个组中。</p>
+<span id="more"></span>
+
+<h2 id="链接（Links）"><a href="#链接（Links）" class="headerlink" title="链接（Links）"></a>链接（Links）</h2><p>链接是双向的。如果两个进程被链接，它们被称为属于同一个链接集。如果其中一个异常终止，退出信号会传播到属于其链接集的所有进程。</p>
+<p>设置两个进程之间的链接，可以使用以下 BIF：</p>
+<ul>
+<li><p><code>link(Pid)</code> 在调用进程和进程标识符为 <code>Pid</code> 的进程之间建立双向链接。</p>
+</li>
+<li><p><code>spawn_link(Module, Function, Args)</code> 原子地生成并链接到一个进程。这相当于生成一个进程并链接到它，但是以原子方式完成，因此不存在生成的进程在链接建立之前死亡的风险。</p>
+</li>
+<li><p><code>unlink(Pid)</code> 移除调用进程和进程标识符为 <code>Pid</code> 的进程之间的任何链接。</p>
+</li>
+</ul>
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>&gt; Pid = spawn(<span class="keyword">fun</span>() -&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span> <span class="keyword">end</span>).</span><br><span class="line">&lt;<span class="number">0.25</span>.<span class="number">0</span>&gt;</span><br><span class="line"><span class="number">2</span>&gt; link(Pid).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="number">3</span>&gt; exit(Pid, kill).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line">** exception exit: killed</span><br></pre></td></tr></table></figure>
+
+<p>在这个例子中，链接到生成的进程然后发送 kill 信号会导致生成的进程和 shell 都崩溃。</p>
+<h2 id="捕获退出（Trapping-Exits）"><a href="#捕获退出（Trapping-Exits）" class="headerlink" title="捕获退出（Trapping Exits）"></a>捕获退出（Trapping Exits）</h2><p>进程可以通过设置以下标志来捕获退出信号：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">process_flag</span><span class="params">(trap_exit, true)</span></span></span><br></pre></td></tr></table></figure>
+
+<p>当一个进程正在捕获退出时，退出信号会被转换成 <code>{&#39;EXIT&#39;, Pid, Reason}</code> 形式的消息，可以在普通的 receive 语句中处理。</p>
+<h3 id="示例-1"><a href="#示例-1" class="headerlink" title="示例"></a>示例</h3><figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>&gt; process_flag(trap_exit, <span class="literal">true</span>).</span><br><span class="line"><span class="literal">false</span></span><br><span class="line"><span class="number">2</span>&gt; Pid = spawn_link(<span class="keyword">fun</span>() -&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span> <span class="keyword">end</span>).</span><br><span class="line">&lt;<span class="number">0.35</span>.<span class="number">0</span>&gt;</span><br><span class="line"><span class="number">3</span>&gt; exit(Pid, reason).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="number">4</span>&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span>.</span><br><span class="line">&#123;&#x27;EXIT&#x27;,&lt;<span class="number">0.35</span>.<span class="number">0</span>&gt;,reason&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="表-2-1-传播语义"><a href="#表-2-1-传播语义" class="headerlink" title="表 2-1. 传播语义"></a>表 2-1. 传播语义</h2><table>
+<thead>
+<tr>
+<th>原因</th>
+<th>捕获退出 (<code>trap_exit=true</code>)</th>
+<th>不捕获退出</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>normal</code></td>
+<td>接收 <code>{&#39;EXIT&#39;, Pid, normal}</code></td>
+<td>无事发生</td>
+</tr>
+<tr>
+<td><code>kill</code></td>
+<td>以原因 <code>killed</code> 终止</td>
+<td>以原因 <code>killed</code> 终止</td>
+</tr>
+<tr>
+<td>其他</td>
+<td>接收 <code>{&#39;EXIT&#39;, Pid, Other}</code></td>
+<td>以原因 <code>Other</code> 终止</td>
+</tr>
+</tbody></table>
+<h2 id="监视器（Monitors）"><a href="#监视器（Monitors）" class="headerlink" title="监视器（Monitors）"></a>监视器（Monitors）</h2><p>与链接不同，监视器是单向的。当被监视的进程终止时，监视进程会在其邮箱中收到一条 <code>{&#39;DOWN&#39;, Reference, process, Pid, Reason}</code> 消息，但不会向相反方向发送信号。</p>
+<p>使用 BIF 设置监视器：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line">Reference = monitor(process, Pid)</span><br></pre></td></tr></table></figure>
+
+<p>如果设置了多个监视器，<code>Reference</code> 可用于标识特定的监视器。</p>
+<p>要移除监视器，使用：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">demonitor</span><span class="params">(Reference)</span></span></span><br></pre></td></tr></table></figure>
+
+<h3 id="监视器与链接对比"><a href="#监视器与链接对比" class="headerlink" title="监视器与链接对比"></a>监视器与链接对比</h3><table>
+<thead>
+<tr>
+<th>特性</th>
+<th>链接</th>
+<th>监视器</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>方向性</td>
+<td>双向</td>
+<td>单向</td>
+</tr>
+<tr>
+<td>默认行为</td>
+<td>一起崩溃</td>
+<td>退出时发送消息</td>
+</tr>
+<tr>
+<td>信号传播</td>
+<td>双向</td>
+<td>单向</td>
+</tr>
+<tr>
+<td>设置函数</td>
+<td><code>link/1</code></td>
+<td><code>monitor/2</code></td>
+</tr>
+<tr>
+<td>移除函数</td>
+<td><code>unlink/1</code></td>
+<td><code>demonitor/1</code></td>
+</tr>
+</tbody></table>
+<h3 id="示例-2"><a href="#示例-2" class="headerlink" title="示例"></a>示例</h3><figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>&gt; Pid = spawn(<span class="keyword">fun</span>() -&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span> <span class="keyword">end</span>).</span><br><span class="line">&lt;<span class="number">0.25</span>.<span class="number">0</span>&gt;</span><br><span class="line"><span class="number">2</span>&gt; Ref = monitor(process, Pid).</span><br><span class="line">#Ref&lt;<span class="number">0.0</span>.<span class="number">0.26</span>&gt;</span><br><span class="line"><span class="number">3</span>&gt; exit(Pid, reason).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="number">4</span>&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span>.</span><br><span class="line">&#123;&#x27;DOWN&#x27;,#Ref&lt;<span class="number">0.0</span>.<span class="number">0.26</span>&gt;,process,&lt;<span class="number">0.25</span>.<span class="number">0</span>&gt;,reason&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li><strong>链接</strong> 在进程之间创建双向连接。当一个进程死亡时，所有链接的进程都会收到退出信号。</li>
+<li><strong>监视器</strong> 创建单向观察。当被监视的进程终止时，监视进程会收到 <code>&#39;DOWN&#39;</code> 消息。</li>
+<li>使用 <code>process_flag(trap_exit, true)</code> 将退出信号转换为消息。</li>
+<li><code>kill</code> 原因无法被捕获，总是会终止进程。</li>
+</ul>
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>Erlang</category>
+      </categories>
+      <tags>
+        <tag>Erlang</tag>
+        <tag>OTP</tag>
+        <tag>并发编程</tag>
+        <tag>进程链接</tag>
+        <tag>监视器</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Erlang 进程链接与监视器</title>
     <url>/2026/01/16/erlang-erlang-links-and-monitors/</url>
     <content><![CDATA[<h1 id="Links-and-Monitors-for-Supervision"><a href="#Links-and-Monitors-for-Supervision" class="headerlink" title="Links and Monitors for Supervision"></a>Links and Monitors for Supervision</h1><p>When processes depend on each other, we have essentially two choices: to have them live and die together, or to let one process be informed when another one crashes. The “let it fail” philosophy of Erlang, discussed in Chapter 3, leads us to a preference for the latter alternative.</p>
@@ -111,6 +243,307 @@
         <tag>并发编程</tag>
         <tag>进程链接</tag>
         <tag>监视器</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>第四章：通用型服务器 gen_server</title>
+    <url>/2024/01/18/erlang-erlang-otp-gen-server/</url>
+    <content><![CDATA[<p>本文介绍 Erlang&#x2F;OTP 中的通用型服务器行为模式 gen_server，这是 OTP 框架中最常用的 behavior 之一。</p>
+<span id="more"></span>
+
+<h2 id="gen-server-概述"><a href="#gen-server-概述" class="headerlink" title="gen_server 概述"></a>gen_server 概述</h2><p>gen_server 是 OTP 提供的通用服务器行为模式，它封装了客户端-服务器模型中的常见模式，让开发者可以专注于业务逻辑而不是底层的进程通信细节。</p>
+<p>使用 gen_server 的优势：</p>
+<ul>
+<li>标准化的服务器实现模式</li>
+<li>内置的错误处理机制</li>
+<li>支持同步和异步消息传递</li>
+<li>与 OTP 监督树无缝集成</li>
+</ul>
+<h2 id="behavior-指令"><a href="#behavior-指令" class="headerlink" title="behavior 指令"></a>behavior 指令</h2><p>要实现一个 gen_server，需要在模块中声明 behavior：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="keyword">-module</span><span class="params">(my_server)</span>.</span><br><span class="line"><span class="keyword">-behaviour</span><span class="params">(gen_server)</span>.</span><br><span class="line"></span><br><span class="line"><span class="comment">%% API</span></span><br><span class="line"><span class="keyword">-export</span><span class="params">([start_link/<span class="number">0</span>, stop/<span class="number">0</span>])</span>.</span><br><span class="line"></span><br><span class="line"><span class="comment">%% gen_server 回调函数</span></span><br><span class="line"><span class="keyword">-export</span><span class="params">([init/<span class="number">1</span>, handle_call/<span class="number">3</span>, handle_cast/<span class="number">2</span>, handle_info/<span class="number">2</span>,</span></span><br><span class="line"><span class="params">         terminate/<span class="number">2</span>, code_change/<span class="number">3</span>])</span>.</span><br></pre></td></tr></table></figure>
+
+<h2 id="启动一个-server"><a href="#启动一个-server" class="headerlink" title="启动一个 server"></a>启动一个 server</h2><p>gen_server 提供了多种启动函数：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="comment">%% 启动一个匿名服务器</span></span><br><span class="line">gen_server:start_link(Module, Args, Options)</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 启动一个命名服务器（本地注册）</span></span><br><span class="line">gen_server:start_link(&#123;local, Name&#125;, Module, Args, Options)</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 启动一个命名服务器（全局注册）</span></span><br><span class="line">gen_server:start_link(&#123;global, Name&#125;, Module, Args, Options)</span><br></pre></td></tr></table></figure>
+
+<p>启动时会调用 <code>init/1</code> 回调函数：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">init</span><span class="params">(Args)</span> -&gt;</span></span><br><span class="line">    <span class="comment">%% 初始化服务器状态</span></span><br><span class="line">    State = #state&#123;&#125;,</span><br><span class="line">    &#123;ok, State&#125;.</span><br></pre></td></tr></table></figure>
+
+<p><code>init/1</code> 可以返回：</p>
+<ul>
+<li><code>{ok, State}</code> - 正常启动</li>
+<li><code>{ok, State, Timeout}</code> - 启动并设置超时</li>
+<li><code>{ok, State, hibernate}</code> - 启动并进入休眠</li>
+<li><code>{stop, Reason}</code> - 启动失败</li>
+<li><code>ignore</code> - 忽略启动</li>
+</ul>
+<h2 id="消息传递"><a href="#消息传递" class="headerlink" title="消息传递"></a>消息传递</h2><p>gen_server 支持多种消息传递方式：</p>
+<p><img src="/images/erlang_otp/gen_server_flow.svg" alt="gen_server 消息传递流程"></p>
+<h3 id="同步式消息传递"><a href="#同步式消息传递" class="headerlink" title="同步式消息传递"></a>同步式消息传递</h3><p>使用 <code>gen_server:call/2,3</code> 发送同步请求，客户端会阻塞等待响应：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="comment">%% 客户端调用</span></span><br><span class="line">Result = gen_server:call(ServerRef, Request),</span><br><span class="line">Result = gen_server:call(ServerRef, Request, Timeout).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 服务器端处理</span></span><br><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(Request, From, State)</span> -&gt;</span></span><br><span class="line">    Reply = do_something(Request),</span><br><span class="line">    &#123;reply, Reply, State&#125;.</span><br></pre></td></tr></table></figure>
+
+<p><code>handle_call/3</code> 的参数：</p>
+<ul>
+<li><code>Request</code> - 客户端发送的请求</li>
+<li><code>From</code> - 调用者信息 <code>{Pid, Tag}</code></li>
+<li><code>State</code> - 当前服务器状态</li>
+</ul>
+<h3 id="异步式消息传递"><a href="#异步式消息传递" class="headerlink" title="异步式消息传递"></a>异步式消息传递</h3><p>使用 <code>gen_server:cast/2</code> 发送异步请求，客户端不等待响应：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="comment">%% 客户端调用</span></span><br><span class="line">ok = gen_server:cast(ServerRef, Msg).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 服务器端处理</span></span><br><span class="line"><span class="function"><span class="title">handle_cast</span><span class="params">(Msg, State)</span> -&gt;</span></span><br><span class="line">    NewState = process_msg(Msg, State),</span><br><span class="line">    &#123;noreply, NewState&#125;.</span><br></pre></td></tr></table></figure>
+
+<h3 id="其他消息"><a href="#其他消息" class="headerlink" title="其他消息"></a>其他消息</h3><p>服务器可能收到不是通过 <code>call</code> 或 <code>cast</code> 发送的消息，这些消息由 <code>handle_info/2</code> 处理：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">handle_info</span><span class="params">(Info, State)</span> -&gt;</span></span><br><span class="line">    <span class="keyword">case</span> Info <span class="keyword">of</span></span><br><span class="line">        timeout -&gt;</span><br><span class="line">            <span class="comment">%% 处理超时</span></span><br><span class="line">            &#123;noreply, State&#125;;</span><br><span class="line">        &#123;nodedown, Node&#125; -&gt;</span><br><span class="line">            <span class="comment">%% 处理节点断开</span></span><br><span class="line">            &#123;noreply, State&#125;;</span><br><span class="line">        _Other -&gt;</span><br><span class="line">            <span class="comment">%% 忽略未知消息</span></span><br><span class="line">            &#123;noreply, State&#125;</span><br><span class="line">    <span class="keyword">end</span>.</span><br></pre></td></tr></table></figure>
+
+<h3 id="未处理的消息"><a href="#未处理的消息" class="headerlink" title="未处理的消息"></a>未处理的消息</h3><p>良好的实践是在 <code>handle_info/2</code> 中记录未预期的消息：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">handle_info</span><span class="params">(Msg, State)</span> -&gt;</span></span><br><span class="line">    error_logger:warning_msg(<span class="string">&quot;Unexpected message: ~p~n&quot;</span>, [Msg]),</span><br><span class="line">    &#123;noreply, State&#125;.</span><br></pre></td></tr></table></figure>
+
+<h2 id="同步客户端"><a href="#同步客户端" class="headerlink" title="同步客户端"></a>同步客户端</h2><p>实现一个完整的同步客户端 API：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="keyword">-module</span><span class="params">(kv_store)</span>.</span><br><span class="line"><span class="keyword">-behaviour</span><span class="params">(gen_server)</span>.</span><br><span class="line"></span><br><span class="line"><span class="comment">%% API</span></span><br><span class="line"><span class="keyword">-export</span><span class="params">([start_link/<span class="number">0</span>, get/<span class="number">1</span>, put/<span class="number">2</span>, delete/<span class="number">1</span>])</span>.</span><br><span class="line"></span><br><span class="line"><span class="comment">%% gen_server callbacks</span></span><br><span class="line"><span class="keyword">-export</span><span class="params">([init/<span class="number">1</span>, handle_call/<span class="number">3</span>, handle_cast/<span class="number">2</span>, handle_info/<span class="number">2</span>,</span></span><br><span class="line"><span class="params">         terminate/<span class="number">2</span>, code_change/<span class="number">3</span>])</span>.</span><br><span class="line"></span><br><span class="line"><span class="keyword">-record</span><span class="params">(state, &#123;store = #&#123;&#125;&#125;)</span>.</span><br><span class="line"></span><br><span class="line"><span class="comment">%%% API 函数</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">start_link</span><span class="params">()</span> -&gt;</span></span><br><span class="line">    gen_server:start_link(&#123;local, ?MODULE&#125;, ?MODULE, [], []).</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">get</span><span class="params">(Key)</span> -&gt;</span></span><br><span class="line">    gen_server:call(?MODULE, &#123;get, Key&#125;).</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">put</span><span class="params">(Key, Value)</span> -&gt;</span></span><br><span class="line">    gen_server:call(?MODULE, &#123;put, Key, Value&#125;).</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">delete</span><span class="params">(Key)</span> -&gt;</span></span><br><span class="line">    gen_server:call(?MODULE, &#123;delete, Key&#125;).</span><br><span class="line"></span><br><span class="line"><span class="comment">%%% 回调函数</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">init</span><span class="params">([])</span> -&gt;</span></span><br><span class="line">    &#123;ok, #state&#123;&#125;&#125;.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(&#123;get, Key&#125;, _From, State = #state&#123;store = Store&#125;)</span> -&gt;</span></span><br><span class="line">    Reply = maps:get(Key, Store, undefined),</span><br><span class="line">    &#123;reply, Reply, State&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(&#123;put, Key, Value&#125;, _From, State = #state&#123;store = Store&#125;)</span> -&gt;</span></span><br><span class="line">    NewStore = maps:put(Key, Value, Store),</span><br><span class="line">    &#123;reply, ok, State#state&#123;store = NewStore&#125;&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(&#123;delete, Key&#125;, _From, State = #state&#123;store = Store&#125;)</span> -&gt;</span></span><br><span class="line">    NewStore = maps:remove(Key, Store),</span><br><span class="line">    &#123;reply, ok, State#state&#123;store = NewStore&#125;&#125;.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_cast</span><span class="params">(_Msg, State)</span> -&gt;</span></span><br><span class="line">    &#123;noreply, State&#125;.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_info</span><span class="params">(_Info, State)</span> -&gt;</span></span><br><span class="line">    &#123;noreply, State&#125;.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">terminate</span><span class="params">(_Reason, _State)</span> -&gt;</span></span><br><span class="line">    ok.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">code_change</span><span class="params">(_OldVsn, State, _Extra)</span> -&gt;</span></span><br><span class="line">    &#123;ok, State&#125;.</span><br></pre></td></tr></table></figure>
+
+<h2 id="终止"><a href="#终止" class="headerlink" title="终止"></a>终止</h2><p>服务器终止时会调用 <code>terminate/2</code>：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">terminate</span><span class="params">(Reason, State)</span> -&gt;</span></span><br><span class="line">    <span class="comment">%% 清理资源</span></span><br><span class="line">    cleanup(State),</span><br><span class="line">    ok.</span><br></pre></td></tr></table></figure>
+
+<p>终止原因可能是：</p>
+<ul>
+<li><code>normal</code> - 正常终止</li>
+<li><code>shutdown</code> - 监督者要求关闭</li>
+<li><code>{shutdown, Term}</code> - 带额外信息的关闭</li>
+<li>其他值 - 异常终止</li>
+</ul>
+<h2 id="调用超时"><a href="#调用超时" class="headerlink" title="调用超时"></a>调用超时</h2><p><code>gen_server:call/3</code> 支持设置超时时间：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="comment">%% 默认超时 5000ms</span></span><br><span class="line">gen_server:call(Server, Request).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 自定义超时</span></span><br><span class="line">gen_server:call(Server, Request, <span class="number">10000</span>).  <span class="comment">%% 10秒</span></span><br><span class="line"></span><br><span class="line"><span class="comment">%% 无限等待</span></span><br><span class="line">gen_server:call(Server, Request, infinity).</span><br></pre></td></tr></table></figure>
+
+<p>超时后客户端会收到 <code>exit</code> 信号：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="keyword">try</span></span><br><span class="line">    gen_server:call(Server, Request, <span class="number">5000</span>)</span><br><span class="line"><span class="keyword">catch</span></span><br><span class="line">    exit:&#123;timeout, _&#125; -&gt;</span><br><span class="line">        &#123;error, timeout&#125;</span><br><span class="line"><span class="keyword">end</span>.</span><br></pre></td></tr></table></figure>
+
+<h2 id="死锁"><a href="#死锁" class="headerlink" title="死锁"></a>死锁</h2><p>避免 gen_server 死锁的几个原则：</p>
+<ol>
+<li><strong>不要在回调函数中调用自己</strong>：</li>
+</ol>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="comment">%% 错误示例 - 会导致死锁</span></span><br><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(get_twice, _From, State)</span> -&gt;</span></span><br><span class="line">    Result1 = gen_server:call(self(), get),  <span class="comment">%% 死锁！</span></span><br><span class="line">    &#123;reply, Result1, State&#125;.</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li><strong>避免循环调用</strong>：</li>
+</ol>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="comment">%% Server A 调用 Server B，Server B 又调用 Server A</span></span><br><span class="line"><span class="comment">%% 这会导致死锁</span></span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li><strong>使用 cast 代替 call 打破循环</strong></li>
+</ol>
+<h2 id="通用型-server-的超时问题"><a href="#通用型-server-的超时问题" class="headerlink" title="通用型 server 的超时问题"></a>通用型 server 的超时问题</h2><p>可以在回调函数中返回超时值：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">init</span><span class="params">([])</span> -&gt;</span></span><br><span class="line">    &#123;ok, #state&#123;&#125;, <span class="number">5000</span>&#125;.  <span class="comment">%% 5秒后触发 timeout</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(Request, _From, State)</span> -&gt;</span></span><br><span class="line">    &#123;reply, ok, State, <span class="number">5000</span>&#125;.  <span class="comment">%% 重置超时</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_info</span><span class="params">(timeout, State)</span> -&gt;</span></span><br><span class="line">    <span class="comment">%% 处理超时，例如执行定期任务</span></span><br><span class="line">    do_periodic_work(),</span><br><span class="line">    &#123;noreply, State, <span class="number">5000</span>&#125;.  <span class="comment">%% 继续等待下一个超时</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="使-behavior-休眠"><a href="#使-behavior-休眠" class="headerlink" title="使 behavior 休眠"></a>使 behavior 休眠</h2><p>当服务器空闲时，可以让它进入休眠状态以释放内存：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(Request, _From, State)</span> -&gt;</span></span><br><span class="line">    &#123;reply, ok, State, hibernate&#125;.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_cast</span><span class="params">(Msg, State)</span> -&gt;</span></span><br><span class="line">    &#123;noreply, State, hibernate&#125;.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_info</span><span class="params">(Info, State)</span> -&gt;</span></span><br><span class="line">    &#123;noreply, State, hibernate&#125;.</span><br></pre></td></tr></table></figure>
+
+<p>休眠时，进程会进行垃圾回收并最小化内存占用。收到新消息时自动唤醒。</p>
+<h2 id="全局化"><a href="#全局化" class="headerlink" title="全局化"></a>全局化</h2><p>使用全局名称注册 gen_server：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="comment">%% 全局注册启动</span></span><br><span class="line">gen_server:start_link(&#123;global, my_global_server&#125;, ?MODULE, [], []).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 全局调用</span></span><br><span class="line">gen_server:call(&#123;global, my_global_server&#125;, Request).</span><br><span class="line">gen_server:cast(&#123;global, my_global_server&#125;, Msg).</span><br></pre></td></tr></table></figure>
+
+<p>也可以使用 <code>via</code> 元组与自定义注册表：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="comment">%% 使用 gproc 作为注册表</span></span><br><span class="line">gen_server:start_link(&#123;via, gproc, &#123;n, l, my_server&#125;&#125;, ?MODULE, [], []).</span><br></pre></td></tr></table></figure>
+
+<h2 id="链接-behavior"><a href="#链接-behavior" class="headerlink" title="链接 behavior"></a>链接 behavior</h2><p>gen_server 通常与监督者链接使用：</p>
+<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="comment">%% 在监督者中定义子规范</span></span><br><span class="line"><span class="function"><span class="title">init</span><span class="params">([])</span> -&gt;</span></span><br><span class="line">    Children = [</span><br><span class="line">        #&#123;id =&gt; my_server,</span><br><span class="line">          start =&gt; &#123;my_server, start_link, []&#125;,</span><br><span class="line">          restart =&gt; permanent,</span><br><span class="line">          shutdown =&gt; <span class="number">5000</span>,</span><br><span class="line">          type =&gt; worker,</span><br><span class="line">          modules =&gt; [my_server]&#125;</span><br><span class="line">    ],</span><br><span class="line">    &#123;ok, &#123;#&#123;strategy =&gt; one_for_one&#125;, Children&#125;&#125;.</span><br></pre></td></tr></table></figure>
+
+<h2 id="gen-server-生命周期"><a href="#gen-server-生命周期" class="headerlink" title="gen_server 生命周期"></a>gen_server 生命周期</h2><p><img src="/images/erlang_otp/gen_server_lifecycle.svg" alt="gen_server 生命周期"></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>gen_server 是 Erlang&#x2F;OTP 中最重要的 behavior 之一：</p>
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>同步调用</td>
+<td><code>call/2,3</code> + <code>handle_call/3</code></td>
+</tr>
+<tr>
+<td>异步调用</td>
+<td><code>cast/2</code> + <code>handle_cast/2</code></td>
+</tr>
+<tr>
+<td>其他消息</td>
+<td><code>handle_info/2</code></td>
+</tr>
+<tr>
+<td>生命周期</td>
+<td><code>init/1</code> → 运行 → <code>terminate/2</code></td>
+</tr>
+<tr>
+<td>超时处理</td>
+<td>回调返回值中指定</td>
+</tr>
+<tr>
+<td>休眠</td>
+<td><code>hibernate</code> 选项</td>
+</tr>
+</tbody></table>
+<p>掌握 gen_server 是学习 OTP 的基础，它为构建健壮的并发应用提供了标准化的模式。</p>
+<h2 id="接下来是什么"><a href="#接下来是什么" class="headerlink" title="接下来是什么"></a>接下来是什么</h2><p>下一章我们将学习 <strong>gen_statem</strong>（有限状态机）行为模式，它适用于需要状态转换的场景。</p>
+<hr>
+<h2 id="相关资源"><a href="#相关资源" class="headerlink" title="相关资源"></a>相关资源</h2><ul>
+<li><a href="https://www.erlang.org/doc/man/gen_server.html">Erlang gen_server 官方文档</a></li>
+<li><a href="https://www.erlang.org/doc/design_principles/gen_server_concepts.html">OTP Design Principles</a></li>
+</ul>
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>Erlang/OTP</category>
+      </categories>
+      <tags>
+        <tag>Erlang</tag>
+        <tag>OTP</tag>
+        <tag>并发编程</tag>
+        <tag>gen_server</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>RabbitMQ 服务器编译指南</title>
+    <url>/2026/01/16/rabbitmq-rabbitmq-compilation-guide/</url>
+    <content><![CDATA[<h1 id="RabbitMQ-服务器编译指南"><a href="#RabbitMQ-服务器编译指南" class="headerlink" title="RabbitMQ 服务器编译指南"></a>RabbitMQ 服务器编译指南</h1><p>本文档记录了在 macOS (Apple Silicon) 环境下编译 RabbitMQ 服务器的完整过程，包括遇到的问题和解决方案。</p>
+<span id="more"></span>
+
+<h2 id="环境信息"><a href="#环境信息" class="headerlink" title="环境信息"></a>环境信息</h2><ul>
+<li><strong>操作系统</strong>: macOS (Darwin)</li>
+<li><strong>架构</strong>: Apple Silicon (ARM64)</li>
+<li><strong>Shell</strong>: bash</li>
+<li><strong>包管理器</strong>: Homebrew</li>
+</ul>
+<h2 id="系统要求"><a href="#系统要求" class="headerlink" title="系统要求"></a>系统要求</h2><h3 id="必需工具"><a href="#必需工具" class="headerlink" title="必需工具"></a>必需工具</h3><ol>
+<li><p><strong>GNU Make 4+</strong></p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">brew install make</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>Erlang 27.x</strong></p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">brew install erlang@27</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>p7zip (7z 命令)</strong></p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">brew install p7zip</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>Git</strong></p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">brew install git</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="可选工具"><a href="#可选工具" class="headerlink" title="可选工具"></a>可选工具</h3><ul>
+<li><strong>Elixir</strong> (用于 CLI 工具)</li>
+<li><strong>rebar3</strong> (Erlang 构建工具)</li>
+</ul>
+<h2 id="编译过程"><a href="#编译过程" class="headerlink" title="编译过程"></a>编译过程</h2><h3 id="1-环境准备"><a href="#1-环境准备" class="headerlink" title="1. 环境准备"></a>1. 环境准备</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 克隆 RabbitMQ 服务器源码</span></span><br><span class="line">git <span class="built_in">clone</span> https://github.com/rabbitmq/rabbitmq-server.git</span><br><span class="line"><span class="built_in">cd</span> rabbitmq-server</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置环境变量</span></span><br><span class="line"><span class="built_in">export</span> PATH=<span class="string">&quot;/opt/homebrew/opt/erlang@27/bin:/opt/homebrew/bin:<span class="variable">$PATH</span>&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="2-清理和编译"><a href="#2-清理和编译" class="headerlink" title="2. 清理和编译"></a>2. 清理和编译</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 清理所有构建产物</span></span><br><span class="line">git clean -xfffd</span><br><span class="line">gmake clean</span><br><span class="line">gmake distclean</span><br><span class="line"></span><br><span class="line"><span class="comment"># 开始编译（推荐使用单线程避免并发问题）</span></span><br><span class="line">gmake -j1</span><br></pre></td></tr></table></figure>
+
+<h2 id="遇到的问题和解决方案"><a href="#遇到的问题和解决方案" class="headerlink" title="遇到的问题和解决方案"></a>遇到的问题和解决方案</h2><h3 id="问题-1-Erlang-版本不兼容"><a href="#问题-1-Erlang-版本不兼容" class="headerlink" title="问题 1: Erlang 版本不兼容"></a>问题 1: Erlang 版本不兼容</h3><p><strong>错误信息</strong>:</p>
+<figure class="highlight routeros"><table><tr><td class="code"><pre><span class="line">rabbit_data_coercion.erl:76:23: syntax <span class="built_in">error</span> before: <span class="string">&#x27;||&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>原因</strong>: RabbitMQ 4.x 使用了 Erlang 26+ 才支持的 map comprehension 语法，而系统安装的是 Erlang 25。</p>
+<p><strong>解决方案</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 卸载旧版本 Erlang</span></span><br><span class="line">brew uninstall erlang@25</span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装 Erlang 27</span></span><br><span class="line">brew install erlang@27</span><br><span class="line"></span><br><span class="line"><span class="comment"># 更新 PATH</span></span><br><span class="line"><span class="built_in">export</span> PATH=<span class="string">&quot;/opt/homebrew/opt/erlang@27/bin:<span class="variable">$PATH</span>&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>验证</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">erl -version</span><br><span class="line"><span class="comment"># 应该显示: Erlang (SMP,ASYNC_THREADS) (BEAM) emulator version 15.2.7.4</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 测试 map comprehension 语法</span></span><br><span class="line">erl -<span class="built_in">eval</span> <span class="string">&#x27;M = #&#123;a =&gt; 1, b =&gt; 2&#125;, R = #&#123;K =&gt; V || K := V &lt;- M&#125;, io:format(&quot;~p~n&quot;, [R]), halt().&#x27;</span> -noshell</span><br><span class="line"><span class="comment"># 应该输出: #&#123;a =&gt; 1,b =&gt; 2&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="问题-2-wxWidgets-兼容性问题"><a href="#问题-2-wxWidgets-兼容性问题" class="headerlink" title="问题 2: wxWidgets 兼容性问题"></a>问题 2: wxWidgets 兼容性问题</h3><p><strong>错误信息</strong>:</p>
+<figure class="highlight excel"><table><tr><td class="code"><pre><span class="line">observ<span class="symbol">er:st</span>art().</span><br><span class="line">=CRASH REPORT==== Symbol <span class="built_in">not</span> fou<span class="symbol">nd:</span> __ZNK8wxCursor10GetHotSpotEv</span><br></pre></td></tr></table></figure>
+
+<p><strong>原因</strong>: Erlang 27 与现有的 wxWidgets 版本不兼容。</p>
+<p><strong>解决方案</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 卸载 Erlang 27 和 wxWidgets</span></span><br><span class="line">brew uninstall erlang@27</span><br><span class="line">brew uninstall --ignore-dependencies wxwidgets</span><br><span class="line"></span><br><span class="line"><span class="comment"># 重新安装（这会自动安装兼容的 wxWidgets 版本）</span></span><br><span class="line">brew install erlang@27</span><br></pre></td></tr></table></figure>
+
+<p><strong>验证</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 测试 observer 是否正常工作</span></span><br><span class="line">erl -<span class="built_in">eval</span> <span class="string">&#x27;observer:start(), timer:sleep(2000), observer:stop(), halt().&#x27;</span></span><br><span class="line"><span class="comment"># 应该正常启动和关闭，无错误信息</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="问题-3-缺少-7z-命令"><a href="#问题-3-缺少-7z-命令" class="headerlink" title="问题 3: 缺少 7z 命令"></a>问题 3: 缺少 7z 命令</h3><p><strong>错误信息</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">/bin/sh: 7z: <span class="built_in">command</span> not found</span><br><span class="line">gmake[2]: *** [../../erlang.mk:3510: escript-zip] Error 127</span><br></pre></td></tr></table></figure>
+
+<p><strong>原因</strong>: RabbitMQ CLI 工具构建需要 7z 命令来创建 escript 归档。</p>
+<p><strong>解决方案</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 安装 p7zip</span></span><br><span class="line">brew install p7zip</span><br><span class="line"></span><br><span class="line"><span class="comment"># 验证安装</span></span><br><span class="line"><span class="built_in">which</span> 7z</span><br><span class="line"><span class="comment"># 应该输出: /opt/homebrew/bin/7z</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="问题-4-hex-core-依赖构建失败"><a href="#问题-4-hex-core-依赖构建失败" class="headerlink" title="问题 4: hex_core 依赖构建失败"></a>问题 4: hex_core 依赖构建失败</h3><p><strong>错误信息</strong>:</p>
+<figure class="highlight gams"><table><tr><td class="code"><pre><span class="line">gmake[<span class="number">2</span>]: *** <span class="keyword">No</span> targets specified <span class="keyword">and</span> <span class="keyword">no</span> makefile found.  Stop.</span><br><span class="line">touch: cannot touch <span class="string">&#x27;/Users/.../deps/hex_core/ebin/dep_built&#x27;</span>: <span class="keyword">No</span> such <span class="keyword">file</span> <span class="keyword">or</span> directory</span><br></pre></td></tr></table></figure>
+
+<p><strong>原因</strong>: hex_core 使用 rebar3 构建系统，但 erlang.mk 尝试用 make 构建它。</p>
+<p><strong>解决方案</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 手动编译 hex_core</span></span><br><span class="line"><span class="built_in">cd</span> deps/hex_core</span><br><span class="line"><span class="built_in">mkdir</span> -p ebin</span><br><span class="line">erlc -o ebin src/*.erl</span><br><span class="line"><span class="built_in">cp</span> src/hex_core.app.src ebin/hex_core.app</span><br><span class="line"><span class="built_in">touch</span> ebin/dep_built</span><br><span class="line"><span class="built_in">cd</span> ../..</span><br></pre></td></tr></table></figure>
+
+<h3 id="问题-5-ra-模块并发编译问题"><a href="#问题-5-ra-模块并发编译问题" class="headerlink" title="问题 5: ra 模块并发编译问题"></a>问题 5: ra 模块并发编译问题</h3><p><strong>错误信息</strong>:</p>
+<figure class="highlight vim"><table><tr><td class="code"><pre><span class="line">failed <span class="keyword">to</span> <span class="built_in">rename</span> .../ra_snapshot.bea# <span class="keyword">to</span> .../ra_snapshot.beam: <span class="keyword">no</span> such <span class="keyword">file</span> <span class="built_in">or</span> directory</span><br></pre></td></tr></table></figure>
+
+<p><strong>原因</strong>: 并发编译时文件操作冲突。</p>
+<p><strong>解决方案</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 使用单线程编译</span></span><br><span class="line">gmake -j1</span><br><span class="line"></span><br><span class="line"><span class="comment"># 或者清理 ra 目录后重新编译</span></span><br><span class="line"><span class="built_in">rm</span> -rf deps/ra/ebin</span><br><span class="line"><span class="built_in">mkdir</span> deps/ra/ebin</span><br><span class="line">gmake -j1 deps</span><br></pre></td></tr></table></figure>
+
+<h3 id="问题-6-Generic-Unix-包构建中的重复文件名错误"><a href="#问题-6-Generic-Unix-包构建中的重复文件名错误" class="headerlink" title="问题 6: Generic Unix 包构建中的重复文件名错误"></a>问题 6: Generic Unix 包构建中的重复文件名错误</h3><p><strong>错误信息</strong>:</p>
+<figure class="highlight subunit"><table><tr><td class="code"><pre><span class="line"><span class="keyword">ERROR:</span></span><br><span class="line"><span class="keyword"></span>Duplicate filename on disk:</span><br><span class="line">dep_built</span><br><span class="line">dep_built</span><br><span class="line">make[6]: *** [../../erlang.mk:3511: escript-zip] Error 2</span><br></pre></td></tr></table></figure>
+
+<p><strong>原因</strong>: 在创建 escript zip 文件时，多个依赖项中都包含 <code>dep_built</code> 文件，导致 7z 归档时文件名冲突。</p>
+<p><strong>解决方案</strong>:</p>
+<p>方法1 - 临时删除 dep_built 文件：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 删除所有 dep_built 文件</span></span><br><span class="line">find deps -name <span class="string">&quot;dep_built&quot;</span> -delete</span><br><span class="line"></span><br><span class="line"><span class="comment"># 然后构建包</span></span><br><span class="line">gmake package-generic-unix</span><br></pre></td></tr></table></figure>
+
+<p>方法2 - 修改 erlang.mk（永久解决）：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 在 erlang.mk 第3510-3515行，添加 filter-out 来排除 dep_built 文件</span></span><br><span class="line"><span class="comment"># 将：</span></span><br><span class="line"><span class="comment">#   $(subst $(DEPS_DIR)/,,$(addsuffix /*,$(wildcard \</span></span><br><span class="line"><span class="comment"># 改为：</span></span><br><span class="line"><span class="comment">#   $(filter-out %/dep_built,$(subst $(DEPS_DIR)/,,$(addsuffix /*,$(wildcard \</span></span><br></pre></td></tr></table></figure>
+
+<p>方法3 - 使用构建脚本：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 使用提供的自动化脚本</span></span><br><span class="line">./build_package.sh</span><br></pre></td></tr></table></figure>
+
+<p><strong>验证</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 检查生成的包文件</span></span><br><span class="line"><span class="built_in">ls</span> -la PACKAGES/rabbitmq-server-*.tar.xz</span><br></pre></td></tr></table></figure>
+
+<h2 id="包构建脚本"><a href="#包构建脚本" class="headerlink" title="包构建脚本"></a>包构建脚本</h2><p>创建 <code>build_package.sh</code> 脚本来自动化包构建过程：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"><span class="comment"># RabbitMQ Generic Unix Package Build Script</span></span><br><span class="line"><span class="built_in">set</span> -e</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;开始构建 RabbitMQ Generic Unix 包...&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置环境变量</span></span><br><span class="line"><span class="built_in">export</span> PATH=<span class="string">&quot;/opt/homebrew/opt/erlang@27/bin:/opt/homebrew/bin:<span class="variable">$PATH</span>&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 验证环境</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;验证构建环境...&quot;</span></span><br><span class="line"><span class="built_in">which</span> gmake || &#123; <span class="built_in">echo</span> <span class="string">&quot;错误: 未找到 gmake&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line"><span class="built_in">which</span> erl || &#123; <span class="built_in">echo</span> <span class="string">&quot;错误: 未找到 erlang&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line"><span class="built_in">which</span> 7z || &#123; <span class="built_in">echo</span> <span class="string">&quot;错误: 未找到 7z&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查 Erlang 版本</span></span><br><span class="line">ERL_VERSION=$(erl -<span class="built_in">eval</span> <span class="string">&#x27;io:format(&quot;~s&quot;, [erlang:system_info(otp_release)]), halt().&#x27;</span> -noshell)</span><br><span class="line"><span class="keyword">if</span> [[ <span class="string">&quot;<span class="variable">$ERL_VERSION</span>&quot;</span> &lt; <span class="string">&quot;27&quot;</span> ]]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;错误: 需要 Erlang 27+，当前版本: <span class="variable">$ERL_VERSION</span>&quot;</span></span><br><span class="line">    <span class="built_in">exit</span> 1</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;Erlang 版本: <span class="variable">$ERL_VERSION</span> ✓&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 清理可能导致问题的 dep_built 文件</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;清理 dep_built 文件...&quot;</span></span><br><span class="line">find deps -name <span class="string">&quot;dep_built&quot;</span> -delete 2&gt;/dev/null || <span class="literal">true</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 确保主项目已经构建</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;确保主项目已构建...&quot;</span></span><br><span class="line"><span class="keyword">if</span> [ ! -f <span class="string">&quot;sbin/rabbitmq-server&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;主项目未构建，开始构建...&quot;</span></span><br><span class="line">    gmake -j1</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 构建 generic-unix 包</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;构建 Generic Unix 包...&quot;</span></span><br><span class="line">gmake package-generic-unix</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;构建完成！&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查输出</span></span><br><span class="line">PACKAGE_DIR=<span class="string">&quot;PACKAGES&quot;</span></span><br><span class="line"><span class="keyword">if</span> [ -d <span class="string">&quot;<span class="variable">$PACKAGE_DIR</span>&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;生成的包文件:&quot;</span></span><br><span class="line">    <span class="built_in">ls</span> -la <span class="string">&quot;<span class="variable">$PACKAGE_DIR</span>&quot;</span>/rabbitmq-server-*.tar.xz 2&gt;/dev/null || <span class="built_in">echo</span> <span class="string">&quot;未找到 .tar.xz 文件&quot;</span></span><br><span class="line">    <span class="built_in">ls</span> -la <span class="string">&quot;<span class="variable">$PACKAGE_DIR</span>&quot;</span>/rabbitmq-server-*.tar.gz 2&gt;/dev/null || <span class="built_in">echo</span> <span class="string">&quot;未找到 .tar.gz 文件&quot;</span></span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;警告: 未找到 PACKAGES 目录&quot;</span></span><br><span class="line"><span class="keyword">fi</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="完整编译脚本"><a href="#完整编译脚本" class="headerlink" title="完整编译脚本"></a>完整编译脚本</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># RabbitMQ 服务器编译脚本</span></span><br><span class="line"><span class="built_in">set</span> -e</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;开始编译 RabbitMQ 服务器...&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置环境变量</span></span><br><span class="line"><span class="built_in">export</span> PATH=<span class="string">&quot;/opt/homebrew/opt/erlang@27/bin:/opt/homebrew/bin:<span class="variable">$PATH</span>&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 验证必需工具</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;验证构建工具...&quot;</span></span><br><span class="line"><span class="built_in">which</span> gmake || &#123; <span class="built_in">echo</span> <span class="string">&quot;错误: 未找到 gmake&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line"><span class="built_in">which</span> erl || &#123; <span class="built_in">echo</span> <span class="string">&quot;错误: 未找到 erlang&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line"><span class="built_in">which</span> 7z || &#123; <span class="built_in">echo</span> <span class="string">&quot;错误: 未找到 7z&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查 Erlang 版本</span></span><br><span class="line">ERL_VERSION=$(erl -<span class="built_in">eval</span> <span class="string">&#x27;io:format(&quot;~s&quot;, [erlang:system_info(otp_release)]), halt().&#x27;</span> -noshell)</span><br><span class="line"><span class="keyword">if</span> [[ <span class="string">&quot;<span class="variable">$ERL_VERSION</span>&quot;</span> &lt; <span class="string">&quot;27&quot;</span> ]]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;错误: 需要 Erlang 27+，当前版本: <span class="variable">$ERL_VERSION</span>&quot;</span></span><br><span class="line">    <span class="built_in">exit</span> 1</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;Erlang 版本: <span class="variable">$ERL_VERSION</span> ✓&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 清理构建产物</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;清理构建产物...&quot;</span></span><br><span class="line">git clean -xfffd</span><br><span class="line">gmake clean</span><br><span class="line">gmake distclean</span><br><span class="line"></span><br><span class="line"><span class="comment"># 手动构建 hex_core（如果需要）</span></span><br><span class="line"><span class="keyword">if</span> [ ! -f <span class="string">&quot;deps/hex_core/ebin/dep_built&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;手动构建 hex_core...&quot;</span></span><br><span class="line">    <span class="built_in">cd</span> deps/hex_core</span><br><span class="line">    <span class="built_in">mkdir</span> -p ebin</span><br><span class="line">    erlc -o ebin src/*.erl 2&gt;/dev/null || <span class="literal">true</span></span><br><span class="line">    <span class="built_in">cp</span> src/hex_core.app.src ebin/hex_core.app 2&gt;/dev/null || <span class="literal">true</span></span><br><span class="line">    <span class="built_in">touch</span> ebin/dep_built</span><br><span class="line">    <span class="built_in">cd</span> ../..</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 开始编译</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;开始编译 RabbitMQ...&quot;</span></span><br><span class="line">gmake -j1</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;编译完成！&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 验证编译结果</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;验证编译结果...&quot;</span></span><br><span class="line"><span class="keyword">if</span> [ -f <span class="string">&quot;sbin/rabbitmq-server&quot;</span> ] &amp;&amp; [ -f <span class="string">&quot;escript/rabbitmqctl&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;✓ 编译成功！&quot;</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;  - 服务器脚本: sbin/rabbitmq-server&quot;</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;  - 控制工具: escript/rabbitmqctl&quot;</span></span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;✗ 编译可能不完整，请检查错误信息&quot;</span></span><br><span class="line">    <span class="built_in">exit</span> 1</span><br><span class="line"><span class="keyword">fi</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="验证编译结果"><a href="#验证编译结果" class="headerlink" title="验证编译结果"></a>验证编译结果</h2><h3 id="检查生成的文件"><a href="#检查生成的文件" class="headerlink" title="检查生成的文件"></a>检查生成的文件</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 检查主要可执行文件</span></span><br><span class="line"><span class="built_in">ls</span> -la sbin/rabbitmq-server</span><br><span class="line"><span class="built_in">ls</span> -la escript/rabbitmqctl</span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查插件目录</span></span><br><span class="line"><span class="built_in">ls</span> -la plugins/</span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查 Erlang beam 文件</span></span><br><span class="line">find deps/rabbit/ebin -name <span class="string">&quot;*.beam&quot;</span> | <span class="built_in">head</span> -5</span><br></pre></td></tr></table></figure>
+
+<h3 id="运行测试"><a href="#运行测试" class="headerlink" title="运行测试"></a>运行测试</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 启动开发模式服务器</span></span><br><span class="line">gmake run-broker</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在另一个终端中测试连接</span></span><br><span class="line">./escript/rabbitmqctl status</span><br></pre></td></tr></table></figure>
+
+<h2 id="常见问题排查"><a href="#常见问题排查" class="headerlink" title="常见问题排查"></a>常见问题排查</h2><h3 id="编译时间过长"><a href="#编译时间过长" class="headerlink" title="编译时间过长"></a>编译时间过长</h3><ul>
+<li><strong>原因</strong>: RabbitMQ 是大型项目，包含众多模块</li>
+<li><strong>解决</strong>: 正常现象，完整编译需要 15-25 分钟</li>
+</ul>
+<h3 id="内存不足"><a href="#内存不足" class="headerlink" title="内存不足"></a>内存不足</h3><ul>
+<li><strong>症状</strong>: 编译过程中系统卡顿或进程被杀死</li>
+<li><strong>解决</strong>: 使用 <code>gmake -j1</code> 减少并发，或增加虚拟内存</li>
+</ul>
+<h3 id="权限问题"><a href="#权限问题" class="headerlink" title="权限问题"></a>权限问题</h3><ul>
+<li><strong>症状</strong>: 无法创建文件或目录</li>
+<li><strong>解决</strong>: 确保对项目目录有写权限，避免使用 sudo</li>
+</ul>
+<h3 id="网络问题"><a href="#网络问题" class="headerlink" title="网络问题"></a>网络问题</h3><ul>
+<li><strong>症状</strong>: 依赖下载失败</li>
+<li><strong>解决</strong>: 检查网络连接，考虑使用代理或镜像源</li>
+</ul>
+<h2 id="性能优化建议"><a href="#性能优化建议" class="headerlink" title="性能优化建议"></a>性能优化建议</h2><ol>
+<li><strong>使用 SSD</strong>: 确保项目在 SSD 上编译</li>
+<li><strong>充足内存</strong>: 推荐 8GB+ 内存</li>
+<li><strong>单线程编译</strong>: 使用 <code>-j1</code> 避免并发问题</li>
+<li><strong>清理缓存</strong>: 定期运行 <code>gmake distclean</code></li>
+</ol>
+<h2 id="相关资源"><a href="#相关资源" class="headerlink" title="相关资源"></a>相关资源</h2><ul>
+<li><a href="https://www.rabbitmq.com/docs/">RabbitMQ 官方文档</a></li>
+<li><a href="https://github.com/rabbitmq/rabbitmq-server">RabbitMQ GitHub 仓库</a></li>
+<li><a href="https://www.erlang.org/docs">Erlang&#x2F;OTP 文档</a></li>
+</ul>
+<h2 id="版本信息"><a href="#版本信息" class="headerlink" title="版本信息"></a>版本信息</h2><ul>
+<li><strong>文档版本</strong>: 1.0</li>
+<li><strong>RabbitMQ 版本</strong>: 4.x (main 分支)</li>
+<li><strong>Erlang 版本</strong>: 27.3.4.6</li>
+<li><strong>创建日期</strong>: 2026-01-16</li>
+<li><strong>最后更新</strong>: 2026-01-16</li>
+</ul>
+<hr>
+<p><strong>注意</strong>: 本文档基于 macOS Apple Silicon 环境编写，其他平台可能需要调整部分步骤。</p>
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>RabbitMQ</category>
+      </categories>
+      <tags>
+        <tag>Erlang</tag>
+        <tag>RabbitMQ</tag>
+        <tag>编译</tag>
+        <tag>macOS</tag>
       </tags>
   </entry>
   <entry>
@@ -236,119 +669,6 @@
         <tag>RabbitMQ</tag>
         <tag>构建系统</tag>
         <tag>开源贡献</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Erlang 进程链接与监视器（中文版）</title>
-    <url>/2026/01/16/erlang-erlang-links-and-monitors-cn/</url>
-    <content><![CDATA[<h1 id="用于监督的链接和监视器"><a href="#用于监督的链接和监视器" class="headerlink" title="用于监督的链接和监视器"></a>用于监督的链接和监视器</h1><p>当进程相互依赖时，我们基本上有两种选择：让它们同生共死，或者让一个进程在另一个进程崩溃时得到通知。第三章讨论的 Erlang “任其崩溃”哲学，使我们倾向于后一种选择。</p>
-<p>链接的进程形成一个组，默认情况下会一起崩溃。如果其中一个链接的进程异常退出，其组中的所有其他进程都会收到 <code>EXIT</code> 信号并一起崩溃。监视器允许一个进程监视另一个进程，而不会自动被耦合到同一个组中。</p>
-<span id="more"></span>
-
-<h2 id="链接（Links）"><a href="#链接（Links）" class="headerlink" title="链接（Links）"></a>链接（Links）</h2><p>链接是双向的。如果两个进程被链接，它们被称为属于同一个链接集。如果其中一个异常终止，退出信号会传播到属于其链接集的所有进程。</p>
-<p>设置两个进程之间的链接，可以使用以下 BIF：</p>
-<ul>
-<li><p><code>link(Pid)</code> 在调用进程和进程标识符为 <code>Pid</code> 的进程之间建立双向链接。</p>
-</li>
-<li><p><code>spawn_link(Module, Function, Args)</code> 原子地生成并链接到一个进程。这相当于生成一个进程并链接到它，但是以原子方式完成，因此不存在生成的进程在链接建立之前死亡的风险。</p>
-</li>
-<li><p><code>unlink(Pid)</code> 移除调用进程和进程标识符为 <code>Pid</code> 的进程之间的任何链接。</p>
-</li>
-</ul>
-<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>&gt; Pid = spawn(<span class="keyword">fun</span>() -&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span> <span class="keyword">end</span>).</span><br><span class="line">&lt;<span class="number">0.25</span>.<span class="number">0</span>&gt;</span><br><span class="line"><span class="number">2</span>&gt; link(Pid).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="number">3</span>&gt; exit(Pid, kill).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line">** exception exit: killed</span><br></pre></td></tr></table></figure>
-
-<p>在这个例子中，链接到生成的进程然后发送 kill 信号会导致生成的进程和 shell 都崩溃。</p>
-<h2 id="捕获退出（Trapping-Exits）"><a href="#捕获退出（Trapping-Exits）" class="headerlink" title="捕获退出（Trapping Exits）"></a>捕获退出（Trapping Exits）</h2><p>进程可以通过设置以下标志来捕获退出信号：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">process_flag</span><span class="params">(trap_exit, true)</span></span></span><br></pre></td></tr></table></figure>
-
-<p>当一个进程正在捕获退出时，退出信号会被转换成 <code>{&#39;EXIT&#39;, Pid, Reason}</code> 形式的消息，可以在普通的 receive 语句中处理。</p>
-<h3 id="示例-1"><a href="#示例-1" class="headerlink" title="示例"></a>示例</h3><figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>&gt; process_flag(trap_exit, <span class="literal">true</span>).</span><br><span class="line"><span class="literal">false</span></span><br><span class="line"><span class="number">2</span>&gt; Pid = spawn_link(<span class="keyword">fun</span>() -&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span> <span class="keyword">end</span>).</span><br><span class="line">&lt;<span class="number">0.35</span>.<span class="number">0</span>&gt;</span><br><span class="line"><span class="number">3</span>&gt; exit(Pid, reason).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="number">4</span>&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span>.</span><br><span class="line">&#123;&#x27;EXIT&#x27;,&lt;<span class="number">0.35</span>.<span class="number">0</span>&gt;,reason&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="表-2-1-传播语义"><a href="#表-2-1-传播语义" class="headerlink" title="表 2-1. 传播语义"></a>表 2-1. 传播语义</h2><table>
-<thead>
-<tr>
-<th>原因</th>
-<th>捕获退出 (<code>trap_exit=true</code>)</th>
-<th>不捕获退出</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><code>normal</code></td>
-<td>接收 <code>{&#39;EXIT&#39;, Pid, normal}</code></td>
-<td>无事发生</td>
-</tr>
-<tr>
-<td><code>kill</code></td>
-<td>以原因 <code>killed</code> 终止</td>
-<td>以原因 <code>killed</code> 终止</td>
-</tr>
-<tr>
-<td>其他</td>
-<td>接收 <code>{&#39;EXIT&#39;, Pid, Other}</code></td>
-<td>以原因 <code>Other</code> 终止</td>
-</tr>
-</tbody></table>
-<h2 id="监视器（Monitors）"><a href="#监视器（Monitors）" class="headerlink" title="监视器（Monitors）"></a>监视器（Monitors）</h2><p>与链接不同，监视器是单向的。当被监视的进程终止时，监视进程会在其邮箱中收到一条 <code>{&#39;DOWN&#39;, Reference, process, Pid, Reason}</code> 消息，但不会向相反方向发送信号。</p>
-<p>使用 BIF 设置监视器：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line">Reference = monitor(process, Pid)</span><br></pre></td></tr></table></figure>
-
-<p>如果设置了多个监视器，<code>Reference</code> 可用于标识特定的监视器。</p>
-<p>要移除监视器，使用：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">demonitor</span><span class="params">(Reference)</span></span></span><br></pre></td></tr></table></figure>
-
-<h3 id="监视器与链接对比"><a href="#监视器与链接对比" class="headerlink" title="监视器与链接对比"></a>监视器与链接对比</h3><table>
-<thead>
-<tr>
-<th>特性</th>
-<th>链接</th>
-<th>监视器</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>方向性</td>
-<td>双向</td>
-<td>单向</td>
-</tr>
-<tr>
-<td>默认行为</td>
-<td>一起崩溃</td>
-<td>退出时发送消息</td>
-</tr>
-<tr>
-<td>信号传播</td>
-<td>双向</td>
-<td>单向</td>
-</tr>
-<tr>
-<td>设置函数</td>
-<td><code>link/1</code></td>
-<td><code>monitor/2</code></td>
-</tr>
-<tr>
-<td>移除函数</td>
-<td><code>unlink/1</code></td>
-<td><code>demonitor/1</code></td>
-</tr>
-</tbody></table>
-<h3 id="示例-2"><a href="#示例-2" class="headerlink" title="示例"></a>示例</h3><figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>&gt; Pid = spawn(<span class="keyword">fun</span>() -&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span> <span class="keyword">end</span>).</span><br><span class="line">&lt;<span class="number">0.25</span>.<span class="number">0</span>&gt;</span><br><span class="line"><span class="number">2</span>&gt; Ref = monitor(process, Pid).</span><br><span class="line">#Ref&lt;<span class="number">0.0</span>.<span class="number">0.26</span>&gt;</span><br><span class="line"><span class="number">3</span>&gt; exit(Pid, reason).</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="number">4</span>&gt; <span class="keyword">receive</span> X -&gt; X <span class="keyword">end</span>.</span><br><span class="line">&#123;&#x27;DOWN&#x27;,#Ref&lt;<span class="number">0.0</span>.<span class="number">0.26</span>&gt;,process,&lt;<span class="number">0.25</span>.<span class="number">0</span>&gt;,reason&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
-<li><strong>链接</strong> 在进程之间创建双向连接。当一个进程死亡时，所有链接的进程都会收到退出信号。</li>
-<li><strong>监视器</strong> 创建单向观察。当被监视的进程终止时，监视进程会收到 <code>&#39;DOWN&#39;</code> 消息。</li>
-<li>使用 <code>process_flag(trap_exit, true)</code> 将退出信号转换为消息。</li>
-<li><code>kill</code> 原因无法被捕获，总是会终止进程。</li>
-</ul>
-]]></content>
-      <categories>
-        <category>技术</category>
-        <category>Erlang</category>
-      </categories>
-      <tags>
-        <tag>Erlang</tag>
-        <tag>OTP</tag>
-        <tag>并发编程</tag>
-        <tag>进程链接</tag>
-        <tag>监视器</tag>
       </tags>
   </entry>
   <entry>
@@ -552,178 +872,6 @@
       </tags>
   </entry>
   <entry>
-    <title>测试 Giscus 评论功能</title>
-    <url>/2024/01/17/test-giscus-comments/</url>
-    <content><![CDATA[<h1 id="测试评论功能"><a href="#测试评论功能" class="headerlink" title="测试评论功能"></a>测试评论功能</h1><p>这是一篇测试文章，用于验证 Giscus 评论系统是否正常工作。</p>
-<h2 id="功能测试"><a href="#功能测试" class="headerlink" title="功能测试"></a>功能测试</h2><ul>
-<li>✅ 评论功能</li>
-<li>✅ 点赞&#x2F;表情反应</li>
-<li>✅ GitHub 账号登录</li>
-</ul>
-<h2 id="请在下方评论区测试"><a href="#请在下方评论区测试" class="headerlink" title="请在下方评论区测试"></a>请在下方评论区测试</h2><p>滚动到页面底部，您应该能看到评论区。</p>
-<p>如果看到 “使用 GitHub 登录” 的提示，说明 Giscus 已正确加载。</p>
-]]></content>
-      <categories>
-        <category>测试</category>
-      </categories>
-      <tags>
-        <tag>Test</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>第四章：通用型服务器 gen_server</title>
-    <url>/2024/01/18/erlang-erlang-otp-gen-server/</url>
-    <content><![CDATA[<p>本文介绍 Erlang&#x2F;OTP 中的通用型服务器行为模式 gen_server，这是 OTP 框架中最常用的 behavior 之一。</p>
-<span id="more"></span>
-
-<h2 id="gen-server-概述"><a href="#gen-server-概述" class="headerlink" title="gen_server 概述"></a>gen_server 概述</h2><p>gen_server 是 OTP 提供的通用服务器行为模式，它封装了客户端-服务器模型中的常见模式，让开发者可以专注于业务逻辑而不是底层的进程通信细节。</p>
-<p>使用 gen_server 的优势：</p>
-<ul>
-<li>标准化的服务器实现模式</li>
-<li>内置的错误处理机制</li>
-<li>支持同步和异步消息传递</li>
-<li>与 OTP 监督树无缝集成</li>
-</ul>
-<h2 id="behavior-指令"><a href="#behavior-指令" class="headerlink" title="behavior 指令"></a>behavior 指令</h2><p>要实现一个 gen_server，需要在模块中声明 behavior：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="keyword">-module</span><span class="params">(my_server)</span>.</span><br><span class="line"><span class="keyword">-behaviour</span><span class="params">(gen_server)</span>.</span><br><span class="line"></span><br><span class="line"><span class="comment">%% API</span></span><br><span class="line"><span class="keyword">-export</span><span class="params">([start_link/<span class="number">0</span>, stop/<span class="number">0</span>])</span>.</span><br><span class="line"></span><br><span class="line"><span class="comment">%% gen_server 回调函数</span></span><br><span class="line"><span class="keyword">-export</span><span class="params">([init/<span class="number">1</span>, handle_call/<span class="number">3</span>, handle_cast/<span class="number">2</span>, handle_info/<span class="number">2</span>,</span></span><br><span class="line"><span class="params">         terminate/<span class="number">2</span>, code_change/<span class="number">3</span>])</span>.</span><br></pre></td></tr></table></figure>
-
-<h2 id="启动一个-server"><a href="#启动一个-server" class="headerlink" title="启动一个 server"></a>启动一个 server</h2><p>gen_server 提供了多种启动函数：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="comment">%% 启动一个匿名服务器</span></span><br><span class="line">gen_server:start_link(Module, Args, Options)</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 启动一个命名服务器（本地注册）</span></span><br><span class="line">gen_server:start_link(&#123;local, Name&#125;, Module, Args, Options)</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 启动一个命名服务器（全局注册）</span></span><br><span class="line">gen_server:start_link(&#123;global, Name&#125;, Module, Args, Options)</span><br></pre></td></tr></table></figure>
-
-<p>启动时会调用 <code>init/1</code> 回调函数：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">init</span><span class="params">(Args)</span> -&gt;</span></span><br><span class="line">    <span class="comment">%% 初始化服务器状态</span></span><br><span class="line">    State = #state&#123;&#125;,</span><br><span class="line">    &#123;ok, State&#125;.</span><br></pre></td></tr></table></figure>
-
-<p><code>init/1</code> 可以返回：</p>
-<ul>
-<li><code>{ok, State}</code> - 正常启动</li>
-<li><code>{ok, State, Timeout}</code> - 启动并设置超时</li>
-<li><code>{ok, State, hibernate}</code> - 启动并进入休眠</li>
-<li><code>{stop, Reason}</code> - 启动失败</li>
-<li><code>ignore</code> - 忽略启动</li>
-</ul>
-<h2 id="消息传递"><a href="#消息传递" class="headerlink" title="消息传递"></a>消息传递</h2><p>gen_server 支持多种消息传递方式：</p>
-<p><img src="/images/erlang_otp/gen_server_flow.svg" alt="gen_server 消息传递流程"></p>
-<h3 id="同步式消息传递"><a href="#同步式消息传递" class="headerlink" title="同步式消息传递"></a>同步式消息传递</h3><p>使用 <code>gen_server:call/2,3</code> 发送同步请求，客户端会阻塞等待响应：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="comment">%% 客户端调用</span></span><br><span class="line">Result = gen_server:call(ServerRef, Request),</span><br><span class="line">Result = gen_server:call(ServerRef, Request, Timeout).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 服务器端处理</span></span><br><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(Request, From, State)</span> -&gt;</span></span><br><span class="line">    Reply = do_something(Request),</span><br><span class="line">    &#123;reply, Reply, State&#125;.</span><br></pre></td></tr></table></figure>
-
-<p><code>handle_call/3</code> 的参数：</p>
-<ul>
-<li><code>Request</code> - 客户端发送的请求</li>
-<li><code>From</code> - 调用者信息 <code>{Pid, Tag}</code></li>
-<li><code>State</code> - 当前服务器状态</li>
-</ul>
-<h3 id="异步式消息传递"><a href="#异步式消息传递" class="headerlink" title="异步式消息传递"></a>异步式消息传递</h3><p>使用 <code>gen_server:cast/2</code> 发送异步请求，客户端不等待响应：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="comment">%% 客户端调用</span></span><br><span class="line">ok = gen_server:cast(ServerRef, Msg).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 服务器端处理</span></span><br><span class="line"><span class="function"><span class="title">handle_cast</span><span class="params">(Msg, State)</span> -&gt;</span></span><br><span class="line">    NewState = process_msg(Msg, State),</span><br><span class="line">    &#123;noreply, NewState&#125;.</span><br></pre></td></tr></table></figure>
-
-<h3 id="其他消息"><a href="#其他消息" class="headerlink" title="其他消息"></a>其他消息</h3><p>服务器可能收到不是通过 <code>call</code> 或 <code>cast</code> 发送的消息，这些消息由 <code>handle_info/2</code> 处理：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">handle_info</span><span class="params">(Info, State)</span> -&gt;</span></span><br><span class="line">    <span class="keyword">case</span> Info <span class="keyword">of</span></span><br><span class="line">        timeout -&gt;</span><br><span class="line">            <span class="comment">%% 处理超时</span></span><br><span class="line">            &#123;noreply, State&#125;;</span><br><span class="line">        &#123;nodedown, Node&#125; -&gt;</span><br><span class="line">            <span class="comment">%% 处理节点断开</span></span><br><span class="line">            &#123;noreply, State&#125;;</span><br><span class="line">        _Other -&gt;</span><br><span class="line">            <span class="comment">%% 忽略未知消息</span></span><br><span class="line">            &#123;noreply, State&#125;</span><br><span class="line">    <span class="keyword">end</span>.</span><br></pre></td></tr></table></figure>
-
-<h3 id="未处理的消息"><a href="#未处理的消息" class="headerlink" title="未处理的消息"></a>未处理的消息</h3><p>良好的实践是在 <code>handle_info/2</code> 中记录未预期的消息：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">handle_info</span><span class="params">(Msg, State)</span> -&gt;</span></span><br><span class="line">    error_logger:warning_msg(<span class="string">&quot;Unexpected message: ~p~n&quot;</span>, [Msg]),</span><br><span class="line">    &#123;noreply, State&#125;.</span><br></pre></td></tr></table></figure>
-
-<h2 id="同步客户端"><a href="#同步客户端" class="headerlink" title="同步客户端"></a>同步客户端</h2><p>实现一个完整的同步客户端 API：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="keyword">-module</span><span class="params">(kv_store)</span>.</span><br><span class="line"><span class="keyword">-behaviour</span><span class="params">(gen_server)</span>.</span><br><span class="line"></span><br><span class="line"><span class="comment">%% API</span></span><br><span class="line"><span class="keyword">-export</span><span class="params">([start_link/<span class="number">0</span>, get/<span class="number">1</span>, put/<span class="number">2</span>, delete/<span class="number">1</span>])</span>.</span><br><span class="line"></span><br><span class="line"><span class="comment">%% gen_server callbacks</span></span><br><span class="line"><span class="keyword">-export</span><span class="params">([init/<span class="number">1</span>, handle_call/<span class="number">3</span>, handle_cast/<span class="number">2</span>, handle_info/<span class="number">2</span>,</span></span><br><span class="line"><span class="params">         terminate/<span class="number">2</span>, code_change/<span class="number">3</span>])</span>.</span><br><span class="line"></span><br><span class="line"><span class="keyword">-record</span><span class="params">(state, &#123;store = #&#123;&#125;&#125;)</span>.</span><br><span class="line"></span><br><span class="line"><span class="comment">%%% API 函数</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">start_link</span><span class="params">()</span> -&gt;</span></span><br><span class="line">    gen_server:start_link(&#123;local, ?MODULE&#125;, ?MODULE, [], []).</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">get</span><span class="params">(Key)</span> -&gt;</span></span><br><span class="line">    gen_server:call(?MODULE, &#123;get, Key&#125;).</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">put</span><span class="params">(Key, Value)</span> -&gt;</span></span><br><span class="line">    gen_server:call(?MODULE, &#123;put, Key, Value&#125;).</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">delete</span><span class="params">(Key)</span> -&gt;</span></span><br><span class="line">    gen_server:call(?MODULE, &#123;delete, Key&#125;).</span><br><span class="line"></span><br><span class="line"><span class="comment">%%% 回调函数</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">init</span><span class="params">([])</span> -&gt;</span></span><br><span class="line">    &#123;ok, #state&#123;&#125;&#125;.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(&#123;get, Key&#125;, _From, State = #state&#123;store = Store&#125;)</span> -&gt;</span></span><br><span class="line">    Reply = maps:get(Key, Store, undefined),</span><br><span class="line">    &#123;reply, Reply, State&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(&#123;put, Key, Value&#125;, _From, State = #state&#123;store = Store&#125;)</span> -&gt;</span></span><br><span class="line">    NewStore = maps:put(Key, Value, Store),</span><br><span class="line">    &#123;reply, ok, State#state&#123;store = NewStore&#125;&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(&#123;delete, Key&#125;, _From, State = #state&#123;store = Store&#125;)</span> -&gt;</span></span><br><span class="line">    NewStore = maps:remove(Key, Store),</span><br><span class="line">    &#123;reply, ok, State#state&#123;store = NewStore&#125;&#125;.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_cast</span><span class="params">(_Msg, State)</span> -&gt;</span></span><br><span class="line">    &#123;noreply, State&#125;.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_info</span><span class="params">(_Info, State)</span> -&gt;</span></span><br><span class="line">    &#123;noreply, State&#125;.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">terminate</span><span class="params">(_Reason, _State)</span> -&gt;</span></span><br><span class="line">    ok.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">code_change</span><span class="params">(_OldVsn, State, _Extra)</span> -&gt;</span></span><br><span class="line">    &#123;ok, State&#125;.</span><br></pre></td></tr></table></figure>
-
-<h2 id="终止"><a href="#终止" class="headerlink" title="终止"></a>终止</h2><p>服务器终止时会调用 <code>terminate/2</code>：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">terminate</span><span class="params">(Reason, State)</span> -&gt;</span></span><br><span class="line">    <span class="comment">%% 清理资源</span></span><br><span class="line">    cleanup(State),</span><br><span class="line">    ok.</span><br></pre></td></tr></table></figure>
-
-<p>终止原因可能是：</p>
-<ul>
-<li><code>normal</code> - 正常终止</li>
-<li><code>shutdown</code> - 监督者要求关闭</li>
-<li><code>{shutdown, Term}</code> - 带额外信息的关闭</li>
-<li>其他值 - 异常终止</li>
-</ul>
-<h2 id="调用超时"><a href="#调用超时" class="headerlink" title="调用超时"></a>调用超时</h2><p><code>gen_server:call/3</code> 支持设置超时时间：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="comment">%% 默认超时 5000ms</span></span><br><span class="line">gen_server:call(Server, Request).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 自定义超时</span></span><br><span class="line">gen_server:call(Server, Request, <span class="number">10000</span>).  <span class="comment">%% 10秒</span></span><br><span class="line"></span><br><span class="line"><span class="comment">%% 无限等待</span></span><br><span class="line">gen_server:call(Server, Request, infinity).</span><br></pre></td></tr></table></figure>
-
-<p>超时后客户端会收到 <code>exit</code> 信号：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="keyword">try</span></span><br><span class="line">    gen_server:call(Server, Request, <span class="number">5000</span>)</span><br><span class="line"><span class="keyword">catch</span></span><br><span class="line">    exit:&#123;timeout, _&#125; -&gt;</span><br><span class="line">        &#123;error, timeout&#125;</span><br><span class="line"><span class="keyword">end</span>.</span><br></pre></td></tr></table></figure>
-
-<h2 id="死锁"><a href="#死锁" class="headerlink" title="死锁"></a>死锁</h2><p>避免 gen_server 死锁的几个原则：</p>
-<ol>
-<li><strong>不要在回调函数中调用自己</strong>：</li>
-</ol>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="comment">%% 错误示例 - 会导致死锁</span></span><br><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(get_twice, _From, State)</span> -&gt;</span></span><br><span class="line">    Result1 = gen_server:call(self(), get),  <span class="comment">%% 死锁！</span></span><br><span class="line">    &#123;reply, Result1, State&#125;.</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li><strong>避免循环调用</strong>：</li>
-</ol>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="comment">%% Server A 调用 Server B，Server B 又调用 Server A</span></span><br><span class="line"><span class="comment">%% 这会导致死锁</span></span><br></pre></td></tr></table></figure>
-
-<ol start="3">
-<li><strong>使用 cast 代替 call 打破循环</strong></li>
-</ol>
-<h2 id="通用型-server-的超时问题"><a href="#通用型-server-的超时问题" class="headerlink" title="通用型 server 的超时问题"></a>通用型 server 的超时问题</h2><p>可以在回调函数中返回超时值：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">init</span><span class="params">([])</span> -&gt;</span></span><br><span class="line">    &#123;ok, #state&#123;&#125;, <span class="number">5000</span>&#125;.  <span class="comment">%% 5秒后触发 timeout</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(Request, _From, State)</span> -&gt;</span></span><br><span class="line">    &#123;reply, ok, State, <span class="number">5000</span>&#125;.  <span class="comment">%% 重置超时</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_info</span><span class="params">(timeout, State)</span> -&gt;</span></span><br><span class="line">    <span class="comment">%% 处理超时，例如执行定期任务</span></span><br><span class="line">    do_periodic_work(),</span><br><span class="line">    &#123;noreply, State, <span class="number">5000</span>&#125;.  <span class="comment">%% 继续等待下一个超时</span></span><br></pre></td></tr></table></figure>
-
-<h2 id="使-behavior-休眠"><a href="#使-behavior-休眠" class="headerlink" title="使 behavior 休眠"></a>使 behavior 休眠</h2><p>当服务器空闲时，可以让它进入休眠状态以释放内存：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="title">handle_call</span><span class="params">(Request, _From, State)</span> -&gt;</span></span><br><span class="line">    &#123;reply, ok, State, hibernate&#125;.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_cast</span><span class="params">(Msg, State)</span> -&gt;</span></span><br><span class="line">    &#123;noreply, State, hibernate&#125;.</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">handle_info</span><span class="params">(Info, State)</span> -&gt;</span></span><br><span class="line">    &#123;noreply, State, hibernate&#125;.</span><br></pre></td></tr></table></figure>
-
-<p>休眠时，进程会进行垃圾回收并最小化内存占用。收到新消息时自动唤醒。</p>
-<h2 id="全局化"><a href="#全局化" class="headerlink" title="全局化"></a>全局化</h2><p>使用全局名称注册 gen_server：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="comment">%% 全局注册启动</span></span><br><span class="line">gen_server:start_link(&#123;global, my_global_server&#125;, ?MODULE, [], []).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 全局调用</span></span><br><span class="line">gen_server:call(&#123;global, my_global_server&#125;, Request).</span><br><span class="line">gen_server:cast(&#123;global, my_global_server&#125;, Msg).</span><br></pre></td></tr></table></figure>
-
-<p>也可以使用 <code>via</code> 元组与自定义注册表：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="comment">%% 使用 gproc 作为注册表</span></span><br><span class="line">gen_server:start_link(&#123;via, gproc, &#123;n, l, my_server&#125;&#125;, ?MODULE, [], []).</span><br></pre></td></tr></table></figure>
-
-<h2 id="链接-behavior"><a href="#链接-behavior" class="headerlink" title="链接 behavior"></a>链接 behavior</h2><p>gen_server 通常与监督者链接使用：</p>
-<figure class="highlight erlang"><table><tr><td class="code"><pre><span class="line"><span class="comment">%% 在监督者中定义子规范</span></span><br><span class="line"><span class="function"><span class="title">init</span><span class="params">([])</span> -&gt;</span></span><br><span class="line">    Children = [</span><br><span class="line">        #&#123;id =&gt; my_server,</span><br><span class="line">          start =&gt; &#123;my_server, start_link, []&#125;,</span><br><span class="line">          restart =&gt; permanent,</span><br><span class="line">          shutdown =&gt; <span class="number">5000</span>,</span><br><span class="line">          type =&gt; worker,</span><br><span class="line">          modules =&gt; [my_server]&#125;</span><br><span class="line">    ],</span><br><span class="line">    &#123;ok, &#123;#&#123;strategy =&gt; one_for_one&#125;, Children&#125;&#125;.</span><br></pre></td></tr></table></figure>
-
-<h2 id="gen-server-生命周期"><a href="#gen-server-生命周期" class="headerlink" title="gen_server 生命周期"></a>gen_server 生命周期</h2><p><img src="/images/erlang_otp/gen_server_lifecycle.svg" alt="gen_server 生命周期"></p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>gen_server 是 Erlang&#x2F;OTP 中最重要的 behavior 之一：</p>
-<table>
-<thead>
-<tr>
-<th>特性</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>同步调用</td>
-<td><code>call/2,3</code> + <code>handle_call/3</code></td>
-</tr>
-<tr>
-<td>异步调用</td>
-<td><code>cast/2</code> + <code>handle_cast/2</code></td>
-</tr>
-<tr>
-<td>其他消息</td>
-<td><code>handle_info/2</code></td>
-</tr>
-<tr>
-<td>生命周期</td>
-<td><code>init/1</code> → 运行 → <code>terminate/2</code></td>
-</tr>
-<tr>
-<td>超时处理</td>
-<td>回调返回值中指定</td>
-</tr>
-<tr>
-<td>休眠</td>
-<td><code>hibernate</code> 选项</td>
-</tr>
-</tbody></table>
-<p>掌握 gen_server 是学习 OTP 的基础，它为构建健壮的并发应用提供了标准化的模式。</p>
-<h2 id="接下来是什么"><a href="#接下来是什么" class="headerlink" title="接下来是什么"></a>接下来是什么</h2><p>下一章我们将学习 <strong>gen_statem</strong>（有限状态机）行为模式，它适用于需要状态转换的场景。</p>
-<hr>
-<h2 id="相关资源"><a href="#相关资源" class="headerlink" title="相关资源"></a>相关资源</h2><ul>
-<li><a href="https://www.erlang.org/doc/man/gen_server.html">Erlang gen_server 官方文档</a></li>
-<li><a href="https://www.erlang.org/doc/design_principles/gen_server_concepts.html">OTP Design Principles</a></li>
-</ul>
-]]></content>
-      <categories>
-        <category>技术</category>
-        <category>Erlang/OTP</category>
-      </categories>
-      <tags>
-        <tag>Erlang</tag>
-        <tag>OTP</tag>
-        <tag>并发编程</tag>
-        <tag>gen_server</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>RabbitMQ 问题最终解决方案总结</title>
     <url>/2026/01/16/rabbitmq-rabbitmq-final-solution-summary/</url>
     <content><![CDATA[<h1 id="RabbitMQ-问题最终解决方案总结"><a href="#RabbitMQ-问题最终解决方案总结" class="headerlink" title="RabbitMQ 问题最终解决方案总结"></a>RabbitMQ 问题最终解决方案总结</h1><h2 id="真正的根本原因：网络配置问题"><a href="#真正的根本原因：网络配置问题" class="headerlink" title="真正的根本原因：网络配置问题"></a>真正的根本原因：网络配置问题</h2><h3 id="问题真相"><a href="#问题真相" class="headerlink" title="问题真相"></a>问题真相</h3><p>经过深入调试，发现问题的<strong>真正根本原因</strong>是 <strong>hosts 文件配置错误</strong>：</p>
@@ -822,151 +970,110 @@
       </tags>
   </entry>
   <entry>
-    <title>RabbitMQ 服务器编译指南</title>
-    <url>/2026/01/16/rabbitmq-rabbitmq-compilation-guide/</url>
-    <content><![CDATA[<h1 id="RabbitMQ-服务器编译指南"><a href="#RabbitMQ-服务器编译指南" class="headerlink" title="RabbitMQ 服务器编译指南"></a>RabbitMQ 服务器编译指南</h1><p>本文档记录了在 macOS (Apple Silicon) 环境下编译 RabbitMQ 服务器的完整过程，包括遇到的问题和解决方案。</p>
-<span id="more"></span>
+    <title>RabbitMQ 插件启用问题排查指南</title>
+    <url>/2026/01/16/rabbitmq-rabbitmq-plugins-enable-guide/</url>
+    <content><![CDATA[<h1 id="RabbitMQ-插件启用问题排查指南"><a href="#RabbitMQ-插件启用问题排查指南" class="headerlink" title="RabbitMQ 插件启用问题排查指南"></a>RabbitMQ 插件启用问题排查指南</h1><h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>从源码编译运行 RabbitMQ 时，执行插件启用命令报错：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ sbin/rabbitmq-plugins <span class="built_in">enable</span> rabbitmq_management</span><br><span class="line">Error: :plugins_dir_does_not_exist</span><br><span class="line">Arguments given:</span><br><span class="line">        <span class="built_in">enable</span> rabbitmq_management</span><br><span class="line"></span><br><span class="line">Usage</span><br><span class="line"></span><br><span class="line">rabbitmq-plugins [--node &lt;node&gt;] [--longnames] [--quiet] <span class="built_in">enable</span> &lt;plugin1&gt; [ &lt;plugin2&gt;] | --all [--offline] [--online]</span><br></pre></td></tr></table></figure>
 
-<h2 id="环境信息"><a href="#环境信息" class="headerlink" title="环境信息"></a>环境信息</h2><ul>
-<li><strong>操作系统</strong>: macOS (Darwin)</li>
-<li><strong>架构</strong>: Apple Silicon (ARM64)</li>
-<li><strong>Shell</strong>: bash</li>
-<li><strong>包管理器</strong>: Homebrew</li>
+<p>即使设置了 <code>ERL_LIBS</code> 环境变量也无法解决：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ <span class="built_in">echo</span> <span class="variable">$ERL_LIBS</span></span><br><span class="line">/Users/ericksun/workspace/rabbitmq-server/plugins</span><br></pre></td></tr></table></figure>
+
+<h2 id="根因分析"><a href="#根因分析" class="headerlink" title="根因分析"></a>根因分析</h2><h3 id="ERL-LIBS-与-RABBITMQ-PLUGINS-DIR-的区别"><a href="#ERL-LIBS-与-RABBITMQ-PLUGINS-DIR-的区别" class="headerlink" title="ERL_LIBS 与 RABBITMQ_PLUGINS_DIR 的区别"></a>ERL_LIBS 与 RABBITMQ_PLUGINS_DIR 的区别</h3><table>
+<thead>
+<tr>
+<th>环境变量</th>
+<th>作用</th>
+<th>使用者</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ERL_LIBS</code></td>
+<td>告诉 Erlang VM 在哪里查找代码模块</td>
+<td>Erlang 运行时</td>
+</tr>
+<tr>
+<td><code>RABBITMQ_PLUGINS_DIR</code></td>
+<td>告诉 rabbitmq-plugins 脚本插件目录位置</td>
+<td>RabbitMQ 脚本</td>
+</tr>
+<tr>
+<td><code>RABBITMQ_ENABLED_PLUGINS_FILE</code></td>
+<td>指定启用插件配置文件的位置</td>
+<td>RabbitMQ 脚本</td>
+</tr>
+</tbody></table>
+<p><code>ERL_LIBS</code> 只是让 Erlang 能找到代码，但 <code>rabbitmq-plugins</code> 脚本需要 <code>RABBITMQ_PLUGINS_DIR</code> 来定位插件目录。</p>
+<h3 id="默认路径问题"><a href="#默认路径问题" class="headerlink" title="默认路径问题"></a>默认路径问题</h3><p>从源码运行时，RabbitMQ 默认查找：</p>
+<ul>
+<li>插件目录：由 <code>RABBITMQ_HOME/plugins</code> 或 <code>RABBITMQ_PLUGINS_DIR</code> 指定</li>
+<li>启用插件文件：<code>/etc/rabbitmq/enabled_plugins</code>（系统路径，源码环境下不存在）</li>
 </ul>
-<h2 id="系统要求"><a href="#系统要求" class="headerlink" title="系统要求"></a>系统要求</h2><h3 id="必需工具"><a href="#必需工具" class="headerlink" title="必需工具"></a>必需工具</h3><ol>
-<li><p><strong>GNU Make 4+</strong></p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">brew install make</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><strong>Erlang 27.x</strong></p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">brew install erlang@27</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><strong>p7zip (7z 命令)</strong></p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">brew install p7zip</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><strong>Git</strong></p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">brew install git</span><br></pre></td></tr></table></figure></li>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><h3 id="方案一：设置环境变量（推荐）"><a href="#方案一：设置环境变量（推荐）" class="headerlink" title="方案一：设置环境变量（推荐）"></a>方案一：设置环境变量（推荐）</h3><p>在 shell 配置文件（如 <code>~/.bashrc</code> 或 <code>~/.zshrc</code>）中添加：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># RabbitMQ 源码开发环境配置</span></span><br><span class="line"><span class="built_in">export</span> RABBITMQ_HOME=/path/to/rabbitmq-server</span><br><span class="line"><span class="built_in">export</span> RABBITMQ_PLUGINS_DIR=<span class="variable">$RABBITMQ_HOME</span>/plugins</span><br><span class="line"><span class="built_in">export</span> RABBITMQ_ENABLED_PLUGINS_FILE=<span class="variable">$RABBITMQ_HOME</span>/etc/rabbitmq/enabled_plugins</span><br></pre></td></tr></table></figure>
+
+<p>然后创建必要的目录：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> -p <span class="variable">$RABBITMQ_HOME</span>/etc/rabbitmq</span><br></pre></td></tr></table></figure>
+
+<h3 id="方案二：命令行指定（临时使用）"><a href="#方案二：命令行指定（临时使用）" class="headerlink" title="方案二：命令行指定（临时使用）"></a>方案二：命令行指定（临时使用）</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> /path/to/rabbitmq-server</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建配置目录</span></span><br><span class="line"><span class="built_in">mkdir</span> -p etc/rabbitmq</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启用插件（使用 --offline 模式，不需要连接运行中的节点）</span></span><br><span class="line">RABBITMQ_PLUGINS_DIR=$(<span class="built_in">pwd</span>)/plugins \</span><br><span class="line">RABBITMQ_ENABLED_PLUGINS_FILE=$(<span class="built_in">pwd</span>)/etc/rabbitmq/enabled_plugins \</span><br><span class="line">sbin/rabbitmq-plugins <span class="built_in">enable</span> rabbitmq_management --offline</span><br></pre></td></tr></table></figure>
+
+<h3 id="方案三：使用-make-命令"><a href="#方案三：使用-make-命令" class="headerlink" title="方案三：使用 make 命令"></a>方案三：使用 make 命令</h3><p>RabbitMQ 源码提供了便捷的 make 目标：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 启动带管理插件的开发节点</span></span><br><span class="line">make run-broker RABBITMQ_ENABLED_PLUGINS=<span class="string">&quot;rabbitmq_management&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="成功执行示例"><a href="#成功执行示例" class="headerlink" title="成功执行示例"></a>成功执行示例</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ RABBITMQ_PLUGINS_DIR=$(<span class="built_in">pwd</span>)/plugins \</span><br><span class="line">  RABBITMQ_ENABLED_PLUGINS_FILE=$(<span class="built_in">pwd</span>)/etc/rabbitmq/enabled_plugins \</span><br><span class="line">  sbin/rabbitmq-plugins <span class="built_in">enable</span> rabbitmq_management --offline</span><br><span class="line"></span><br><span class="line">Enabling plugins on node rabbit@ERICKSUN-MC1:</span><br><span class="line">rabbitmq_management</span><br><span class="line"></span><br><span class="line">The following plugins have been configured:</span><br><span class="line">  rabbitmq_management</span><br><span class="line">  rabbitmq_management_agent</span><br><span class="line">  rabbitmq_web_dispatch</span><br><span class="line">Applying plugin configuration to rabbit@ERICKSUN-MC1...</span><br><span class="line">The following plugins have been enabled:</span><br><span class="line">  rabbitmq_management</span><br><span class="line">  rabbitmq_management_agent</span><br><span class="line">  rabbitmq_web_dispatch</span><br><span class="line"></span><br><span class="line"><span class="built_in">set</span> 3 plugins.</span><br><span class="line">Offline change; changes will take effect at broker restart.</span><br></pre></td></tr></table></figure>
+
+<h2 id="常用插件命令"><a href="#常用插件命令" class="headerlink" title="常用插件命令"></a>常用插件命令</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 设置环境变量（假设已在 rabbitmq-server 目录）</span></span><br><span class="line"><span class="built_in">export</span> RABBITMQ_PLUGINS_DIR=$(<span class="built_in">pwd</span>)/plugins</span><br><span class="line"><span class="built_in">export</span> RABBITMQ_ENABLED_PLUGINS_FILE=$(<span class="built_in">pwd</span>)/etc/rabbitmq/enabled_plugins</span><br><span class="line"></span><br><span class="line"><span class="comment"># 列出所有可用插件</span></span><br><span class="line">sbin/rabbitmq-plugins list</span><br><span class="line"></span><br><span class="line"><span class="comment"># 列出已启用的插件</span></span><br><span class="line">sbin/rabbitmq-plugins list --enabled</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启用插件（离线模式）</span></span><br><span class="line">sbin/rabbitmq-plugins <span class="built_in">enable</span> rabbitmq_management --offline</span><br><span class="line"></span><br><span class="line"><span class="comment"># 禁用插件</span></span><br><span class="line">sbin/rabbitmq-plugins <span class="built_in">disable</span> rabbitmq_management --offline</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启用多个插件</span></span><br><span class="line">sbin/rabbitmq-plugins <span class="built_in">enable</span> rabbitmq_management rabbitmq_shovel --offline</span><br></pre></td></tr></table></figure>
+
+<h2 id="常见插件说明"><a href="#常见插件说明" class="headerlink" title="常见插件说明"></a>常见插件说明</h2><table>
+<thead>
+<tr>
+<th>插件名称</th>
+<th>功能描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>rabbitmq_management</code></td>
+<td>Web 管理界面，默认端口 15672</td>
+</tr>
+<tr>
+<td><code>rabbitmq_management_agent</code></td>
+<td>管理插件的代理（自动依赖）</td>
+</tr>
+<tr>
+<td><code>rabbitmq_web_dispatch</code></td>
+<td>Web 请求分发（自动依赖）</td>
+</tr>
+<tr>
+<td><code>rabbitmq_shovel</code></td>
+<td>消息转发&#x2F;复制</td>
+</tr>
+<tr>
+<td><code>rabbitmq_federation</code></td>
+<td>跨集群消息联邦</td>
+</tr>
+<tr>
+<td><code>rabbitmq_mqtt</code></td>
+<td>MQTT 协议支持</td>
+</tr>
+<tr>
+<td><code>rabbitmq_stomp</code></td>
+<td>STOMP 协议支持</td>
+</tr>
+</tbody></table>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>从源码运行 RabbitMQ 时，需要正确设置以下环境变量：</p>
+<ol>
+<li><strong><code>RABBITMQ_PLUGINS_DIR</code></strong> - 指向 <code>plugins</code> 目录</li>
+<li><strong><code>RABBITMQ_ENABLED_PLUGINS_FILE</code></strong> - 指向本地的 <code>enabled_plugins</code> 文件</li>
 </ol>
-<h3 id="可选工具"><a href="#可选工具" class="headerlink" title="可选工具"></a>可选工具</h3><ul>
-<li><strong>Elixir</strong> (用于 CLI 工具)</li>
-<li><strong>rebar3</strong> (Erlang 构建工具)</li>
-</ul>
-<h2 id="编译过程"><a href="#编译过程" class="headerlink" title="编译过程"></a>编译过程</h2><h3 id="1-环境准备"><a href="#1-环境准备" class="headerlink" title="1. 环境准备"></a>1. 环境准备</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 克隆 RabbitMQ 服务器源码</span></span><br><span class="line">git <span class="built_in">clone</span> https://github.com/rabbitmq/rabbitmq-server.git</span><br><span class="line"><span class="built_in">cd</span> rabbitmq-server</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置环境变量</span></span><br><span class="line"><span class="built_in">export</span> PATH=<span class="string">&quot;/opt/homebrew/opt/erlang@27/bin:/opt/homebrew/bin:<span class="variable">$PATH</span>&quot;</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="2-清理和编译"><a href="#2-清理和编译" class="headerlink" title="2. 清理和编译"></a>2. 清理和编译</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 清理所有构建产物</span></span><br><span class="line">git clean -xfffd</span><br><span class="line">gmake clean</span><br><span class="line">gmake distclean</span><br><span class="line"></span><br><span class="line"><span class="comment"># 开始编译（推荐使用单线程避免并发问题）</span></span><br><span class="line">gmake -j1</span><br></pre></td></tr></table></figure>
-
-<h2 id="遇到的问题和解决方案"><a href="#遇到的问题和解决方案" class="headerlink" title="遇到的问题和解决方案"></a>遇到的问题和解决方案</h2><h3 id="问题-1-Erlang-版本不兼容"><a href="#问题-1-Erlang-版本不兼容" class="headerlink" title="问题 1: Erlang 版本不兼容"></a>问题 1: Erlang 版本不兼容</h3><p><strong>错误信息</strong>:</p>
-<figure class="highlight routeros"><table><tr><td class="code"><pre><span class="line">rabbit_data_coercion.erl:76:23: syntax <span class="built_in">error</span> before: <span class="string">&#x27;||&#x27;</span></span><br></pre></td></tr></table></figure>
-
-<p><strong>原因</strong>: RabbitMQ 4.x 使用了 Erlang 26+ 才支持的 map comprehension 语法，而系统安装的是 Erlang 25。</p>
-<p><strong>解决方案</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 卸载旧版本 Erlang</span></span><br><span class="line">brew uninstall erlang@25</span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装 Erlang 27</span></span><br><span class="line">brew install erlang@27</span><br><span class="line"></span><br><span class="line"><span class="comment"># 更新 PATH</span></span><br><span class="line"><span class="built_in">export</span> PATH=<span class="string">&quot;/opt/homebrew/opt/erlang@27/bin:<span class="variable">$PATH</span>&quot;</span></span><br></pre></td></tr></table></figure>
-
-<p><strong>验证</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">erl -version</span><br><span class="line"><span class="comment"># 应该显示: Erlang (SMP,ASYNC_THREADS) (BEAM) emulator version 15.2.7.4</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 测试 map comprehension 语法</span></span><br><span class="line">erl -<span class="built_in">eval</span> <span class="string">&#x27;M = #&#123;a =&gt; 1, b =&gt; 2&#125;, R = #&#123;K =&gt; V || K := V &lt;- M&#125;, io:format(&quot;~p~n&quot;, [R]), halt().&#x27;</span> -noshell</span><br><span class="line"><span class="comment"># 应该输出: #&#123;a =&gt; 1,b =&gt; 2&#125;</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="问题-2-wxWidgets-兼容性问题"><a href="#问题-2-wxWidgets-兼容性问题" class="headerlink" title="问题 2: wxWidgets 兼容性问题"></a>问题 2: wxWidgets 兼容性问题</h3><p><strong>错误信息</strong>:</p>
-<figure class="highlight excel"><table><tr><td class="code"><pre><span class="line">observ<span class="symbol">er:st</span>art().</span><br><span class="line">=CRASH REPORT==== Symbol <span class="built_in">not</span> fou<span class="symbol">nd:</span> __ZNK8wxCursor10GetHotSpotEv</span><br></pre></td></tr></table></figure>
-
-<p><strong>原因</strong>: Erlang 27 与现有的 wxWidgets 版本不兼容。</p>
-<p><strong>解决方案</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 卸载 Erlang 27 和 wxWidgets</span></span><br><span class="line">brew uninstall erlang@27</span><br><span class="line">brew uninstall --ignore-dependencies wxwidgets</span><br><span class="line"></span><br><span class="line"><span class="comment"># 重新安装（这会自动安装兼容的 wxWidgets 版本）</span></span><br><span class="line">brew install erlang@27</span><br></pre></td></tr></table></figure>
-
-<p><strong>验证</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 测试 observer 是否正常工作</span></span><br><span class="line">erl -<span class="built_in">eval</span> <span class="string">&#x27;observer:start(), timer:sleep(2000), observer:stop(), halt().&#x27;</span></span><br><span class="line"><span class="comment"># 应该正常启动和关闭，无错误信息</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="问题-3-缺少-7z-命令"><a href="#问题-3-缺少-7z-命令" class="headerlink" title="问题 3: 缺少 7z 命令"></a>问题 3: 缺少 7z 命令</h3><p><strong>错误信息</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">/bin/sh: 7z: <span class="built_in">command</span> not found</span><br><span class="line">gmake[2]: *** [../../erlang.mk:3510: escript-zip] Error 127</span><br></pre></td></tr></table></figure>
-
-<p><strong>原因</strong>: RabbitMQ CLI 工具构建需要 7z 命令来创建 escript 归档。</p>
-<p><strong>解决方案</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 安装 p7zip</span></span><br><span class="line">brew install p7zip</span><br><span class="line"></span><br><span class="line"><span class="comment"># 验证安装</span></span><br><span class="line"><span class="built_in">which</span> 7z</span><br><span class="line"><span class="comment"># 应该输出: /opt/homebrew/bin/7z</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="问题-4-hex-core-依赖构建失败"><a href="#问题-4-hex-core-依赖构建失败" class="headerlink" title="问题 4: hex_core 依赖构建失败"></a>问题 4: hex_core 依赖构建失败</h3><p><strong>错误信息</strong>:</p>
-<figure class="highlight gams"><table><tr><td class="code"><pre><span class="line">gmake[<span class="number">2</span>]: *** <span class="keyword">No</span> targets specified <span class="keyword">and</span> <span class="keyword">no</span> makefile found.  Stop.</span><br><span class="line">touch: cannot touch <span class="string">&#x27;/Users/.../deps/hex_core/ebin/dep_built&#x27;</span>: <span class="keyword">No</span> such <span class="keyword">file</span> <span class="keyword">or</span> directory</span><br></pre></td></tr></table></figure>
-
-<p><strong>原因</strong>: hex_core 使用 rebar3 构建系统，但 erlang.mk 尝试用 make 构建它。</p>
-<p><strong>解决方案</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 手动编译 hex_core</span></span><br><span class="line"><span class="built_in">cd</span> deps/hex_core</span><br><span class="line"><span class="built_in">mkdir</span> -p ebin</span><br><span class="line">erlc -o ebin src/*.erl</span><br><span class="line"><span class="built_in">cp</span> src/hex_core.app.src ebin/hex_core.app</span><br><span class="line"><span class="built_in">touch</span> ebin/dep_built</span><br><span class="line"><span class="built_in">cd</span> ../..</span><br></pre></td></tr></table></figure>
-
-<h3 id="问题-5-ra-模块并发编译问题"><a href="#问题-5-ra-模块并发编译问题" class="headerlink" title="问题 5: ra 模块并发编译问题"></a>问题 5: ra 模块并发编译问题</h3><p><strong>错误信息</strong>:</p>
-<figure class="highlight vim"><table><tr><td class="code"><pre><span class="line">failed <span class="keyword">to</span> <span class="built_in">rename</span> .../ra_snapshot.bea# <span class="keyword">to</span> .../ra_snapshot.beam: <span class="keyword">no</span> such <span class="keyword">file</span> <span class="built_in">or</span> directory</span><br></pre></td></tr></table></figure>
-
-<p><strong>原因</strong>: 并发编译时文件操作冲突。</p>
-<p><strong>解决方案</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 使用单线程编译</span></span><br><span class="line">gmake -j1</span><br><span class="line"></span><br><span class="line"><span class="comment"># 或者清理 ra 目录后重新编译</span></span><br><span class="line"><span class="built_in">rm</span> -rf deps/ra/ebin</span><br><span class="line"><span class="built_in">mkdir</span> deps/ra/ebin</span><br><span class="line">gmake -j1 deps</span><br></pre></td></tr></table></figure>
-
-<h3 id="问题-6-Generic-Unix-包构建中的重复文件名错误"><a href="#问题-6-Generic-Unix-包构建中的重复文件名错误" class="headerlink" title="问题 6: Generic Unix 包构建中的重复文件名错误"></a>问题 6: Generic Unix 包构建中的重复文件名错误</h3><p><strong>错误信息</strong>:</p>
-<figure class="highlight subunit"><table><tr><td class="code"><pre><span class="line"><span class="keyword">ERROR:</span></span><br><span class="line"><span class="keyword"></span>Duplicate filename on disk:</span><br><span class="line">dep_built</span><br><span class="line">dep_built</span><br><span class="line">make[6]: *** [../../erlang.mk:3511: escript-zip] Error 2</span><br></pre></td></tr></table></figure>
-
-<p><strong>原因</strong>: 在创建 escript zip 文件时，多个依赖项中都包含 <code>dep_built</code> 文件，导致 7z 归档时文件名冲突。</p>
-<p><strong>解决方案</strong>:</p>
-<p>方法1 - 临时删除 dep_built 文件：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 删除所有 dep_built 文件</span></span><br><span class="line">find deps -name <span class="string">&quot;dep_built&quot;</span> -delete</span><br><span class="line"></span><br><span class="line"><span class="comment"># 然后构建包</span></span><br><span class="line">gmake package-generic-unix</span><br></pre></td></tr></table></figure>
-
-<p>方法2 - 修改 erlang.mk（永久解决）：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 在 erlang.mk 第3510-3515行，添加 filter-out 来排除 dep_built 文件</span></span><br><span class="line"><span class="comment"># 将：</span></span><br><span class="line"><span class="comment">#   $(subst $(DEPS_DIR)/,,$(addsuffix /*,$(wildcard \</span></span><br><span class="line"><span class="comment"># 改为：</span></span><br><span class="line"><span class="comment">#   $(filter-out %/dep_built,$(subst $(DEPS_DIR)/,,$(addsuffix /*,$(wildcard \</span></span><br></pre></td></tr></table></figure>
-
-<p>方法3 - 使用构建脚本：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 使用提供的自动化脚本</span></span><br><span class="line">./build_package.sh</span><br></pre></td></tr></table></figure>
-
-<p><strong>验证</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 检查生成的包文件</span></span><br><span class="line"><span class="built_in">ls</span> -la PACKAGES/rabbitmq-server-*.tar.xz</span><br></pre></td></tr></table></figure>
-
-<h2 id="包构建脚本"><a href="#包构建脚本" class="headerlink" title="包构建脚本"></a>包构建脚本</h2><p>创建 <code>build_package.sh</code> 脚本来自动化包构建过程：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"><span class="comment"># RabbitMQ Generic Unix Package Build Script</span></span><br><span class="line"><span class="built_in">set</span> -e</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;开始构建 RabbitMQ Generic Unix 包...&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置环境变量</span></span><br><span class="line"><span class="built_in">export</span> PATH=<span class="string">&quot;/opt/homebrew/opt/erlang@27/bin:/opt/homebrew/bin:<span class="variable">$PATH</span>&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 验证环境</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;验证构建环境...&quot;</span></span><br><span class="line"><span class="built_in">which</span> gmake || &#123; <span class="built_in">echo</span> <span class="string">&quot;错误: 未找到 gmake&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line"><span class="built_in">which</span> erl || &#123; <span class="built_in">echo</span> <span class="string">&quot;错误: 未找到 erlang&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line"><span class="built_in">which</span> 7z || &#123; <span class="built_in">echo</span> <span class="string">&quot;错误: 未找到 7z&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查 Erlang 版本</span></span><br><span class="line">ERL_VERSION=$(erl -<span class="built_in">eval</span> <span class="string">&#x27;io:format(&quot;~s&quot;, [erlang:system_info(otp_release)]), halt().&#x27;</span> -noshell)</span><br><span class="line"><span class="keyword">if</span> [[ <span class="string">&quot;<span class="variable">$ERL_VERSION</span>&quot;</span> &lt; <span class="string">&quot;27&quot;</span> ]]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;错误: 需要 Erlang 27+，当前版本: <span class="variable">$ERL_VERSION</span>&quot;</span></span><br><span class="line">    <span class="built_in">exit</span> 1</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;Erlang 版本: <span class="variable">$ERL_VERSION</span> ✓&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 清理可能导致问题的 dep_built 文件</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;清理 dep_built 文件...&quot;</span></span><br><span class="line">find deps -name <span class="string">&quot;dep_built&quot;</span> -delete 2&gt;/dev/null || <span class="literal">true</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 确保主项目已经构建</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;确保主项目已构建...&quot;</span></span><br><span class="line"><span class="keyword">if</span> [ ! -f <span class="string">&quot;sbin/rabbitmq-server&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;主项目未构建，开始构建...&quot;</span></span><br><span class="line">    gmake -j1</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 构建 generic-unix 包</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;构建 Generic Unix 包...&quot;</span></span><br><span class="line">gmake package-generic-unix</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;构建完成！&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查输出</span></span><br><span class="line">PACKAGE_DIR=<span class="string">&quot;PACKAGES&quot;</span></span><br><span class="line"><span class="keyword">if</span> [ -d <span class="string">&quot;<span class="variable">$PACKAGE_DIR</span>&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;生成的包文件:&quot;</span></span><br><span class="line">    <span class="built_in">ls</span> -la <span class="string">&quot;<span class="variable">$PACKAGE_DIR</span>&quot;</span>/rabbitmq-server-*.tar.xz 2&gt;/dev/null || <span class="built_in">echo</span> <span class="string">&quot;未找到 .tar.xz 文件&quot;</span></span><br><span class="line">    <span class="built_in">ls</span> -la <span class="string">&quot;<span class="variable">$PACKAGE_DIR</span>&quot;</span>/rabbitmq-server-*.tar.gz 2&gt;/dev/null || <span class="built_in">echo</span> <span class="string">&quot;未找到 .tar.gz 文件&quot;</span></span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;警告: 未找到 PACKAGES 目录&quot;</span></span><br><span class="line"><span class="keyword">fi</span></span><br></pre></td></tr></table></figure>
-
-<h2 id="完整编译脚本"><a href="#完整编译脚本" class="headerlink" title="完整编译脚本"></a>完整编译脚本</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># RabbitMQ 服务器编译脚本</span></span><br><span class="line"><span class="built_in">set</span> -e</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;开始编译 RabbitMQ 服务器...&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置环境变量</span></span><br><span class="line"><span class="built_in">export</span> PATH=<span class="string">&quot;/opt/homebrew/opt/erlang@27/bin:/opt/homebrew/bin:<span class="variable">$PATH</span>&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 验证必需工具</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;验证构建工具...&quot;</span></span><br><span class="line"><span class="built_in">which</span> gmake || &#123; <span class="built_in">echo</span> <span class="string">&quot;错误: 未找到 gmake&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line"><span class="built_in">which</span> erl || &#123; <span class="built_in">echo</span> <span class="string">&quot;错误: 未找到 erlang&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line"><span class="built_in">which</span> 7z || &#123; <span class="built_in">echo</span> <span class="string">&quot;错误: 未找到 7z&quot;</span>; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查 Erlang 版本</span></span><br><span class="line">ERL_VERSION=$(erl -<span class="built_in">eval</span> <span class="string">&#x27;io:format(&quot;~s&quot;, [erlang:system_info(otp_release)]), halt().&#x27;</span> -noshell)</span><br><span class="line"><span class="keyword">if</span> [[ <span class="string">&quot;<span class="variable">$ERL_VERSION</span>&quot;</span> &lt; <span class="string">&quot;27&quot;</span> ]]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;错误: 需要 Erlang 27+，当前版本: <span class="variable">$ERL_VERSION</span>&quot;</span></span><br><span class="line">    <span class="built_in">exit</span> 1</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;Erlang 版本: <span class="variable">$ERL_VERSION</span> ✓&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 清理构建产物</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;清理构建产物...&quot;</span></span><br><span class="line">git clean -xfffd</span><br><span class="line">gmake clean</span><br><span class="line">gmake distclean</span><br><span class="line"></span><br><span class="line"><span class="comment"># 手动构建 hex_core（如果需要）</span></span><br><span class="line"><span class="keyword">if</span> [ ! -f <span class="string">&quot;deps/hex_core/ebin/dep_built&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;手动构建 hex_core...&quot;</span></span><br><span class="line">    <span class="built_in">cd</span> deps/hex_core</span><br><span class="line">    <span class="built_in">mkdir</span> -p ebin</span><br><span class="line">    erlc -o ebin src/*.erl 2&gt;/dev/null || <span class="literal">true</span></span><br><span class="line">    <span class="built_in">cp</span> src/hex_core.app.src ebin/hex_core.app 2&gt;/dev/null || <span class="literal">true</span></span><br><span class="line">    <span class="built_in">touch</span> ebin/dep_built</span><br><span class="line">    <span class="built_in">cd</span> ../..</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 开始编译</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;开始编译 RabbitMQ...&quot;</span></span><br><span class="line">gmake -j1</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;编译完成！&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 验证编译结果</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;验证编译结果...&quot;</span></span><br><span class="line"><span class="keyword">if</span> [ -f <span class="string">&quot;sbin/rabbitmq-server&quot;</span> ] &amp;&amp; [ -f <span class="string">&quot;escript/rabbitmqctl&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;✓ 编译成功！&quot;</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;  - 服务器脚本: sbin/rabbitmq-server&quot;</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;  - 控制工具: escript/rabbitmqctl&quot;</span></span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;✗ 编译可能不完整，请检查错误信息&quot;</span></span><br><span class="line">    <span class="built_in">exit</span> 1</span><br><span class="line"><span class="keyword">fi</span></span><br></pre></td></tr></table></figure>
-
-<h2 id="验证编译结果"><a href="#验证编译结果" class="headerlink" title="验证编译结果"></a>验证编译结果</h2><h3 id="检查生成的文件"><a href="#检查生成的文件" class="headerlink" title="检查生成的文件"></a>检查生成的文件</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 检查主要可执行文件</span></span><br><span class="line"><span class="built_in">ls</span> -la sbin/rabbitmq-server</span><br><span class="line"><span class="built_in">ls</span> -la escript/rabbitmqctl</span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查插件目录</span></span><br><span class="line"><span class="built_in">ls</span> -la plugins/</span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查 Erlang beam 文件</span></span><br><span class="line">find deps/rabbit/ebin -name <span class="string">&quot;*.beam&quot;</span> | <span class="built_in">head</span> -5</span><br></pre></td></tr></table></figure>
-
-<h3 id="运行测试"><a href="#运行测试" class="headerlink" title="运行测试"></a>运行测试</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 启动开发模式服务器</span></span><br><span class="line">gmake run-broker</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在另一个终端中测试连接</span></span><br><span class="line">./escript/rabbitmqctl status</span><br></pre></td></tr></table></figure>
-
-<h2 id="常见问题排查"><a href="#常见问题排查" class="headerlink" title="常见问题排查"></a>常见问题排查</h2><h3 id="编译时间过长"><a href="#编译时间过长" class="headerlink" title="编译时间过长"></a>编译时间过长</h3><ul>
-<li><strong>原因</strong>: RabbitMQ 是大型项目，包含众多模块</li>
-<li><strong>解决</strong>: 正常现象，完整编译需要 15-25 分钟</li>
-</ul>
-<h3 id="内存不足"><a href="#内存不足" class="headerlink" title="内存不足"></a>内存不足</h3><ul>
-<li><strong>症状</strong>: 编译过程中系统卡顿或进程被杀死</li>
-<li><strong>解决</strong>: 使用 <code>gmake -j1</code> 减少并发，或增加虚拟内存</li>
-</ul>
-<h3 id="权限问题"><a href="#权限问题" class="headerlink" title="权限问题"></a>权限问题</h3><ul>
-<li><strong>症状</strong>: 无法创建文件或目录</li>
-<li><strong>解决</strong>: 确保对项目目录有写权限，避免使用 sudo</li>
-</ul>
-<h3 id="网络问题"><a href="#网络问题" class="headerlink" title="网络问题"></a>网络问题</h3><ul>
-<li><strong>症状</strong>: 依赖下载失败</li>
-<li><strong>解决</strong>: 检查网络连接，考虑使用代理或镜像源</li>
-</ul>
-<h2 id="性能优化建议"><a href="#性能优化建议" class="headerlink" title="性能优化建议"></a>性能优化建议</h2><ol>
-<li><strong>使用 SSD</strong>: 确保项目在 SSD 上编译</li>
-<li><strong>充足内存</strong>: 推荐 8GB+ 内存</li>
-<li><strong>单线程编译</strong>: 使用 <code>-j1</code> 避免并发问题</li>
-<li><strong>清理缓存</strong>: 定期运行 <code>gmake distclean</code></li>
-</ol>
-<h2 id="相关资源"><a href="#相关资源" class="headerlink" title="相关资源"></a>相关资源</h2><ul>
-<li><a href="https://www.rabbitmq.com/docs/">RabbitMQ 官方文档</a></li>
-<li><a href="https://github.com/rabbitmq/rabbitmq-server">RabbitMQ GitHub 仓库</a></li>
-<li><a href="https://www.erlang.org/docs">Erlang&#x2F;OTP 文档</a></li>
-</ul>
-<h2 id="版本信息"><a href="#版本信息" class="headerlink" title="版本信息"></a>版本信息</h2><ul>
-<li><strong>文档版本</strong>: 1.0</li>
-<li><strong>RabbitMQ 版本</strong>: 4.x (main 分支)</li>
-<li><strong>Erlang 版本</strong>: 27.3.4.6</li>
-<li><strong>创建日期</strong>: 2026-01-16</li>
-<li><strong>最后更新</strong>: 2026-01-16</li>
-</ul>
-<hr>
-<p><strong>注意</strong>: 本文档基于 macOS Apple Silicon 环境编写，其他平台可能需要调整部分步骤。</p>
+<p><code>ERL_LIBS</code> 环境变量只影响 Erlang 代码加载路径，不能替代 RabbitMQ 自身的配置变量。</p>
 ]]></content>
       <categories>
-        <category>技术</category>
         <category>RabbitMQ</category>
       </categories>
       <tags>
-        <tag>Erlang</tag>
         <tag>RabbitMQ</tag>
-        <tag>编译</tag>
-        <tag>macOS</tag>
+        <tag>问题排查</tag>
+        <tag>插件</tag>
+        <tag>源码编译</tag>
       </tags>
   </entry>
 </search>

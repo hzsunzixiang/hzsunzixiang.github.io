@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.svg">
+  <link rel="mask-icon" href="/images/favicon.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Noto+Serif+SC:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Source+Code+Pro:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"hzsunzixiang.github.io","root":"/","images":"/images","scheme":"Pisces","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"default","show_result":true},"fold":{"enable":false,"height":500},"language":false,"highlight_theme":"default"},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="RabbitMQ 插件启用问题排查指南问题描述从源码编译运行 RabbitMQ 时，执行插件启用命令报错： 12345678$ sbin&#x2F;rabbitmq-plugins enable rabbitmq_managementError: :plugins_dir_does_not_existArguments given:        enable rabbitmq_managementUsag">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RabbitMQ 插件启用问题排查指南">
+<meta property="og:url" content="https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-plugins-enable-guide/">
+<meta property="og:site_name" content="Zixiang Sun&#39;s Blog">
+<meta property="og:description" content="RabbitMQ 插件启用问题排查指南问题描述从源码编译运行 RabbitMQ 时，执行插件启用命令报错： 12345678$ sbin&#x2F;rabbitmq-plugins enable rabbitmq_managementError: :plugins_dir_does_not_existArguments given:        enable rabbitmq_managementUsag">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-01-16T13:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-16T13:59:04.995Z">
+<meta property="article:author" content="Zixiang Sun">
+<meta property="article:tag" content="RabbitMQ">
+<meta property="article:tag" content="插件">
+<meta property="article:tag" content="源码编译">
+<meta property="article:tag" content="问题排查">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-plugins-enable-guide/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-plugins-enable-guide/","path":"2026/01/16/rabbitmq-rabbitmq-plugins-enable-guide/","title":"RabbitMQ 插件启用问题排查指南"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>RabbitMQ 插件启用问题排查指南 | Zixiang Sun's Blog</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="Zixiang Sun's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Zixiang Sun's Blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Sharing thoughts on technology, programming, and life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">9</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">6</span></a></li><li class="menu-item menu-item-erlang"><a href="/erlang/" rel="section"><i class="fa fa-code fa-fw"></i>Erlang</a></li><li class="menu-item menu-item-rabbitmq"><a href="/rabbitmq/" rel="section"><i class="fa fa-server fa-fw"></i>RabbitMQ</a></li><li class="menu-item menu-item-craq"><a href="/craq/" rel="section"><i class="fa fa-book fa-fw"></i>CRAQ</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#RabbitMQ-%E6%8F%92%E4%BB%B6%E5%90%AF%E7%94%A8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E6%8C%87%E5%8D%97"><span class="nav-number">1.</span> <span class="nav-text">RabbitMQ 插件启用问题排查指南</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E6%8F%8F%E8%BF%B0"><span class="nav-number">1.1.</span> <span class="nav-text">问题描述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B9%E5%9B%A0%E5%88%86%E6%9E%90"><span class="nav-number">1.2.</span> <span class="nav-text">根因分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ERL-LIBS-%E4%B8%8E-RABBITMQ-PLUGINS-DIR-%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">1.2.1.</span> <span class="nav-text">ERL_LIBS 与 RABBITMQ_PLUGINS_DIR 的区别</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%BB%98%E8%AE%A4%E8%B7%AF%E5%BE%84%E9%97%AE%E9%A2%98"><span class="nav-number">1.2.2.</span> <span class="nav-text">默认路径问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">1.3.</span> <span class="nav-text">解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%B9%E6%A1%88%E4%B8%80%EF%BC%9A%E8%AE%BE%E7%BD%AE%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%EF%BC%88%E6%8E%A8%E8%8D%90%EF%BC%89"><span class="nav-number">1.3.1.</span> <span class="nav-text">方案一：设置环境变量（推荐）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%B9%E6%A1%88%E4%BA%8C%EF%BC%9A%E5%91%BD%E4%BB%A4%E8%A1%8C%E6%8C%87%E5%AE%9A%EF%BC%88%E4%B8%B4%E6%97%B6%E4%BD%BF%E7%94%A8%EF%BC%89"><span class="nav-number">1.3.2.</span> <span class="nav-text">方案二：命令行指定（临时使用）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%B9%E6%A1%88%E4%B8%89%EF%BC%9A%E4%BD%BF%E7%94%A8-make-%E5%91%BD%E4%BB%A4"><span class="nav-number">1.3.3.</span> <span class="nav-text">方案三：使用 make 命令</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%88%90%E5%8A%9F%E6%89%A7%E8%A1%8C%E7%A4%BA%E4%BE%8B"><span class="nav-number">1.4.</span> <span class="nav-text">成功执行示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E7%94%A8%E6%8F%92%E4%BB%B6%E5%91%BD%E4%BB%A4"><span class="nav-number">1.5.</span> <span class="nav-text">常用插件命令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E6%8F%92%E4%BB%B6%E8%AF%B4%E6%98%8E"><span class="nav-number">1.6.</span> <span class="nav-text">常见插件说明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.7.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Zixiang Sun"
+      src="/images/avatar.svg">
+  <p class="site-author-name" itemprop="name">Zixiang Sun</p>
+  <div class="site-description" itemprop="description">Welcome to my personal blog where I share thoughts on technology, programming, and life experiences.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">9</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/hzsunzixiang" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;hzsunzixiang" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:17842379@qq.com" title="E-Mail → mailto:17842379@qq.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-plugins-enable-guide/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.svg">
+      <meta itemprop="name" content="Zixiang Sun">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Zixiang Sun's Blog">
+      <meta itemprop="description" content="Welcome to my personal blog where I share thoughts on technology, programming, and life experiences.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="RabbitMQ 插件启用问题排查指南 | Zixiang Sun's Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RabbitMQ 插件启用问题排查指南
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-01-16 21:00:00 / 修改时间：21:59:04" itemprop="dateCreated datePublished" datetime="2026-01-16T21:00:00+08:00">2026-01-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/RabbitMQ/" itemprop="url" rel="index"><span itemprop="name">RabbitMQ</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="RabbitMQ-插件启用问题排查指南"><a href="#RabbitMQ-插件启用问题排查指南" class="headerlink" title="RabbitMQ 插件启用问题排查指南"></a>RabbitMQ 插件启用问题排查指南</h1><h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>从源码编译运行 RabbitMQ 时，执行插件启用命令报错：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ sbin/rabbitmq-plugins <span class="built_in">enable</span> rabbitmq_management</span><br><span class="line">Error: :plugins_dir_does_not_exist</span><br><span class="line">Arguments given:</span><br><span class="line">        <span class="built_in">enable</span> rabbitmq_management</span><br><span class="line"></span><br><span class="line">Usage</span><br><span class="line"></span><br><span class="line">rabbitmq-plugins [--node &lt;node&gt;] [--longnames] [--quiet] <span class="built_in">enable</span> &lt;plugin1&gt; [ &lt;plugin2&gt;] | --all [--offline] [--online]</span><br></pre></td></tr></table></figure>
+
+<p>即使设置了 <code>ERL_LIBS</code> 环境变量也无法解决：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">echo</span> <span class="variable">$ERL_LIBS</span></span><br><span class="line">/Users/ericksun/workspace/rabbitmq-server/plugins</span><br></pre></td></tr></table></figure>
+
+<h2 id="根因分析"><a href="#根因分析" class="headerlink" title="根因分析"></a>根因分析</h2><h3 id="ERL-LIBS-与-RABBITMQ-PLUGINS-DIR-的区别"><a href="#ERL-LIBS-与-RABBITMQ-PLUGINS-DIR-的区别" class="headerlink" title="ERL_LIBS 与 RABBITMQ_PLUGINS_DIR 的区别"></a>ERL_LIBS 与 RABBITMQ_PLUGINS_DIR 的区别</h3><table>
+<thead>
+<tr>
+<th>环境变量</th>
+<th>作用</th>
+<th>使用者</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ERL_LIBS</code></td>
+<td>告诉 Erlang VM 在哪里查找代码模块</td>
+<td>Erlang 运行时</td>
+</tr>
+<tr>
+<td><code>RABBITMQ_PLUGINS_DIR</code></td>
+<td>告诉 rabbitmq-plugins 脚本插件目录位置</td>
+<td>RabbitMQ 脚本</td>
+</tr>
+<tr>
+<td><code>RABBITMQ_ENABLED_PLUGINS_FILE</code></td>
+<td>指定启用插件配置文件的位置</td>
+<td>RabbitMQ 脚本</td>
+</tr>
+</tbody></table>
+<p><code>ERL_LIBS</code> 只是让 Erlang 能找到代码，但 <code>rabbitmq-plugins</code> 脚本需要 <code>RABBITMQ_PLUGINS_DIR</code> 来定位插件目录。</p>
+<h3 id="默认路径问题"><a href="#默认路径问题" class="headerlink" title="默认路径问题"></a>默认路径问题</h3><p>从源码运行时，RabbitMQ 默认查找：</p>
+<ul>
+<li>插件目录：由 <code>RABBITMQ_HOME/plugins</code> 或 <code>RABBITMQ_PLUGINS_DIR</code> 指定</li>
+<li>启用插件文件：<code>/etc/rabbitmq/enabled_plugins</code>（系统路径，源码环境下不存在）</li>
+</ul>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><h3 id="方案一：设置环境变量（推荐）"><a href="#方案一：设置环境变量（推荐）" class="headerlink" title="方案一：设置环境变量（推荐）"></a>方案一：设置环境变量（推荐）</h3><p>在 shell 配置文件（如 <code>~/.bashrc</code> 或 <code>~/.zshrc</code>）中添加：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># RabbitMQ 源码开发环境配置</span></span><br><span class="line"><span class="built_in">export</span> RABBITMQ_HOME=/path/to/rabbitmq-server</span><br><span class="line"><span class="built_in">export</span> RABBITMQ_PLUGINS_DIR=<span class="variable">$RABBITMQ_HOME</span>/plugins</span><br><span class="line"><span class="built_in">export</span> RABBITMQ_ENABLED_PLUGINS_FILE=<span class="variable">$RABBITMQ_HOME</span>/etc/rabbitmq/enabled_plugins</span><br></pre></td></tr></table></figure>
+
+<p>然后创建必要的目录：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> -p <span class="variable">$RABBITMQ_HOME</span>/etc/rabbitmq</span><br></pre></td></tr></table></figure>
+
+<h3 id="方案二：命令行指定（临时使用）"><a href="#方案二：命令行指定（临时使用）" class="headerlink" title="方案二：命令行指定（临时使用）"></a>方案二：命令行指定（临时使用）</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /path/to/rabbitmq-server</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建配置目录</span></span><br><span class="line"><span class="built_in">mkdir</span> -p etc/rabbitmq</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启用插件（使用 --offline 模式，不需要连接运行中的节点）</span></span><br><span class="line">RABBITMQ_PLUGINS_DIR=$(<span class="built_in">pwd</span>)/plugins \</span><br><span class="line">RABBITMQ_ENABLED_PLUGINS_FILE=$(<span class="built_in">pwd</span>)/etc/rabbitmq/enabled_plugins \</span><br><span class="line">sbin/rabbitmq-plugins <span class="built_in">enable</span> rabbitmq_management --offline</span><br></pre></td></tr></table></figure>
+
+<h3 id="方案三：使用-make-命令"><a href="#方案三：使用-make-命令" class="headerlink" title="方案三：使用 make 命令"></a>方案三：使用 make 命令</h3><p>RabbitMQ 源码提供了便捷的 make 目标：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 启动带管理插件的开发节点</span></span><br><span class="line">make run-broker RABBITMQ_ENABLED_PLUGINS=<span class="string">&quot;rabbitmq_management&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="成功执行示例"><a href="#成功执行示例" class="headerlink" title="成功执行示例"></a>成功执行示例</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">$ RABBITMQ_PLUGINS_DIR=$(<span class="built_in">pwd</span>)/plugins \</span><br><span class="line">  RABBITMQ_ENABLED_PLUGINS_FILE=$(<span class="built_in">pwd</span>)/etc/rabbitmq/enabled_plugins \</span><br><span class="line">  sbin/rabbitmq-plugins <span class="built_in">enable</span> rabbitmq_management --offline</span><br><span class="line"></span><br><span class="line">Enabling plugins on node rabbit@ERICKSUN-MC1:</span><br><span class="line">rabbitmq_management</span><br><span class="line"></span><br><span class="line">The following plugins have been configured:</span><br><span class="line">  rabbitmq_management</span><br><span class="line">  rabbitmq_management_agent</span><br><span class="line">  rabbitmq_web_dispatch</span><br><span class="line">Applying plugin configuration to rabbit@ERICKSUN-MC1...</span><br><span class="line">The following plugins have been enabled:</span><br><span class="line">  rabbitmq_management</span><br><span class="line">  rabbitmq_management_agent</span><br><span class="line">  rabbitmq_web_dispatch</span><br><span class="line"></span><br><span class="line"><span class="built_in">set</span> 3 plugins.</span><br><span class="line">Offline change; changes will take effect at broker restart.</span><br></pre></td></tr></table></figure>
+
+<h2 id="常用插件命令"><a href="#常用插件命令" class="headerlink" title="常用插件命令"></a>常用插件命令</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 设置环境变量（假设已在 rabbitmq-server 目录）</span></span><br><span class="line"><span class="built_in">export</span> RABBITMQ_PLUGINS_DIR=$(<span class="built_in">pwd</span>)/plugins</span><br><span class="line"><span class="built_in">export</span> RABBITMQ_ENABLED_PLUGINS_FILE=$(<span class="built_in">pwd</span>)/etc/rabbitmq/enabled_plugins</span><br><span class="line"></span><br><span class="line"><span class="comment"># 列出所有可用插件</span></span><br><span class="line">sbin/rabbitmq-plugins list</span><br><span class="line"></span><br><span class="line"><span class="comment"># 列出已启用的插件</span></span><br><span class="line">sbin/rabbitmq-plugins list --enabled</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启用插件（离线模式）</span></span><br><span class="line">sbin/rabbitmq-plugins <span class="built_in">enable</span> rabbitmq_management --offline</span><br><span class="line"></span><br><span class="line"><span class="comment"># 禁用插件</span></span><br><span class="line">sbin/rabbitmq-plugins <span class="built_in">disable</span> rabbitmq_management --offline</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启用多个插件</span></span><br><span class="line">sbin/rabbitmq-plugins <span class="built_in">enable</span> rabbitmq_management rabbitmq_shovel --offline</span><br></pre></td></tr></table></figure>
+
+<h2 id="常见插件说明"><a href="#常见插件说明" class="headerlink" title="常见插件说明"></a>常见插件说明</h2><table>
+<thead>
+<tr>
+<th>插件名称</th>
+<th>功能描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>rabbitmq_management</code></td>
+<td>Web 管理界面，默认端口 15672</td>
+</tr>
+<tr>
+<td><code>rabbitmq_management_agent</code></td>
+<td>管理插件的代理（自动依赖）</td>
+</tr>
+<tr>
+<td><code>rabbitmq_web_dispatch</code></td>
+<td>Web 请求分发（自动依赖）</td>
+</tr>
+<tr>
+<td><code>rabbitmq_shovel</code></td>
+<td>消息转发&#x2F;复制</td>
+</tr>
+<tr>
+<td><code>rabbitmq_federation</code></td>
+<td>跨集群消息联邦</td>
+</tr>
+<tr>
+<td><code>rabbitmq_mqtt</code></td>
+<td>MQTT 协议支持</td>
+</tr>
+<tr>
+<td><code>rabbitmq_stomp</code></td>
+<td>STOMP 协议支持</td>
+</tr>
+</tbody></table>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>从源码运行 RabbitMQ 时，需要正确设置以下环境变量：</p>
+<ol>
+<li><strong><code>RABBITMQ_PLUGINS_DIR</code></strong> - 指向 <code>plugins</code> 目录</li>
+<li><strong><code>RABBITMQ_ENABLED_PLUGINS_FILE</code></strong> - 指向本地的 <code>enabled_plugins</code> 文件</li>
+</ol>
+<p><code>ERL_LIBS</code> 环境变量只影响 Erlang 代码加载路径，不能替代 RabbitMQ 自身的配置变量。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/RabbitMQ/" rel="tag"># RabbitMQ</a>
+              <a href="/tags/%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/" rel="tag"># 问题排查</a>
+              <a href="/tags/%E6%8F%92%E4%BB%B6/" rel="tag"># 插件</a>
+              <a href="/tags/%E6%BA%90%E7%A0%81%E7%BC%96%E8%AF%91/" rel="tag"># 源码编译</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/01/16/rabbitmq-rabbitmq-final-solution-summary/" rel="prev" title="RabbitMQ 问题最终解决方案总结">
+                  <i class="fa fa-angle-left"></i> RabbitMQ 问题最终解决方案总结
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2024 – 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Zixiang Sun</span>
+  </div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"hzsunzixiang/hzsunzixiang.github.io","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

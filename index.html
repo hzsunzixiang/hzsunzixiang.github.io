@@ -113,7 +113,7 @@
 
 
 <nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">8</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">5</span></a></li><li class="menu-item menu-item-erlang"><a href="/erlang/" rel="section"><i class="fa fa-code fa-fw"></i>Erlang</a></li><li class="menu-item menu-item-rabbitmq"><a href="/rabbitmq/" rel="section"><i class="fa fa-server fa-fw"></i>RabbitMQ</a></li><li class="menu-item menu-item-craq"><a href="/craq/" rel="section"><i class="fa fa-book fa-fw"></i>CRAQ</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">9</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">6</span></a></li><li class="menu-item menu-item-erlang"><a href="/erlang/" rel="section"><i class="fa fa-code fa-fw"></i>Erlang</a></li><li class="menu-item menu-item-rabbitmq"><a href="/rabbitmq/" rel="section"><i class="fa fa-server fa-fw"></i>RabbitMQ</a></li><li class="menu-item menu-item-craq"><a href="/craq/" rel="section"><i class="fa fa-book fa-fw"></i>CRAQ</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
       <li class="menu-item menu-item-search">
         <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
         </a>
@@ -178,18 +178,18 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-count">9</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
           <a href="/categories/">
-        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-count">6</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-count">17</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -214,6 +214,177 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-plugins-enable-guide/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.svg">
+      <meta itemprop="name" content="Zixiang Sun">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Zixiang Sun's Blog">
+      <meta itemprop="description" content="Welcome to my personal blog where I share thoughts on technology, programming, and life experiences.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | Zixiang Sun's Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/01/16/rabbitmq-rabbitmq-plugins-enable-guide/" class="post-title-link" itemprop="url">RabbitMQ 插件启用问题排查指南</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-01-16 21:00:00 / 修改时间：21:59:04" itemprop="dateCreated datePublished" datetime="2026-01-16T21:00:00+08:00">2026-01-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/RabbitMQ/" itemprop="url" rel="index"><span itemprop="name">RabbitMQ</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="RabbitMQ-插件启用问题排查指南"><a href="#RabbitMQ-插件启用问题排查指南" class="headerlink" title="RabbitMQ 插件启用问题排查指南"></a>RabbitMQ 插件启用问题排查指南</h1><h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>从源码编译运行 RabbitMQ 时，执行插件启用命令报错：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ sbin/rabbitmq-plugins <span class="built_in">enable</span> rabbitmq_management</span><br><span class="line">Error: :plugins_dir_does_not_exist</span><br><span class="line">Arguments given:</span><br><span class="line">        <span class="built_in">enable</span> rabbitmq_management</span><br><span class="line"></span><br><span class="line">Usage</span><br><span class="line"></span><br><span class="line">rabbitmq-plugins [--node &lt;node&gt;] [--longnames] [--quiet] <span class="built_in">enable</span> &lt;plugin1&gt; [ &lt;plugin2&gt;] | --all [--offline] [--online]</span><br></pre></td></tr></table></figure>
+
+<p>即使设置了 <code>ERL_LIBS</code> 环境变量也无法解决：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">echo</span> <span class="variable">$ERL_LIBS</span></span><br><span class="line">/Users/ericksun/workspace/rabbitmq-server/plugins</span><br></pre></td></tr></table></figure>
+
+<h2 id="根因分析"><a href="#根因分析" class="headerlink" title="根因分析"></a>根因分析</h2><h3 id="ERL-LIBS-与-RABBITMQ-PLUGINS-DIR-的区别"><a href="#ERL-LIBS-与-RABBITMQ-PLUGINS-DIR-的区别" class="headerlink" title="ERL_LIBS 与 RABBITMQ_PLUGINS_DIR 的区别"></a>ERL_LIBS 与 RABBITMQ_PLUGINS_DIR 的区别</h3><table>
+<thead>
+<tr>
+<th>环境变量</th>
+<th>作用</th>
+<th>使用者</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ERL_LIBS</code></td>
+<td>告诉 Erlang VM 在哪里查找代码模块</td>
+<td>Erlang 运行时</td>
+</tr>
+<tr>
+<td><code>RABBITMQ_PLUGINS_DIR</code></td>
+<td>告诉 rabbitmq-plugins 脚本插件目录位置</td>
+<td>RabbitMQ 脚本</td>
+</tr>
+<tr>
+<td><code>RABBITMQ_ENABLED_PLUGINS_FILE</code></td>
+<td>指定启用插件配置文件的位置</td>
+<td>RabbitMQ 脚本</td>
+</tr>
+</tbody></table>
+<p><code>ERL_LIBS</code> 只是让 Erlang 能找到代码，但 <code>rabbitmq-plugins</code> 脚本需要 <code>RABBITMQ_PLUGINS_DIR</code> 来定位插件目录。</p>
+<h3 id="默认路径问题"><a href="#默认路径问题" class="headerlink" title="默认路径问题"></a>默认路径问题</h3><p>从源码运行时，RabbitMQ 默认查找：</p>
+<ul>
+<li>插件目录：由 <code>RABBITMQ_HOME/plugins</code> 或 <code>RABBITMQ_PLUGINS_DIR</code> 指定</li>
+<li>启用插件文件：<code>/etc/rabbitmq/enabled_plugins</code>（系统路径，源码环境下不存在）</li>
+</ul>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><h3 id="方案一：设置环境变量（推荐）"><a href="#方案一：设置环境变量（推荐）" class="headerlink" title="方案一：设置环境变量（推荐）"></a>方案一：设置环境变量（推荐）</h3><p>在 shell 配置文件（如 <code>~/.bashrc</code> 或 <code>~/.zshrc</code>）中添加：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># RabbitMQ 源码开发环境配置</span></span><br><span class="line"><span class="built_in">export</span> RABBITMQ_HOME=/path/to/rabbitmq-server</span><br><span class="line"><span class="built_in">export</span> RABBITMQ_PLUGINS_DIR=<span class="variable">$RABBITMQ_HOME</span>/plugins</span><br><span class="line"><span class="built_in">export</span> RABBITMQ_ENABLED_PLUGINS_FILE=<span class="variable">$RABBITMQ_HOME</span>/etc/rabbitmq/enabled_plugins</span><br></pre></td></tr></table></figure>
+
+<p>然后创建必要的目录：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> -p <span class="variable">$RABBITMQ_HOME</span>/etc/rabbitmq</span><br></pre></td></tr></table></figure>
+
+<h3 id="方案二：命令行指定（临时使用）"><a href="#方案二：命令行指定（临时使用）" class="headerlink" title="方案二：命令行指定（临时使用）"></a>方案二：命令行指定（临时使用）</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /path/to/rabbitmq-server</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建配置目录</span></span><br><span class="line"><span class="built_in">mkdir</span> -p etc/rabbitmq</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启用插件（使用 --offline 模式，不需要连接运行中的节点）</span></span><br><span class="line">RABBITMQ_PLUGINS_DIR=$(<span class="built_in">pwd</span>)/plugins \</span><br><span class="line">RABBITMQ_ENABLED_PLUGINS_FILE=$(<span class="built_in">pwd</span>)/etc/rabbitmq/enabled_plugins \</span><br><span class="line">sbin/rabbitmq-plugins <span class="built_in">enable</span> rabbitmq_management --offline</span><br></pre></td></tr></table></figure>
+
+<h3 id="方案三：使用-make-命令"><a href="#方案三：使用-make-命令" class="headerlink" title="方案三：使用 make 命令"></a>方案三：使用 make 命令</h3><p>RabbitMQ 源码提供了便捷的 make 目标：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 启动带管理插件的开发节点</span></span><br><span class="line">make run-broker RABBITMQ_ENABLED_PLUGINS=<span class="string">&quot;rabbitmq_management&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="成功执行示例"><a href="#成功执行示例" class="headerlink" title="成功执行示例"></a>成功执行示例</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">$ RABBITMQ_PLUGINS_DIR=$(<span class="built_in">pwd</span>)/plugins \</span><br><span class="line">  RABBITMQ_ENABLED_PLUGINS_FILE=$(<span class="built_in">pwd</span>)/etc/rabbitmq/enabled_plugins \</span><br><span class="line">  sbin/rabbitmq-plugins <span class="built_in">enable</span> rabbitmq_management --offline</span><br><span class="line"></span><br><span class="line">Enabling plugins on node rabbit@ERICKSUN-MC1:</span><br><span class="line">rabbitmq_management</span><br><span class="line"></span><br><span class="line">The following plugins have been configured:</span><br><span class="line">  rabbitmq_management</span><br><span class="line">  rabbitmq_management_agent</span><br><span class="line">  rabbitmq_web_dispatch</span><br><span class="line">Applying plugin configuration to rabbit@ERICKSUN-MC1...</span><br><span class="line">The following plugins have been enabled:</span><br><span class="line">  rabbitmq_management</span><br><span class="line">  rabbitmq_management_agent</span><br><span class="line">  rabbitmq_web_dispatch</span><br><span class="line"></span><br><span class="line"><span class="built_in">set</span> 3 plugins.</span><br><span class="line">Offline change; changes will take effect at broker restart.</span><br></pre></td></tr></table></figure>
+
+<h2 id="常用插件命令"><a href="#常用插件命令" class="headerlink" title="常用插件命令"></a>常用插件命令</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 设置环境变量（假设已在 rabbitmq-server 目录）</span></span><br><span class="line"><span class="built_in">export</span> RABBITMQ_PLUGINS_DIR=$(<span class="built_in">pwd</span>)/plugins</span><br><span class="line"><span class="built_in">export</span> RABBITMQ_ENABLED_PLUGINS_FILE=$(<span class="built_in">pwd</span>)/etc/rabbitmq/enabled_plugins</span><br><span class="line"></span><br><span class="line"><span class="comment"># 列出所有可用插件</span></span><br><span class="line">sbin/rabbitmq-plugins list</span><br><span class="line"></span><br><span class="line"><span class="comment"># 列出已启用的插件</span></span><br><span class="line">sbin/rabbitmq-plugins list --enabled</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启用插件（离线模式）</span></span><br><span class="line">sbin/rabbitmq-plugins <span class="built_in">enable</span> rabbitmq_management --offline</span><br><span class="line"></span><br><span class="line"><span class="comment"># 禁用插件</span></span><br><span class="line">sbin/rabbitmq-plugins <span class="built_in">disable</span> rabbitmq_management --offline</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启用多个插件</span></span><br><span class="line">sbin/rabbitmq-plugins <span class="built_in">enable</span> rabbitmq_management rabbitmq_shovel --offline</span><br></pre></td></tr></table></figure>
+
+<h2 id="常见插件说明"><a href="#常见插件说明" class="headerlink" title="常见插件说明"></a>常见插件说明</h2><table>
+<thead>
+<tr>
+<th>插件名称</th>
+<th>功能描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>rabbitmq_management</code></td>
+<td>Web 管理界面，默认端口 15672</td>
+</tr>
+<tr>
+<td><code>rabbitmq_management_agent</code></td>
+<td>管理插件的代理（自动依赖）</td>
+</tr>
+<tr>
+<td><code>rabbitmq_web_dispatch</code></td>
+<td>Web 请求分发（自动依赖）</td>
+</tr>
+<tr>
+<td><code>rabbitmq_shovel</code></td>
+<td>消息转发&#x2F;复制</td>
+</tr>
+<tr>
+<td><code>rabbitmq_federation</code></td>
+<td>跨集群消息联邦</td>
+</tr>
+<tr>
+<td><code>rabbitmq_mqtt</code></td>
+<td>MQTT 协议支持</td>
+</tr>
+<tr>
+<td><code>rabbitmq_stomp</code></td>
+<td>STOMP 协议支持</td>
+</tr>
+</tbody></table>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>从源码运行 RabbitMQ 时，需要正确设置以下环境变量：</p>
+<ol>
+<li><strong><code>RABBITMQ_PLUGINS_DIR</code></strong> - 指向 <code>plugins</code> 目录</li>
+<li><strong><code>RABBITMQ_ENABLED_PLUGINS_FILE</code></strong> - 指向本地的 <code>enabled_plugins</code> 文件</li>
+</ol>
+<p><code>ERL_LIBS</code> 环境变量只影响 Erlang 代码加载路径，不能替代 RabbitMQ 自身的配置变量。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 

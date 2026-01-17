@@ -1,6 +1,6 @@
 ---
 title: RabbitMQ 依赖模块全面分析
-date: 2026-01-16
+date: 2026-01-17
 categories:
   - RabbitMQ
 tags:

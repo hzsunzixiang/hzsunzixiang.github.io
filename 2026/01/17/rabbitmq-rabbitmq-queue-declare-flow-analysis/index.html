@@ -23,12 +23,12 @@
     <meta name="description" content="RabbitMQ 队列声明流程深度分析1. 概述本文档深入分析 RabbitMQ 队列声明（rabbit_amqqueue:declare&#x2F;6）的完整执行流程，基于以下示例命令： 1234567891011121314(rabbit@debian-1)1&gt; rabbit_amqqueue:declare(    rabbit_misc:r(&lt;&lt;&quot;&#x2F;&quot;&gt;&amp;">
 <meta property="og:type" content="article">
 <meta property="og:title" content="RabbitMQ 队列声明流程深度分析">
-<meta property="og:url" content="https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-queue-declare-flow-analysis/">
+<meta property="og:url" content="https://hzsunzixiang.github.io/2026/01/17/rabbitmq-rabbitmq-queue-declare-flow-analysis/">
 <meta property="og:site_name" content="Zixiang Sun&#39;s Blog">
 <meta property="og:description" content="RabbitMQ 队列声明流程深度分析1. 概述本文档深入分析 RabbitMQ 队列声明（rabbit_amqqueue:declare&#x2F;6）的完整执行流程，基于以下示例命令： 1234567891011121314(rabbit@debian-1)1&gt; rabbit_amqqueue:declare(    rabbit_misc:r(&lt;&lt;&quot;&#x2F;&quot;&gt;&amp;">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2026-01-15T16:00:00.000Z">
-<meta property="article:modified_time" content="2026-01-17T11:40:26.744Z">
+<meta property="article:published_time" content="2026-01-16T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-17T14:46:59.354Z">
 <meta property="article:author" content="Zixiang Sun">
 <meta property="article:tag" content="Erlang">
 <meta property="article:tag" content="RabbitMQ">
@@ -37,10 +37,10 @@
 <meta name="twitter:card" content="summary">
 
 
-<link rel="canonical" href="https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-queue-declare-flow-analysis/">
+<link rel="canonical" href="https://hzsunzixiang.github.io/2026/01/17/rabbitmq-rabbitmq-queue-declare-flow-analysis/">
 
 
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-queue-declare-flow-analysis/","path":"2026/01/16/rabbitmq-rabbitmq-queue-declare-flow-analysis/","title":"RabbitMQ 队列声明流程深度分析"}</script>
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://hzsunzixiang.github.io/2026/01/17/rabbitmq-rabbitmq-queue-declare-flow-analysis/","path":"2026/01/17/rabbitmq-rabbitmq-queue-declare-flow-analysis/","title":"RabbitMQ 队列声明流程深度分析"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
 <title>RabbitMQ 队列声明流程深度分析 | Zixiang Sun's Blog</title>
@@ -225,7 +225,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-queue-declare-flow-analysis/">
+    <link itemprop="mainEntityOfPage" href="https://hzsunzixiang.github.io/2026/01/17/rabbitmq-rabbitmq-queue-declare-flow-analysis/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.svg">
@@ -253,15 +253,9 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
+      
 
-      <time title="创建时间：2026-01-16 00:00:00" itemprop="dateCreated datePublished" datetime="2026-01-16T00:00:00+08:00">2026-01-16</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-01-17 19:40:26" itemprop="dateModified" datetime="2026-01-17T19:40:26+08:00">2026-01-17</time>
+      <time title="创建时间：2026-01-17 00:00:00 / 修改时间：22:46:59" itemprop="dateCreated datePublished" datetime="2026-01-17T00:00:00+08:00">2026-01-17</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -655,14 +649,11 @@
 
           <div class="post-nav">
             <div class="post-nav-item">
-                <a href="/2024/01/18/erlang-erlang-otp-gen-server/" rel="prev" title="第四章：通用型服务器 gen_server">
-                  <i class="fa fa-angle-left"></i> 第四章：通用型服务器 gen_server
+                <a href="/2026/01/17/rabbitmq-rabbitmq-dependencies-analysis/" rel="prev" title="RabbitMQ 依赖模块全面分析">
+                  <i class="fa fa-angle-left"></i> RabbitMQ 依赖模块全面分析
                 </a>
             </div>
             <div class="post-nav-item">
-                <a href="/2026/01/16/rabbitmq-rabbitmq-dependencies-analysis/" rel="next" title="RabbitMQ 依赖模块全面分析">
-                  RabbitMQ 依赖模块全面分析 <i class="fa fa-angle-right"></i>
-                </a>
             </div>
           </div>
     </footer>

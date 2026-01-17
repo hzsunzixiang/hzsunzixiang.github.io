@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.svg">
+  <link rel="mask-icon" href="/images/favicon.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Noto+Serif+SC:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Source+Code+Pro:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"hzsunzixiang.github.io","root":"/","images":"/images","scheme":"Pisces","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"default","show_result":true},"fold":{"enable":false,"height":500},"language":false,"highlight_theme":"default"},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":true,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="Erlang Trace 调试技术详解概述与 C&#x2F;C++ 的 GDB 单步调试和 Java IDE（Eclipse&#x2F;IntelliJ IDEA）的断点调试不同，Erlang 采用基于进程的 trace 机制进行调试。本文深入介绍 Erlang 的 trace 调试技术，这是 RabbitMQ 源码分析的重要工具。 参考资料推荐书籍 Erlang in Anger - 生产环境">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Erlang Trace 调试技术详解">
+<meta property="og:url" content="https://hzsunzixiang.github.io/2026/01/16/erlang-erlang-trace-debugging-guide/">
+<meta property="og:site_name" content="Zixiang Sun&#39;s Blog">
+<meta property="og:description" content="Erlang Trace 调试技术详解概述与 C&#x2F;C++ 的 GDB 单步调试和 Java IDE（Eclipse&#x2F;IntelliJ IDEA）的断点调试不同，Erlang 采用基于进程的 trace 机制进行调试。本文深入介绍 Erlang 的 trace 调试技术，这是 RabbitMQ 源码分析的重要工具。 参考资料推荐书籍 Erlang in Anger - 生产环境">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-01-16T15:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-17T10:59:55.386Z">
+<meta property="article:author" content="Zixiang Sun">
+<meta property="article:tag" content="Erlang">
+<meta property="article:tag" content="RabbitMQ">
+<meta property="article:tag" content="dbg">
+<meta property="article:tag" content="trace">
+<meta property="article:tag" content="源码分析">
+<meta property="article:tag" content="调试">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://hzsunzixiang.github.io/2026/01/16/erlang-erlang-trace-debugging-guide/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://hzsunzixiang.github.io/2026/01/16/erlang-erlang-trace-debugging-guide/","path":"2026/01/16/erlang-erlang-trace-debugging-guide/","title":"Erlang Trace 调试技术详解"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Erlang Trace 调试技术详解 | Zixiang Sun's Blog</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="Zixiang Sun's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Zixiang Sun's Blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Sharing thoughts on technology, programming, and life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">12</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">8</span></a></li><li class="menu-item menu-item-erlang"><a href="/erlang/" rel="section"><i class="fa fa-code fa-fw"></i>Erlang</a></li><li class="menu-item menu-item-rabbitmq"><a href="/rabbitmq/" rel="section"><i class="fa fa-server fa-fw"></i>RabbitMQ</a></li><li class="menu-item menu-item-craq"><a href="/craq/" rel="section"><i class="fa fa-book fa-fw"></i>CRAQ</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Erlang-Trace-%E8%B0%83%E8%AF%95%E6%8A%80%E6%9C%AF%E8%AF%A6%E8%A7%A3"><span class="nav-number">1.</span> <span class="nav-text">Erlang Trace 调试技术详解</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">1.2.</span> <span class="nav-text">参考资料</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A8%E8%8D%90%E4%B9%A6%E7%B1%8D"><span class="nav-number">1.2.1.</span> <span class="nav-text">推荐书籍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3"><span class="nav-number">1.2.2.</span> <span class="nav-text">技术文档</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Erlang-%E8%B0%83%E8%AF%95%E5%B7%A5%E5%85%B7%E6%80%BB%E8%A7%88"><span class="nav-number">1.3.</span> <span class="nav-text">Erlang 调试工具总览</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Trace-%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5"><span class="nav-number">1.4.</span> <span class="nav-text">Trace 基础概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%AF%E8%BF%BD%E8%B8%AA%E7%9A%84%E4%BA%8B%E4%BB%B6%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.4.1.</span> <span class="nav-text">可追踪的事件类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Trace-%E6%B6%88%E6%81%AF%E6%A0%BC%E5%BC%8F"><span class="nav-number">1.4.2.</span> <span class="nav-text">Trace 消息格式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#erlang-trace-3-API-%E8%AF%A6%E8%A7%A3"><span class="nav-number">1.5.</span> <span class="nav-text">erlang:trace&#x2F;3 API 详解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E8%AF%AD%E6%B3%95"><span class="nav-number">1.5.1.</span> <span class="nav-text">基本语法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E8%A6%81%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="nav-number">1.5.2.</span> <span class="nav-text">重要注意事项</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E5%92%8C%E6%B6%88%E6%81%AF%E8%BF%BD%E8%B8%AA"><span class="nav-number">1.6.</span> <span class="nav-text">进程和消息追踪</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#send-%E5%92%8C-%E2%80%98receive%E2%80%99-%E8%BF%BD%E8%B8%AA"><span class="nav-number">1.6.1.</span> <span class="nav-text">send 和 ‘receive’ 追踪</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#send-%E8%BF%BD%E8%B8%AA"><span class="nav-number">1.6.1.1.</span> <span class="nav-text">send 追踪</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E2%80%98receive%E2%80%99-%E8%BF%BD%E8%B8%AA"><span class="nav-number">1.6.1.2.</span> <span class="nav-text">‘receive’ 追踪</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E8%BF%BD%E8%B8%AA-procs"><span class="nav-number">1.6.2.</span> <span class="nav-text">进程生命周期追踪 (procs)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#running-%E8%BF%BD%E8%B8%AA"><span class="nav-number">1.6.3.</span> <span class="nav-text">running 追踪</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E8%BF%BD%E8%B8%AA"><span class="nav-number">1.6.4.</span> <span class="nav-text">垃圾回收追踪</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8%E8%BF%BD%E8%B8%AA"><span class="nav-number">1.7.</span> <span class="nav-text">函数调用追踪</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86"><span class="nav-number">1.7.1.</span> <span class="nav-text">基本原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#trace-pattern-%E5%9F%BA%E6%9C%AC%E8%AF%AD%E6%B3%95"><span class="nav-number">1.7.2.</span> <span class="nav-text">trace_pattern 基本语法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E7%A4%BA%E4%BE%8B"><span class="nav-number">1.7.3.</span> <span class="nav-text">基本示例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#global-vs-local"><span class="nav-number">1.7.4.</span> <span class="nav-text">global vs local</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#return-to-%E8%BF%BD%E8%B8%AA"><span class="nav-number">1.7.5.</span> <span class="nav-text">return_to 追踪</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#return-trace-%E8%8E%B7%E5%8F%96%E8%BF%94%E5%9B%9E%E5%80%BC"><span class="nav-number">1.7.6.</span> <span class="nav-text">return_trace 获取返回值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#arity-%E9%80%89%E9%A1%B9"><span class="nav-number">1.7.7.</span> <span class="nav-text">arity 选项</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Match-Specifications"><span class="nav-number">1.8.</span> <span class="nav-text">Match Specifications</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E7%BB%93%E6%9E%84"><span class="nav-number">1.8.1.</span> <span class="nav-text">基本结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-dbg-fun2ms-1-%E7%94%9F%E6%88%90"><span class="nav-number">1.8.2.</span> <span class="nav-text">使用 dbg:fun2ms&#x2F;1 生成</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E7%94%A8-MatchSpec-%E7%A4%BA%E4%BE%8B"><span class="nav-number">1.8.3.</span> <span class="nav-text">常用 MatchSpec 示例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#dbg-%E6%A8%A1%E5%9D%97"><span class="nav-number">1.9.</span> <span class="nav-text">dbg 模块</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8%E6%B5%81%E7%A8%8B"><span class="nav-number">1.9.1.</span> <span class="nav-text">基本使用流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4"><span class="nav-number">1.9.2.</span> <span class="nav-text">常用命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dbg-p-2-%E7%9A%84-Flags"><span class="nav-number">1.9.3.</span> <span class="nav-text">dbg:p&#x2F;2 的 Flags</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E9%99%85%E7%A4%BA%E4%BE%8B"><span class="nav-number">1.9.4.</span> <span class="nav-text">实际示例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%A6%E8%BF%94%E5%9B%9E%E5%80%BC%E7%9A%84%E8%BF%BD%E8%B8%AA"><span class="nav-number">1.9.5.</span> <span class="nav-text">带返回值的追踪</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#recon-trace"><span class="nav-number">1.10.</span> <span class="nav-text">recon_trace</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%B9%E7%82%B9"><span class="nav-number">1.10.1.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8"><span class="nav-number">1.10.2.</span> <span class="nav-text">基本使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E8%A6%81%E6%8F%90%E7%A4%BA"><span class="nav-number">1.10.3.</span> <span class="nav-text">重要提示</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E6%8A%80%E5%B7%A7"><span class="nav-number">1.11.</span> <span class="nav-text">实战技巧</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E8%BF%BD%E8%B8%AA-RabbitMQ-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8"><span class="nav-number">1.11.1.</span> <span class="nav-text">1. 追踪 RabbitMQ 函数调用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E8%BF%BD%E8%B8%AA%E6%B6%88%E6%81%AF%E4%BC%A0%E9%80%92"><span class="nav-number">1.11.2.</span> <span class="nav-text">2. 追踪消息传递</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83%E5%AE%89%E5%85%A8%E8%BF%BD%E8%B8%AA"><span class="nav-number">1.11.3.</span> <span class="nav-text">3. 生产环境安全追踪</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E8%BF%BD%E8%B8%AA%E7%89%B9%E5%AE%9A%E5%8F%82%E6%95%B0%E7%9A%84%E8%B0%83%E7%94%A8"><span class="nav-number">1.11.4.</span> <span class="nav-text">4. 追踪特定参数的调用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98"><span class="nav-number">1.12.</span> <span class="nav-text">常见问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Q-%E4%B8%BA%E4%BB%80%E4%B9%88-trace-pattern-%E4%B8%8D%E7%94%9F%E6%95%88%EF%BC%9F"><span class="nav-number">1.12.1.</span> <span class="nav-text">Q: 为什么 trace_pattern 不生效？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Q-%E5%A6%82%E4%BD%95%E8%8E%B7%E5%8F%96%E5%87%BD%E6%95%B0%E8%BF%94%E5%9B%9E%E5%80%BC%EF%BC%9F"><span class="nav-number">1.12.2.</span> <span class="nav-text">Q: 如何获取函数返回值？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Q-%E4%B8%BA%E4%BB%80%E4%B9%88%E7%9C%8B%E4%B8%8D%E5%88%B0%E8%BF%BD%E8%B8%AA%E6%B6%88%E6%81%AF%EF%BC%9F"><span class="nav-number">1.12.3.</span> <span class="nav-text">Q: 为什么看不到追踪消息？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Q-%E5%A6%82%E4%BD%95%E8%BF%BD%E8%B8%AA%E6%96%B0%E5%88%9B%E5%BB%BA%E7%9A%84%E8%BF%9B%E7%A8%8B%EF%BC%9F"><span class="nav-number">1.12.4.</span> <span class="nav-text">Q: 如何追踪新创建的进程？</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.13.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5"><span class="nav-number">1.14.</span> <span class="nav-text">参考链接</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Zixiang Sun"
+      src="/images/avatar.svg">
+  <p class="site-author-name" itemprop="name">Zixiang Sun</p>
+  <div class="site-description" itemprop="description">Welcome to my personal blog where I share thoughts on technology, programming, and life experiences.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/hzsunzixiang" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;hzsunzixiang" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:17842379@qq.com" title="E-Mail → mailto:17842379@qq.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hzsunzixiang.github.io/2026/01/16/erlang-erlang-trace-debugging-guide/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.svg">
+      <meta itemprop="name" content="Zixiang Sun">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Zixiang Sun's Blog">
+      <meta itemprop="description" content="Welcome to my personal blog where I share thoughts on technology, programming, and life experiences.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Erlang Trace 调试技术详解 | Zixiang Sun's Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Erlang Trace 调试技术详解
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-01-16 23:00:00" itemprop="dateCreated datePublished" datetime="2026-01-16T23:00:00+08:00">2026-01-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-17 18:59:55" itemprop="dateModified" datetime="2026-01-17T18:59:55+08:00">2026-01-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/technology/" itemprop="url" rel="index"><span itemprop="name">technology</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/technology/Erlang/" itemprop="url" rel="index"><span itemprop="name">Erlang</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="Erlang-Trace-调试技术详解"><a href="#Erlang-Trace-调试技术详解" class="headerlink" title="Erlang Trace 调试技术详解"></a>Erlang Trace 调试技术详解</h1><h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>与 C&#x2F;C++ 的 GDB 单步调试和 Java IDE（Eclipse&#x2F;IntelliJ IDEA）的断点调试不同，Erlang 采用基于进程的 trace 机制进行调试。本文深入介绍 Erlang 的 trace 调试技术，这是 RabbitMQ 源码分析的重要工具。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><h3 id="推荐书籍"><a href="#推荐书籍" class="headerlink" title="推荐书籍"></a>推荐书籍</h3><ul>
+<li><strong><a target="_blank" rel="noopener" href="https://www.erlang-in-anger.com/">Erlang in Anger</a></strong> - 生产环境 Erlang 调试实战指南</li>
+<li><strong><a target="_blank" rel="noopener" href="https://www.amazon.com/Erlang-Programming-Concurrent-Approach-Development/dp/0596518188">Erlang Programming</a></strong> - Francesco Cesarini, Simon Thompson</li>
+</ul>
+<h3 id="技术文档"><a href="#技术文档" class="headerlink" title="技术文档"></a>技术文档</h3><ul>
+<li><a target="_blank" rel="noopener" href="https://www.erlang-factory.com/upload/presentations/316/dbg[1].pdf">dbg.pdf</a> - Erlang Factory 演讲</li>
+<li><a target="_blank" rel="noopener" href="https://www.academia.edu/113957930/Declarative_debugging_of_concurrent_Erlang_programs">Declarative debugging of concurrent Erlang programs</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.researchgate.net/publication/220178306_Trace_Analysis_of_Erlang_Programs">Trace Analysis of Erlang Programs</a></li>
+<li><a target="_blank" rel="noopener" href="https://esl-conf-static.s3.eu-central-1.amazonaws.com/media/files/000/000/725/original/Peter_Gomori_-_Profiling_and_Tracing_for_all_with_Xprof.pdf">Profiling and Tracing for all with Xprof</a></li>
+</ul>
+<hr>
+<h2 id="Erlang-调试工具总览"><a href="#Erlang-调试工具总览" class="headerlink" title="Erlang 调试工具总览"></a>Erlang 调试工具总览</h2><p>Erlang 提供了多层次的调试工具：</p>
+<table>
+<thead>
+<tr>
+<th>工具</th>
+<th>层级</th>
+<th>特点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>erlang:trace/3</code></td>
+<td>底层 BIF</td>
+<td>最基础，所有工具的基础</td>
+</tr>
+<tr>
+<td><code>erlang:trace_pattern/3</code></td>
+<td>底层 BIF</td>
+<td>函数调用追踪</td>
+</tr>
+<tr>
+<td><code>dbg</code></td>
+<td>标准库</td>
+<td>基于 trace 的封装，更易用</td>
+</tr>
+<tr>
+<td><code>redbug</code></td>
+<td>第三方</td>
+<td>生产环境安全的追踪工具</td>
+</tr>
+<tr>
+<td><code>recon_trace</code></td>
+<td>第三方</td>
+<td>专注函数调用追踪</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="Trace-基础概念"><a href="#Trace-基础概念" class="headerlink" title="Trace 基础概念"></a>Trace 基础概念</h2><h3 id="可追踪的事件类型"><a href="#可追踪的事件类型" class="headerlink" title="可追踪的事件类型"></a>可追踪的事件类型</h3><p>Trace 可以追踪三大类事件：</p>
+<table>
+<thead>
+<tr>
+<th>事件类型</th>
+<th>工具</th>
+<th>Trace Flag</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>进程相关活动和消息传递</td>
+<td>trace, dbg, redbug</td>
+<td><code>all</code>, <code>send</code>, <code>&#39;receive&#39;</code>, <code>procs</code>, <code>running</code></td>
+</tr>
+<tr>
+<td>垃圾回收和内存使用</td>
+<td>trace, dbg, redbug</td>
+<td><code>garbage_collection</code>, <code>timestamp</code></td>
+</tr>
+<tr>
+<td>全局和本地函数调用</td>
+<td>trace + trace_pattern, dbg, recon_trace</td>
+<td><code>call</code>, <code>arity</code>, <code>return_to</code></td>
+</tr>
+</tbody></table>
+<h3 id="Trace-消息格式"><a href="#Trace-消息格式" class="headerlink" title="Trace 消息格式"></a>Trace 消息格式</h3><p>跟踪事件以消息形式发送：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;trace, Pid, Tag, Data1 [,Data2]&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其中 <code>[,Data2]</code> 是可选字段，依赖于跟踪消息类型。</p>
+<hr>
+<h2 id="erlang-trace-3-API-详解"><a href="#erlang-trace-3-API-详解" class="headerlink" title="erlang:trace&#x2F;3 API 详解"></a>erlang:trace&#x2F;3 API 详解</h2><h3 id="基本语法"><a href="#基本语法" class="headerlink" title="基本语法"></a>基本语法</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">erlang:trace(PidSpec, Bool, TraceFlags) -&gt; integer()</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>PidSpec</strong>: 要追踪的进程（<code>all</code>, <code>new</code>, <code>existing</code>, <code>Pid</code>）</li>
+<li><strong>Bool</strong>: <code>true</code> 启用追踪，<code>false</code> 禁用</li>
+<li><strong>TraceFlags</strong>: 追踪标志列表</li>
+<li><strong>返回值</strong>: 被追踪的进程数量</li>
+</ul>
+<h3 id="重要注意事项"><a href="#重要注意事项" class="headerlink" title="重要注意事项"></a>重要注意事项</h3><ol>
+<li><p><strong>Tracer 进程不能被追踪</strong></p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 错误：tracer 不能追踪自己</span></span><br><span class="line">erlang:trace(self(), <span class="literal">true</span>, [send]).  <span class="comment">%% badarg error</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>指定其他进程接收追踪消息</strong></p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 将追踪消息发送到指定进程</span></span><br><span class="line">erlang:trace(all, <span class="literal">true</span>, [send, &#123;tracer, TracerPid&#125;]).</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>终端需要 flush() 查看消息</strong></p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 追踪消息在 mailbox 中，需要 flush 显示</span></span><br><span class="line"><span class="number">1</span>&gt; erlang:trace(Pid, <span class="literal">true</span>, [send]).</span><br><span class="line"><span class="number">2</span>&gt; flush().</span><br></pre></td></tr></table></figure></li>
+</ol>
+<hr>
+<h2 id="进程和消息追踪"><a href="#进程和消息追踪" class="headerlink" title="进程和消息追踪"></a>进程和消息追踪</h2><h3 id="send-和-‘receive’-追踪"><a href="#send-和-‘receive’-追踪" class="headerlink" title="send 和 ‘receive’ 追踪"></a>send 和 ‘receive’ 追踪</h3><h4 id="send-追踪"><a href="#send-追踪" class="headerlink" title="send 追踪"></a>send 追踪</h4><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 启用发送追踪</span></span><br><span class="line">erlang:trace(Pid, <span class="literal">true</span>, [send]).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 追踪消息格式</span></span><br><span class="line">&#123;trace, PidPort, send, Msg, To&#125;</span><br><span class="line">&#123;trace, PidPort, send_to_non_existing_process, Msg, To&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="‘receive’-追踪"><a href="#‘receive’-追踪" class="headerlink" title="‘receive’ 追踪"></a>‘receive’ 追踪</h4><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 启用接收追踪（注意：&#x27;receive&#x27; 需要引号，因为是保留字）</span></span><br><span class="line">erlang:trace(Pid, <span class="literal">true</span>, [&#x27;<span class="keyword">receive</span>&#x27;]).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 追踪消息格式</span></span><br><span class="line">&#123;trace, PidPort, &#x27;<span class="keyword">receive</span>&#x27;, Msg&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="进程生命周期追踪-procs"><a href="#进程生命周期追踪-procs" class="headerlink" title="进程生命周期追踪 (procs)"></a>进程生命周期追踪 (procs)</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 追踪进程创建、退出等事件</span></span><br><span class="line">erlang:trace(all, <span class="literal">true</span>, [procs]).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 配合 set_on_spawn 追踪新创建的进程</span></span><br><span class="line">erlang:trace(all, <span class="literal">true</span>, [set_on_spawn, procs]).</span><br></pre></td></tr></table></figure>
+
+<h3 id="running-追踪"><a href="#running-追踪" class="headerlink" title="running 追踪"></a>running 追踪</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 追踪进程调度（运行/挂起）</span></span><br><span class="line">erlang:trace(Pid, <span class="literal">true</span>, [running, procs]).</span><br></pre></td></tr></table></figure>
+
+<h3 id="垃圾回收追踪"><a href="#垃圾回收追踪" class="headerlink" title="垃圾回收追踪"></a>垃圾回收追踪</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 追踪 GC 事件，带时间戳</span></span><br><span class="line">erlang:trace(Pid, <span class="literal">true</span>, [garbage_collection, timestamp]).</span><br></pre></td></tr></table></figure>
+
+<p><strong>注意</strong>: 占用内存太小可能触发不到垃圾回收。</p>
+<hr>
+<h2 id="函数调用追踪"><a href="#函数调用追踪" class="headerlink" title="函数调用追踪"></a>函数调用追踪</h2><p>函数追踪需要 <code>erlang:trace/3</code> 和 <code>erlang:trace_pattern/3</code> 配合使用。</p>
+<h3 id="基本原理"><a href="#基本原理" class="headerlink" title="基本原理"></a>基本原理</h3><table>
+<thead>
+<tr>
+<th>函数</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>erlang:trace/3</code></td>
+<td>定义追踪哪些<strong>进程</strong></td>
+</tr>
+<tr>
+<td><code>erlang:trace_pattern/3</code></td>
+<td>定义追踪哪些<strong>函数</strong></td>
+</tr>
+</tbody></table>
+<p>只有当<strong>被追踪的进程</strong>调用<strong>被追踪的函数</strong>时，才会产生追踪事件。</p>
+<h3 id="trace-pattern-基本语法"><a href="#trace-pattern-基本语法" class="headerlink" title="trace_pattern 基本语法"></a>trace_pattern 基本语法</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">erlang:trace_pattern(MFA, MatchSpec, FlagList) -&gt; integer()</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>MFA</strong>: <code>{Module, Function, Arity}</code> 或 <code>{Module, &#39;_&#39;, &#39;_&#39;}</code></li>
+<li><strong>MatchSpec</strong>: 匹配规则（<code>true</code>, <code>[]</code>, 或详细规则）</li>
+<li><strong>FlagList</strong>: <code>[global]</code>, <code>[local]</code>, <code>[meta]</code> 等</li>
+</ul>
+<h3 id="基本示例"><a href="#基本示例" class="headerlink" title="基本示例"></a>基本示例</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 1. 启用进程的函数调用追踪</span></span><br><span class="line">erlang:trace(all, <span class="literal">true</span>, [call]).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 2. 指定追踪的函数（必须先 load module）</span></span><br><span class="line">erlang:trace_pattern(&#123;mymodule, myfunction, <span class="number">2</span>&#125;, <span class="literal">true</span>, [local]).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 注意：模块必须先加载！</span></span><br><span class="line"><span class="function"><span class="title">l</span><span class="params">(mymodule)</span>.  %% 或 <span class="title">code</span>:<span class="title">ensure_loaded</span><span class="params">(mymodule)</span></span></span><br></pre></td></tr></table></figure>
+
+<h3 id="global-vs-local"><a href="#global-vs-local" class="headerlink" title="global vs local"></a>global vs local</h3><table>
+<thead>
+<tr>
+<th>选项</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>global</code></td>
+<td>默认值，只追踪外部调用（跨模块调用）</td>
+</tr>
+<tr>
+<td><code>local</code></td>
+<td>追踪所有调用，包括模块内部调用</td>
+</tr>
+</tbody></table>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 追踪所有调用（包括内部调用）</span></span><br><span class="line">erlang:trace_pattern(&#123;mymodule, &#x27;_&#x27;, &#x27;_&#x27;&#125;, <span class="literal">true</span>, [local]).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 只追踪外部调用</span></span><br><span class="line">erlang:trace_pattern(&#123;mymodule, &#x27;_&#x27;, &#x27;_&#x27;&#125;, <span class="literal">true</span>, [global]).</span><br></pre></td></tr></table></figure>
+
+<h3 id="return-to-追踪"><a href="#return-to-追踪" class="headerlink" title="return_to 追踪"></a>return_to 追踪</h3><p>追踪函数返回到哪里（只对 <code>local</code> 有效）：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 启用 return_to</span></span><br><span class="line">erlang:trace(all, <span class="literal">true</span>, [call, return_to]).</span><br><span class="line">erlang:trace_pattern(&#123;mymodule, &#x27;_&#x27;, &#x27;_&#x27;&#125;, <span class="literal">true</span>, [local]).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 追踪消息格式</span></span><br><span class="line">&#123;trace, Pid, return_to, &#123;M, F, A&#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>注意</strong>: <code>return_to</code> 无法获取函数返回值！</p>
+<h3 id="return-trace-获取返回值"><a href="#return-trace-获取返回值" class="headerlink" title="return_trace 获取返回值"></a>return_trace 获取返回值</h3><p>要获取函数返回值，使用 MatchSpec 中的 <code>{return_trace}</code>：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 使用 return_trace 获取返回值</span></span><br><span class="line">erlang:trace(all, <span class="literal">true</span>, [call]).</span><br><span class="line">erlang:trace_pattern(&#123;mymodule, myfunction, <span class="number">1</span>&#125;, [&#123;&#x27;_&#x27;, [], [&#123;return_trace&#125;]&#125;], [local]).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 追踪消息格式</span></span><br><span class="line">&#123;trace, Pid, call, &#123;M, F, Args&#125;&#125;</span><br><span class="line">&#123;trace, Pid, return_from, &#123;M, F, Arity&#125;, ReturnValue&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="arity-选项"><a href="#arity-选项" class="headerlink" title="arity 选项"></a>arity 选项</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 使用 arity：只显示参数个数，不显示参数内容</span></span><br><span class="line">erlang:trace(all, <span class="literal">true</span>, [call, arity]).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 不使用 arity：显示完整参数</span></span><br><span class="line">erlang:trace(all, <span class="literal">true</span>, [call]).</span><br></pre></td></tr></table></figure>
+
+<p>使用 <code>arity</code> 可以减少追踪消息大小。</p>
+<hr>
+<h2 id="Match-Specifications"><a href="#Match-Specifications" class="headerlink" title="Match Specifications"></a>Match Specifications</h2><p>Match Specifications 是强大的过滤和操作机制。</p>
+<h3 id="基本结构"><a href="#基本结构" class="headerlink" title="基本结构"></a>基本结构</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MatchSpec = [&#123;MatchHead, MatchConditions, MatchBody&#125;]</span><br></pre></td></tr></table></figure>
+
+<h3 id="使用-dbg-fun2ms-1-生成"><a href="#使用-dbg-fun2ms-1-生成" class="headerlink" title="使用 dbg:fun2ms&#x2F;1 生成"></a>使用 dbg:fun2ms&#x2F;1 生成</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 使用 fun2ms 生成 MatchSpec</span></span><br><span class="line"><span class="number">1</span>&gt; dbg:fun2ms(<span class="keyword">fun</span>([A, B]) <span class="keyword">when</span> A &gt; <span class="number">10</span> -&gt; return_trace() <span class="keyword">end</span>).</span><br><span class="line">[&#123;[&#x27;<span class="string">$1</span>&#x27;,&#x27;<span class="string">$2</span>&#x27;],[&#123;&#x27;&gt;&#x27;,&#x27;<span class="string">$1</span>&#x27;,<span class="number">10</span>&#125;],[&#123;return_trace&#125;]&#125;]</span><br></pre></td></tr></table></figure>
+
+<h3 id="常用-MatchSpec-示例"><a href="#常用-MatchSpec-示例" class="headerlink" title="常用 MatchSpec 示例"></a>常用 MatchSpec 示例</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 追踪所有调用并返回值</span></span><br><span class="line">erlang:trace_pattern(&#123;M, F, A&#125;, [&#123;&#x27;_&#x27;, [], [&#123;return_trace&#125;]&#125;], [local]).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 追踪特定参数值</span></span><br><span class="line">erlang:trace_pattern(&#123;M, F, <span class="number">1</span>&#125;, [&#123;[&#x27;<span class="string">$1</span>&#x27;], [&#123;&#x27;==&#x27;, &#x27;<span class="string">$1</span>&#x27;, foo&#125;], []&#125;], [local]).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 追踪并打印消息</span></span><br><span class="line">erlang:trace_pattern(&#123;M, F, A&#125;, [&#123;&#x27;_&#x27;, [], [&#123;message, &#123;process_dump&#125;&#125;]&#125;], [local]).</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="dbg-模块"><a href="#dbg-模块" class="headerlink" title="dbg 模块"></a>dbg 模块</h2><p><code>dbg</code> 是基于 <code>erlang:trace/3</code> 的高级封装，使用更简便。</p>
+<h3 id="基本使用流程"><a href="#基本使用流程" class="headerlink" title="基本使用流程"></a>基本使用流程</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 1. 启动 tracer</span></span><br><span class="line">dbg:tracer().</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 2. 设置追踪的进程</span></span><br><span class="line">dbg:p(all, c).  <span class="comment">%% all 进程，c = call</span></span><br><span class="line"></span><br><span class="line"><span class="comment">%% 3. 设置追踪的函数</span></span><br><span class="line">dbg:tpl(mymodule, myfunction, x).  <span class="comment">%% x = 所有 arity</span></span><br><span class="line"></span><br><span class="line"><span class="comment">%% 4. 停止追踪</span></span><br><span class="line">dbg:stop_clear().</span><br></pre></td></tr></table></figure>
+
+<h3 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h3><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>dbg:tracer()</code></td>
+<td>启动默认 tracer</td>
+</tr>
+<tr>
+<td><code>dbg:p(PidSpec, Flags)</code></td>
+<td>设置进程追踪</td>
+</tr>
+<tr>
+<td><code>dbg:tp(M, F, A, MS)</code></td>
+<td>追踪全局函数调用</td>
+</tr>
+<tr>
+<td><code>dbg:tpl(M, F, A, MS)</code></td>
+<td>追踪本地+全局函数调用</td>
+</tr>
+<tr>
+<td><code>dbg:ctp(M, F, A)</code></td>
+<td>清除追踪模式</td>
+</tr>
+<tr>
+<td><code>dbg:stop()</code></td>
+<td>停止 tracer</td>
+</tr>
+<tr>
+<td><code>dbg:stop_clear()</code></td>
+<td>停止并清除所有追踪</td>
+</tr>
+</tbody></table>
+<h3 id="dbg-p-2-的-Flags"><a href="#dbg-p-2-的-Flags" class="headerlink" title="dbg:p&#x2F;2 的 Flags"></a>dbg:p&#x2F;2 的 Flags</h3><table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>c</code></td>
+<td>call - 函数调用</td>
+</tr>
+<tr>
+<td><code>s</code></td>
+<td>send - 发送消息</td>
+</tr>
+<tr>
+<td><code>r</code></td>
+<td>receive - 接收消息</td>
+</tr>
+<tr>
+<td><code>m</code></td>
+<td>messages - send + receive</td>
+</tr>
+<tr>
+<td><code>p</code></td>
+<td>procs - 进程事件</td>
+</tr>
+<tr>
+<td><code>sos</code></td>
+<td>set_on_spawn</td>
+</tr>
+<tr>
+<td><code>sol</code></td>
+<td>set_on_link</td>
+</tr>
+</tbody></table>
+<h3 id="实际示例"><a href="#实际示例" class="headerlink" title="实际示例"></a>实际示例</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 追踪 lists:seq/2 的调用</span></span><br><span class="line"><span class="number">1</span>&gt; dbg:tracer().</span><br><span class="line">&#123;ok,&lt;<span class="number">0.90</span>.<span class="number">0</span>&gt;&#125;</span><br><span class="line"></span><br><span class="line"><span class="number">2</span>&gt; dbg:p(all, c).</span><br><span class="line">&#123;ok,[&#123;matched,nonode@nohost,<span class="number">26</span>&#125;]&#125;</span><br><span class="line"></span><br><span class="line"><span class="number">3</span>&gt; dbg:tpl(lists, seq, x).</span><br><span class="line">&#123;ok,[&#123;matched,nonode@nohost,<span class="number">2</span>&#125;]&#125;</span><br><span class="line"></span><br><span class="line"><span class="number">4</span>&gt; lists:seq(<span class="number">1</span>, <span class="number">5</span>).</span><br><span class="line">(&lt;<span class="number">0.84</span>.<span class="number">0</span>&gt;) call lists:seq(<span class="number">1</span>,<span class="number">5</span>)</span><br><span class="line">[<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>]</span><br><span class="line"></span><br><span class="line"><span class="number">5</span>&gt; dbg:stop_clear().</span><br><span class="line">ok</span><br></pre></td></tr></table></figure>
+
+<h3 id="带返回值的追踪"><a href="#带返回值的追踪" class="headerlink" title="带返回值的追踪"></a>带返回值的追踪</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 使用 dbg:fun2ms 生成带 return_trace 的 MatchSpec</span></span><br><span class="line"><span class="number">1</span>&gt; dbg:tracer().</span><br><span class="line"><span class="number">2</span>&gt; dbg:p(all, c).</span><br><span class="line"><span class="number">3</span>&gt; dbg:tpl(lists, seq, dbg:fun2ms(<span class="keyword">fun</span>(_) -&gt; return_trace() <span class="keyword">end</span>)).</span><br><span class="line"><span class="number">4</span>&gt; lists:seq(<span class="number">1</span>, <span class="number">3</span>).</span><br><span class="line">(&lt;<span class="number">0.84</span>.<span class="number">0</span>&gt;) call lists:seq(<span class="number">1</span>,<span class="number">3</span>)</span><br><span class="line">(&lt;<span class="number">0.84</span>.<span class="number">0</span>&gt;) returned from lists:seq/<span class="number">2</span> -&gt; [<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>]</span><br><span class="line">[<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>]</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="recon-trace"><a href="#recon-trace" class="headerlink" title="recon_trace"></a>recon_trace</h2><p><code>recon_trace</code> 是生产环境安全的追踪工具，来自 <code>recon</code> 库。</p>
+<h3 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h3><ul>
+<li>自动限制追踪消息数量，防止系统过载</li>
+<li>只能追踪函数调用，不能追踪消息</li>
+<li>生产环境推荐使用</li>
+</ul>
+<h3 id="基本使用"><a href="#基本使用" class="headerlink" title="基本使用"></a>基本使用</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 追踪 10 次调用</span></span><br><span class="line">recon_trace:calls(&#123;lists, seq, <span class="number">2</span>&#125;, <span class="number">10</span>).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 带返回值</span></span><br><span class="line">recon_trace:calls(&#123;lists, seq, <span class="number">2</span>&#125;, <span class="number">10</span>, [&#123;scope, local&#125;]).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 追踪特定进程</span></span><br><span class="line">recon_trace:calls(&#123;M, F, A&#125;, <span class="number">10</span>, [&#123;pid, Pid&#125;]).</span><br></pre></td></tr></table></figure>
+
+<h3 id="重要提示"><a href="#重要提示" class="headerlink" title="重要提示"></a>重要提示</h3><p>使用 <code>recon_trace</code> 前，需要预加载所有要追踪的模块：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 加载所有 beam 文件对应的模块</span></span><br><span class="line">LP = <span class="keyword">fun</span>() -&gt; </span><br><span class="line">    [code:ensure_loaded(list_to_atom(filename:rootname(filename:basename(F)))) </span><br><span class="line">     || P &lt;- code:get_path(), F &lt;- filelib:wildcard(P ++ <span class="string">&quot;/*.beam&quot;</span>)] </span><br><span class="line"><span class="keyword">end</span>.</span><br><span class="line">LP().</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="实战技巧"><a href="#实战技巧" class="headerlink" title="实战技巧"></a>实战技巧</h2><h3 id="1-追踪-RabbitMQ-函数调用"><a href="#1-追踪-RabbitMQ-函数调用" class="headerlink" title="1. 追踪 RabbitMQ 函数调用"></a>1. 追踪 RabbitMQ 函数调用</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 追踪 rabbit_channel 模块</span></span><br><span class="line"><span class="number">1</span>&gt; dbg:tracer().</span><br><span class="line"><span class="number">2</span>&gt; dbg:p(all, c).</span><br><span class="line"><span class="number">3</span>&gt; dbg:tpl(rabbit_channel, handle_cast, x).</span><br><span class="line"><span class="number">4</span>&gt; <span class="comment">%% 执行相关操作...</span></span><br><span class="line"><span class="number">5</span>&gt; dbg:stop_clear().</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-追踪消息传递"><a href="#2-追踪消息传递" class="headerlink" title="2. 追踪消息传递"></a>2. 追踪消息传递</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 追踪特定进程的消息</span></span><br><span class="line"><span class="number">1</span>&gt; Pid = whereis(rabbit_reader).</span><br><span class="line"><span class="number">2</span>&gt; erlang:trace(Pid, <span class="literal">true</span>, [send, &#x27;<span class="keyword">receive</span>&#x27;]).</span><br><span class="line"><span class="number">3</span>&gt; flush().  <span class="comment">%% 查看追踪消息</span></span><br><span class="line"><span class="number">4</span>&gt; erlang:trace(Pid, <span class="literal">false</span>, [send, &#x27;<span class="keyword">receive</span>&#x27;]).  <span class="comment">%% 停止追踪</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="3-生产环境安全追踪"><a href="#3-生产环境安全追踪" class="headerlink" title="3. 生产环境安全追踪"></a>3. 生产环境安全追踪</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 使用 recon_trace，限制 100 次调用</span></span><br><span class="line">recon_trace:calls(&#123;rabbit_channel, handle_cast, &#x27;_&#x27;&#125;, <span class="number">100</span>).</span><br><span class="line"></span><br><span class="line"><span class="comment">%% 10 秒后自动停止</span></span><br><span class="line">recon_trace:calls(&#123;rabbit_channel, handle_cast, &#x27;_&#x27;&#125;, &#123;<span class="number">100</span>, <span class="number">10000</span>&#125;).</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-追踪特定参数的调用"><a href="#4-追踪特定参数的调用" class="headerlink" title="4. 追踪特定参数的调用"></a>4. 追踪特定参数的调用</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 只追踪第一个参数为 foo 的调用</span></span><br><span class="line">MS = dbg:fun2ms(<span class="keyword">fun</span>([foo, _]) -&gt; return_trace() <span class="keyword">end</span>).</span><br><span class="line">dbg:tpl(mymodule, myfunction, MS).</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h2><h3 id="Q-为什么-trace-pattern-不生效？"><a href="#Q-为什么-trace-pattern-不生效？" class="headerlink" title="Q: 为什么 trace_pattern 不生效？"></a>Q: 为什么 trace_pattern 不生效？</h3><ol>
+<li>模块未加载：先执行 <code>l(module)</code> 或 <code>code:ensure_loaded(module)</code></li>
+<li>只使用了 trace 或 trace_pattern 其中一个：两者必须配合使用</li>
+<li>使用了 <code>global</code> 但调用是模块内部调用：改用 <code>local</code></li>
+</ol>
+<h3 id="Q-如何获取函数返回值？"><a href="#Q-如何获取函数返回值？" class="headerlink" title="Q: 如何获取函数返回值？"></a>Q: 如何获取函数返回值？</h3><p>使用 <code>return_trace</code> MatchSpec，而不是 <code>return_to</code> flag：</p>
+<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">erlang:trace_pattern(&#123;M, F, A&#125;, [&#123;&#x27;_&#x27;, [], [&#123;return_trace&#125;]&#125;], [local]).</span><br></pre></td></tr></table></figure>
+
+<h3 id="Q-为什么看不到追踪消息？"><a href="#Q-为什么看不到追踪消息？" class="headerlink" title="Q: 为什么看不到追踪消息？"></a>Q: 为什么看不到追踪消息？</h3><ol>
+<li>终端作为 tracer 时需要 <code>flush()</code></li>
+<li>tracer 进程不能追踪自己</li>
+<li>检查 trace 和 trace_pattern 是否都设置了</li>
+</ol>
+<h3 id="Q-如何追踪新创建的进程？"><a href="#Q-如何追踪新创建的进程？" class="headerlink" title="Q: 如何追踪新创建的进程？"></a>Q: 如何追踪新创建的进程？</h3><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">%% 使用 set_on_spawn</span></span><br><span class="line">erlang:trace(all, <span class="literal">true</span>, [set_on_spawn, procs, call]).</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>推荐工具</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>开发环境快速调试</td>
+<td><code>dbg</code></td>
+</tr>
+<tr>
+<td>生产环境安全追踪</td>
+<td><code>recon_trace</code></td>
+</tr>
+<tr>
+<td>精细控制</td>
+<td><code>erlang:trace/3</code> + <code>erlang:trace_pattern/3</code></td>
+</tr>
+<tr>
+<td>消息追踪</td>
+<td><code>erlang:trace/3</code> 的 <code>send</code>&#x2F;<code>&#39;receive&#39;</code></td>
+</tr>
+<tr>
+<td>进程追踪</td>
+<td><code>erlang:trace/3</code> 的 <code>procs</code></td>
+</tr>
+</tbody></table>
+<p>掌握 Erlang trace 技术是深入理解 RabbitMQ 等 Erlang 系统的关键。通过合理使用这些工具，可以有效地进行问题排查和性能分析。</p>
+<hr>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://www.erlang.org/doc/man/erlang.html#trace-3">Erlang trace&#x2F;3 官方文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.erlang.org/doc/man/erlang.html#trace_pattern-3">Erlang trace_pattern&#x2F;3 官方文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.erlang.org/doc/man/dbg.html">Erlang dbg 官方文档</a></li>
+<li><a target="_blank" rel="noopener" href="http://erlang.org/documentation/doc-7.0/erts-7.0/doc/html/match_spec.html">Match Specifications in Erlang</a></li>
+<li><a target="_blank" rel="noopener" href="http://stratus3d.com/blog/2021/08/24/guide-to-tracing-in-erlang/">Guide to Tracing in Erlang</a></li>
+<li><a target="_blank" rel="noopener" href="https://ferd.github.io/recon/">recon 库文档</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Erlang/" rel="tag"># Erlang</a>
+              <a href="/tags/RabbitMQ/" rel="tag"># RabbitMQ</a>
+              <a href="/tags/%E8%B0%83%E8%AF%95/" rel="tag"># 调试</a>
+              <a href="/tags/trace/" rel="tag"># trace</a>
+              <a href="/tags/dbg/" rel="tag"># dbg</a>
+              <a href="/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" rel="tag"># 源码分析</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/01/16/rabbitmq-rabbitmq-complete-build-guide/" rel="prev" title="RabbitMQ 编译构建完全指南">
+                  <i class="fa fa-angle-left"></i> RabbitMQ 编译构建完全指南
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2024 – 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Zixiang Sun</span>
+  </div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"hzsunzixiang/hzsunzixiang.github.io","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js" defer></script>
+
+</body>
+</html>

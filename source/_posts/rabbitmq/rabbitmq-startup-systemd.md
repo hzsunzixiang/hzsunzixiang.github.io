@@ -28,13 +28,13 @@ export ERL_LIBS=/usr/lib/rabbitmq/lib/rabbitmq_server-3.9.21/plugins
 ERL_LIBS=/usr/lib/rabbitmq/lib/rabbitmq_server-3.9.21/plugins erl -noinput -s rabbit boot -boot start_sasl
 ```
 
-![RabbitMQ 启动架构图](rabbitmq-startup-systemd/image2.svg)
+{% asset_img image2.svg "RabbitMQ 启动架构图" %}
 
-![启动流程](rabbitmq-startup-systemd/image3.png)
+{% asset_img image3.png "启动流程" %}
 
-![详细启动过程](rabbitmq-startup-systemd/image4.png)
+{% asset_img image4.png "详细启动过程" %}
 
-![启动状态](rabbitmq-startup-systemd/image5.png)
+{% asset_img image5.png "启动状态" %}
 
 ---
 
@@ -55,7 +55,7 @@ ERL_LIBS=/usr/lib/rabbitmq/lib/rabbitmq_server-3.9.21/plugins erl -noinput -s ra
 
 `systemd-notify` 是 `sd_notify()` 函数的一个包装，使得 shell 脚本也能使用此功能。
 
-![systemd-notify 工作流程](rabbitmq-startup-systemd/image6.png)
+{% asset_img image6.png "systemd-notify 工作流程" %}
 
 ### 实例演示
 
@@ -66,7 +66,7 @@ ERL_LIBS=/usr/lib/rabbitmq/lib/rabbitmq_server-3.9.21/plugins erl -noinput -s ra
 | **服务管理器** | systemd | 系统和服务管理器 |
 | **服务管理命令** | systemctl | 与 systemd 进行交互的接口 |
 
-![实例演示架构](rabbitmq-startup-systemd/image7.png)
+{% asset_img image7.png "实例演示架构" %}
 
 **示例代码：** https://github.com/hzsunzixiang/rabbitmq-server-debug/tree/main/book/systemd
 
@@ -176,7 +176,7 @@ notify_socket() ->
     State.
 ```
 
-![Erlang systemd 集成](rabbitmq-startup-systemd/image8.png)
+{% asset_img image8.png "Erlang systemd 集成" %}
 
 ### 关于 READY 通知的重要说明
 
@@ -192,7 +192,7 @@ notify_socket() ->
 
 ## systemd 在 RabbitMQ 启动中的具体作用
 
-![RabbitMQ systemd 集成架构](rabbitmq-startup-systemd/image7.png)
+{% asset_img image7.png "RabbitMQ systemd 集成架构" %}
 
 ### 安装 RabbitMQ
 
@@ -229,11 +229,11 @@ yum install rabbitmq-server.aarch64
 log.file.level = debug
 ```
 
-![日志配置](rabbitmq-startup-systemd/image9.png)
+{% asset_img image9.png "日志配置" %}
 
-![启动日志](rabbitmq-startup-systemd/image10.png)
+{% asset_img image10.png "启动日志" %}
 
-![详细日志](rabbitmq-startup-systemd/image11.png)
+{% asset_img image11.png "详细日志" %}
 
 ### 特别注意：域名配置
 
@@ -322,9 +322,9 @@ systemctl status rabbitmq-server
            └─164295 /usr/local/lib/erlang/erts-14.2.5.1/bin/inet_gethost 4
 ```
 
-![服务状态](rabbitmq-startup-systemd/image12.png)
+{% asset_img image12.png "服务状态" %}
 
-![详细状态](rabbitmq-startup-systemd/image13.png)
+{% asset_img image13.png "详细状态" %}
 
 ### 环境变量说明
 
@@ -333,7 +333,7 @@ NOTIFY_SOCKET:/run/systemd/notify
 RABBITMQ_ALLOW_INPUT:, RUNNING_UNDER_SYSTEMD:true detached:
 ```
 
-![环境变量](rabbitmq-startup-systemd/image14.png)
+{% asset_img image14.png "环境变量" %}
 
 ### 启动状态日志
 
@@ -361,7 +361,7 @@ grep "Change boot state to" /var/log/rabbitmq/*
 
 **注意：** ready 之后，状态就不显示了。
 
-![启动状态图](rabbitmq-startup-systemd/image15.png)
+{% asset_img image15.png "启动状态图" %}
 
 ---
 

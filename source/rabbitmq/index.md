@@ -25,6 +25,7 @@ date: 2024-01-15
 | [RabbitMQ 编译构建完全指南](/2026/01/16/rabbitmq-rabbitmq-complete-build-guide/) | 完整的编译构建指南，包含最佳实践和故障排除 |
 | [RabbitMQ 依赖模块全面分析](/2026/01/17/rabbitmq-rabbitmq-dependencies-analysis/) | 86 个依赖模块的功能、架构和交互方式详解 |
 | [RabbitMQ 队列声明流程深度分析](/2026/01/17/rabbitmq-rabbitmq-queue-declare-flow-analysis/) | 队列声明的完整执行流程和源码分析 |
+| [RabbitMQ 启动方式与 Systemd 集成详解](/2026/01/18/rabbitmq-rabbitmq-startup-systemd/) | RabbitMQ 启动脚本分析与 systemd 服务管理实践 |
 
 ---
 

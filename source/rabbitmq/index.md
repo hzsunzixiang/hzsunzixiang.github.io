@@ -40,6 +40,7 @@ date: 2024-01-15
 
 | 模块 | 文档 | 描述 |
 |------|------|------|
+| systemd | [完整指南](/2026/01/18/rabbitmq-rabbitmq-deps-systemd-guide/) | Linux 服务管理与 RabbitMQ 集成 |
 | base64url | [深度解析](/2026/01/17/rabbitmq-rabbitmq-deps-base64url-analysis/) | URL 安全的 Base64 编解码器 |
 
 ---

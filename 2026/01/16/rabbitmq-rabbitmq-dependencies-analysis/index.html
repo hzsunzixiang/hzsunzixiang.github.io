@@ -23,12 +23,12 @@
     <meta name="description" content="RabbitMQ 依赖模块全面分析概述本文档对 RabbitMQ 4.0.5 版本 deps&#x2F; 目录下的 86 个依赖模块进行全面分析，涵盖每个模块的功能、与 RabbitMQ 核心的交互方式以及在整体架构中的作用。 架构层次概览12345678910111213141516171819202122232425262728293031323334┌─────────────────────────">
 <meta property="og:type" content="article">
 <meta property="og:title" content="RabbitMQ 依赖模块全面分析">
-<meta property="og:url" content="https://hzsunzixiang.github.io/2026/01/17/rabbitmq-rabbitmq-dependencies-analysis/">
+<meta property="og:url" content="https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-dependencies-analysis/">
 <meta property="og:site_name" content="Zixiang Sun&#39;s Blog">
 <meta property="og:description" content="RabbitMQ 依赖模块全面分析概述本文档对 RabbitMQ 4.0.5 版本 deps&#x2F; 目录下的 86 个依赖模块进行全面分析，涵盖每个模块的功能、与 RabbitMQ 核心的交互方式以及在整体架构中的作用。 架构层次概览12345678910111213141516171819202122232425262728293031323334┌─────────────────────────">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2026-01-16T16:00:00.000Z">
-<meta property="article:modified_time" content="2026-01-17T14:46:59.348Z">
+<meta property="article:published_time" content="2026-01-15T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-18T04:46:24.061Z">
 <meta property="article:author" content="Zixiang Sun">
 <meta property="article:tag" content="Erlang">
 <meta property="article:tag" content="RabbitMQ">
@@ -37,10 +37,10 @@
 <meta name="twitter:card" content="summary">
 
 
-<link rel="canonical" href="https://hzsunzixiang.github.io/2026/01/17/rabbitmq-rabbitmq-dependencies-analysis/">
+<link rel="canonical" href="https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-dependencies-analysis/">
 
 
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://hzsunzixiang.github.io/2026/01/17/rabbitmq-rabbitmq-dependencies-analysis/","path":"2026/01/17/rabbitmq-rabbitmq-dependencies-analysis/","title":"RabbitMQ 依赖模块全面分析"}</script>
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-dependencies-analysis/","path":"2026/01/16/rabbitmq-rabbitmq-dependencies-analysis/","title":"RabbitMQ 依赖模块全面分析"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
 <title>RabbitMQ 依赖模块全面分析 | Zixiang Sun's Blog</title>
@@ -225,7 +225,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://hzsunzixiang.github.io/2026/01/17/rabbitmq-rabbitmq-dependencies-analysis/">
+    <link itemprop="mainEntityOfPage" href="https://hzsunzixiang.github.io/2026/01/16/rabbitmq-rabbitmq-dependencies-analysis/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.svg">
@@ -253,9 +253,15 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
-      
 
-      <time title="创建时间：2026-01-17 00:00:00 / 修改时间：22:46:59" itemprop="dateCreated datePublished" datetime="2026-01-17T00:00:00+08:00">2026-01-17</time>
+      <time title="创建时间：2026-01-16 00:00:00" itemprop="dateCreated datePublished" datetime="2026-01-16T00:00:00+08:00">2026-01-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-18 12:46:24" itemprop="dateModified" datetime="2026-01-18T12:46:24+08:00">2026-01-18</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -1258,8 +1264,8 @@
 
     <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/RabbitMQ/" rel="tag"># RabbitMQ</a>
               <a href="/tags/Erlang/" rel="tag"># Erlang</a>
+              <a href="/tags/RabbitMQ/" rel="tag"># RabbitMQ</a>
               <a href="/tags/%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90/" rel="tag"># 架构分析</a>
               <a href="/tags/%E4%BE%9D%E8%B5%96%E6%A8%A1%E5%9D%97/" rel="tag"># 依赖模块</a>
           </div>
@@ -1268,12 +1274,12 @@
 
           <div class="post-nav">
             <div class="post-nav-item">
-                <a href="/2026/01/16/erlang-erlang-trace-debugging-guide/" rel="prev" title="Erlang Trace 调试技术详解">
-                  <i class="fa fa-angle-left"></i> Erlang Trace 调试技术详解
+                <a href="/2024/01/18/erlang-erlang-otp-gen-server/" rel="prev" title="第四章：通用型服务器 gen_server">
+                  <i class="fa fa-angle-left"></i> 第四章：通用型服务器 gen_server
                 </a>
             </div>
             <div class="post-nav-item">
-                <a href="/2026/01/17/rabbitmq-rabbitmq-queue-declare-flow-analysis/" rel="next" title="RabbitMQ 队列声明流程深度分析">
+                <a href="/2026/01/16/rabbitmq-rabbitmq-queue-declare-flow-analysis/" rel="next" title="RabbitMQ 队列声明流程深度分析">
                   RabbitMQ 队列声明流程深度分析 <i class="fa fa-angle-right"></i>
                 </a>
             </div>

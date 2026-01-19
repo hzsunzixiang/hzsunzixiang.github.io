@@ -27,6 +27,7 @@ date: 2024-01-15
 | [RabbitMQ 队列声明源码剖析](/2026/01/18/rabbitmq-rabbitmq-queue-declare-deep-dive/) | 队列声明的完整执行流程和源码分析 |
 | [RabbitMQ 启动方式与 Systemd 集成详解](/2026/01/18/rabbitmq-rabbitmq-startup-systemd/) | RabbitMQ 启动脚本分析与 systemd 服务管理实践 |
 | [RabbitMQ 依赖分析：Systemd 完整指南](/2026/01/18/rabbitmq-rabbitmq-deps-systemd-guide/) | systemd 库源码分析与 Erlang 集成实践 |
+| [RabbitMQ Prelaunch 模块深度解析](/2026/01/18/rabbitmq-rabbitmq-prelaunch-analysis/) | 预启动模块源码分析：环境检查、配置加载、分布式初始化 |
 
 ---
 

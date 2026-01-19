@@ -22,6 +22,7 @@ date: 2026-01-17
 | 模块 | 文档 | 描述 |
 |------|------|------|
 | systemd | [完整指南](/2026/01/18/rabbitmq-rabbitmq-deps-systemd-guide/) | Linux 服务管理与 RabbitMQ 集成实践 |
+| rabbitmq_prelaunch | [深度解析](/2026/01/18/rabbitmq-rabbitmq-prelaunch-analysis/) | 预启动模块：环境检查、配置加载、分布式初始化 |
 
 ### 编码与序列化
 

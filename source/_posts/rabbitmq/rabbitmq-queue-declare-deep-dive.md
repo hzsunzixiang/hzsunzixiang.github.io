@@ -1,6 +1,6 @@
 ---
-title: RabbitMQ 队列声明流程深度分析
-date: 2026-01-16
+title: RabbitMQ 队列声明源码剖析
+date: 2026-01-18
 categories:
   - RabbitMQ
 tags:

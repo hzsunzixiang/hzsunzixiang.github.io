@@ -27,7 +27,7 @@ date: 2026-01-17
 
 | 模块 | 文档 | 描述 |
 |------|------|------|
-| base64url | [深度解析](/2026/01/17/rabbitmq-rabbitmq-deps-base64url-analysis/) | URL 安全的 Base64 编解码器，RFC 4648 标准实现 |
+| base64url | [深度解析](/2026/01/16/rabbitmq-rabbitmq-deps-base64url-analysis/) | URL 安全的 Base64 编解码器，RFC 4648 标准实现 |
 
 ### 网络与协议
 

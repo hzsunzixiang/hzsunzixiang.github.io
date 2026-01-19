@@ -1,6 +1,6 @@
 ---
 title: RabbitMQ 启动方式与 Systemd 集成详解
-date: 2026-01-18
+date: 2026-01-19
 categories:
   - RabbitMQ
 tags:

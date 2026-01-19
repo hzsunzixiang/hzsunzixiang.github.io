@@ -1,6 +1,6 @@
 ---
 title: RabbitMQ 依赖分析：Systemd 完整指南
-date: 2026-01-18
+date: 2026-01-19
 categories:
   - RabbitMQ
   - RabbitMQ Deps

@@ -1,6 +1,6 @@
 ---
 title: RabbitMQ 队列声明源码剖析
-date: 2026-01-18
+date: 2026-01-19
 categories:
   - RabbitMQ
 tags:

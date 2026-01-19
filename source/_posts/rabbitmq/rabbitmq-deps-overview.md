@@ -1,6 +1,6 @@
 ---
 title: RabbitMQ 依赖模块架构全览
-date: 2026-01-18
+date: 2026-01-19
 categories:
   - RabbitMQ
 tags:
